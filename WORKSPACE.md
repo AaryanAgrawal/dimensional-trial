@@ -93,36 +93,7 @@ Next actions.
 
 ### Tasks — CUDA machine (window 2)
 
-Ordered queue for whichever Claude session is running on the office GPU box. Claim a task by
-marking it `[~] doing — cuda-machine` and pushing immediately; mark `[x] done — <result>` and push
-when finished. Don't touch the robot or push to the `dimos` fork/branch from this machine — window
-1 (laptop) owns the branch/PR and the live robot, single-writer.
-
-- [ ] todo — **1. Cold start + GPU verification.** Run §0 cold start on this machine. Then confirm
-      the map pipeline actually uses the GPU: `dimos map global hk_village3 --markers --device
-      CUDA:0`, check the logs name the CUDA device and that wall time is meaningfully faster than
-      the Mac's CPU:0 run (§7 Findings has the CPU:0 reference number to compare against).
-- [ ] todo — **2. Offline eval, full scale.** For each of `hk_village1` through `hk_village5`:
-      ```bash
-      dimos map global <village> --markers --no-gui --device CUDA:0
-      dimos map global <village> --pgo --markers --no-gui --device CUDA:0
-      uv run python -m dimos.mapping.loop_closure.eval <village>
-      ```
-      Build a per-village table: `TOTAL_SPREAD` + raw-vs-PGO marker RMS. The Mac-only village3
-      numbers exist as a reference point to sanity-check against: `TOTAL_SPREAD=4.955m`, raw RMS
-      **0.540m** vs. PGO-corrected RMS **0.577m** (n=4 — one marker, one short recording, roughly a
-      wash; see if bigger villages/more sightings tell a clearer story).
-- [ ] todo — **3. The big map.** `dimos map global go2_hongkong_office --pgo --markers --no-gui
-      --device CUDA:0` — the large tuning/eval map, heavyweight, CUDA-only practical — plus its
-      eval numbers via the same `loop_closure.eval` command.
-- [ ] todo — **4. Platform check.** `uv run pytest dimos/perception/fiducial/
-      dimos/mapping/benchmark/` + `mypy --strict` on the branch, on this Linux/CUDA box — confirms
-      the PR + benchmark devtool are green on their actual target platform (a CI-parity signal the
-      Mac alone can't give).
-- [ ] todo — **5. Write back.** Append every number/table from 1-4 to §7 Findings below, note
-      anything that behaved differently than documented here, commit + push to `main` per the
-      sync protocol in `CLAUDE.md`. Do not touch the robot. Do not push anything to the `dimos`
-      fork/PR from this machine.
+(empty — tasks are added here by window 1; claim per the protocol in CLAUDE.md)
 
 ## 3. Current state (2026-07-16)
 
@@ -370,8 +341,8 @@ dimos benchmark run --mode visual --route <name> --marker-map <path>
   `eval.py hk_village3` → **`TOTAL_SPREAD=4.955m`, `TOTAL_PGO_TIME=2.22s`**. Standalone
   raw-vs-PGO script on marker id=10's 4 sightings: RAW RMS **0.540m** / max **0.833m** / max-pairwise
   **1.438m** vs. PGO-corrected RMS **0.577m** / max **0.962m** / max-pairwise **1.370m** — roughly a
-  wash at n=4, one short recording; needs bigger sets (all 6 villages) on CUDA to mean anything
-  (see §2 "Tasks — CUDA machine").
+  wash at n=4, one short recording; needs bigger sets (all 6 villages) on CUDA to mean anything —
+  once assigned via §2 "Tasks — CUDA machine".
 - **Benchmark kit pre-drive verification** (fresh run, 2026-07-15 evening, macOS, robot offline):
   6/6 components PASS (start/end referee · survey dumper · in-repo benchmark module · marker
   localization · replay integration · bench lifecycle); 52/52 pytest tests passed; `mypy --strict`
@@ -383,8 +354,8 @@ dimos benchmark run --mode visual --route <name> --marker-map <path>
   `ate_rmse_raw_odom_m: 1.75 → ate_rmse_corrected_m: 0.26` (6.76x improvement, post ambiguity-gate;
   0.33m/5.33x pre-gate, the number cited in the original PR). Detection rate 60.4% of frames saw
   ≥1 tag. Reproduce: `cd demo && ./run.sh`, read `out/metrics.json`.
-- *(CUDA-machine window: append villages 1-5 + go2_hongkong_office numbers here per §2's task
-  queue, plus anything that behaved differently than this doc predicted.)*
+- *(CUDA-machine window: once §2 "Tasks — CUDA machine" has an assigned task, append the
+  resulting numbers here, plus anything that behaved differently than this doc predicted.)*
 
 ## 8. Runbook — day-of operational essentials
 
