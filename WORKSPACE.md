@@ -93,7 +93,15 @@ Next actions.
 
 ### Tasks — CUDA machine (window 2)
 
-(empty — tasks are added here by window 1; claim per the protocol in CLAUDE.md)
+- [ ] 0. Sanity: confirm the map pipeline runs on CUDA — quick `dimos map global hk_village3 --markers --no-gui`; should be much faster than CPU (~3 min on the Mac). Fix device selection if not.
+- [ ] 1. Walk docs/capabilities/navigation/relocalization.md end-to-end on a village recording: build the loop-closed global map, `--export` a premap, then run relocalization against it in replay — watch RelocalizationModule find itself on the map.
+- [ ] 2. Odometry test: `dimos map global hk_village4 --markers --no-gui` (map + marker poses from raw odometry).
+- [ ] 3. Comparison: `dimos map global hk_village4 --pgo --markers --no-gui` — compare marker agreement vs task 2 (avg distance between repeated marker sightings).
+- [ ] 4. Full offline baseline table: repeat 2+3 across hk_village1..5 + `uv run python -m dimos.mapping.loop_closure.eval <village>` per village → per-village TOTAL_SPREAD + raw-vs-PGO marker RMS. (Reference: Mac CPU run of village3 = SPREAD 4.955m, raw-vs-PGO RMS 0.540/0.577, n=4.)
+- [ ] 5. The big eval map: `dimos map global go2_hongkong_office --pgo --markers --no-gui` + its numbers.
+- [ ] 6. Write all numbers/tables into ## Findings, note anything that behaved differently than documented, push.
+
+Rules reminder inside the section (one line): claim a task by marking `[~] doing — window 2` + push (the push is the claim); finish with `[x] + one-line result`; do not touch the robot or push to the dimos fork/PR from window 2.
 
 ## 3. Current state (2026-07-16)
 
