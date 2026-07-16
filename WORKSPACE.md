@@ -1,0 +1,495 @@
+# Dimensional Trial — workspace
+
+*Living doc — updated every session; both machines + cloud sessions read this first. Everything
+that matters lives here as one thick doc, on purpose (see `CLAUDE.md` rule 4) — sections below,
+not separate files. Any machine should be able to clone this repo and start working from this
+file alone.*
+
+This is Aaryan's working context for the Forward Deployed Engineer trial at **Dimensional**
+(dimensionalOS/dimos — "the OS for robotics"). The actual code changes live in a separate sibling
+clone of `dimos` (see §0) — this repo never contains `dimos` as content, only as a sibling
+checkout.
+
+---
+
+## 0. Cold start — new machine
+
+Run these in order. If this machine already has both repos cloned and `dimos` synced, skip to §2
+Next actions.
+
+1. **Clone this repo** (if not already here):
+   ```bash
+   git clone https://github.com/AaryanAgrawal/dimensional-trial.git
+   cd dimensional-trial
+   ```
+2. **Clone `dimos` as a sibling directory**, on Aaryan's fork, on the trial branch:
+   ```bash
+   GIT_LFS_SKIP_SMUDGE=1 git clone https://github.com/dimensionalOS/dimos.git
+   cd dimos
+   git remote add fork https://github.com/AaryanAgrawal/dimos
+   git fetch fork
+   git checkout feat/marker-localization-core
+   ```
+   `GIT_LFS_SKIP_SMUDGE=1` skips pulling every LFS asset (recordings, weights) at clone time — the
+   repo is otherwise ~3GB. Pull specific LFS data on demand later: `git lfs pull --include=<path>`.
+3. **Sync the environment** (from inside `dimos/`):
+   ```bash
+   uv sync --all-groups
+   ```
+4. **CUDA note:** map ops (feature matching, graph refinement, village-scale eval) benefit hugely
+   from a CUDA-capable box — if this machine has one, pass `--device CUDA:0` to `dimos map global`
+   commands (§6 CUDA-machine commands); if not (e.g. the dev Mac), `--device CPU:0` works, just
+   slower. Confirm which this machine is before running anything compute-heavy.
+5. **Robot connection crib** (only if this machine will drive the live Go2 — skip if this is the
+   CUDA/offline-eval machine):
+   - Robot: Unitree Go2 **"greenwald"** (`dim-0190056`). Power on via its side button, wait for it
+     to finish booting and stand up on its own (~30-60s) — that's the robot ready signal.
+   - It joins the office WiFi automatically; last known IP `10.0.0.104` (the physical asset tag
+     printed on the robot, `192.168.10.190`, is **stale** — ignore it, DHCP has moved it since).
+   - If `10.0.0.104` doesn't respond, re-sweep the office subnet for the WebRTC control port
+     (9991):
+     ```bash
+     nmap -p 9991 --open 10.0.0.0/24   # adjust the subnet if the office network differs
+     ```
+   - Smoke-test the stack **without** the real robot first (replay path, always available, zero
+     hardware risk):
+     ```bash
+     cd dimos
+     uv run dimos --replay --replay-db=go2_bigoffice run unitree-go2-visual-relocalization
+     ```
+     Expect: 11 modules deployed, `color_image` autoconnected, zero tracebacks, zero `world->map`
+     corrections (the replay recording has no tags in view — that's correct, not a bug). Foreground
+     only — `--daemon` panics on this Mac after the fork (Zenoh's I/O driver doesn't survive it);
+     if you see orphaned worker processes, that's why.
+   - Once the smoke test is clean, connect to the real robot:
+     ```bash
+     ROBOT_IP=10.0.0.104 dimos run unitree-go2-visual-relocalization
+     ```
+6. **Read the rest of this file**, then continue from §2 Next actions.
+
+## 1. Where everything lives
+
+| What | Where |
+|---|---|
+| The module + all code changes | `dimos` fork, branch `feat/marker-localization-core` (sibling clone, §0) |
+| The PR | **#2808** — https://github.com/dimensionalOS/dimos/pull/2808 |
+| The public presentation page | https://aaryanagrawal.me/dimensional |
+| This repo | context/plan/benchmark-protocol/history only — never contains `dimos` as content |
+| Benchmark instruments (logger, bench runner, referee, overlay, survey dumper) | `trial/scripts/` in this repo |
+| Synthetic proof harness (real detector, rendered pixels, no hardware) | `demo/` in this repo — `cd demo && ./run.sh` |
+| Physical marker kit (printable tags, surveyed map) | `print/*.pdf`, `office_markers.yaml`, this repo |
+| Real benchmark run output (generated, not tracked) | `trial/results/` and `trial/scripts/out/` — created on first run by the scripts themselves |
+| Everything else from the trial (spec docs, research notes, day-by-day roadmap, PR drafts, page copy) | local disk only, untracked — folded into this doc's sections below where still load-bearing |
+
+## 2. Next actions
+
+- [ ] todo — post the Linear ticket (§5) to Dimensional's own tracker
+- [ ] todo — lesh call: align on the fusion re-plumb (§4 end state) before building it
+- [ ] todo — CUDA runs: villages 1-5 + go2_hongkong_office at full scale (see "Tasks — CUDA
+      machine" immediately below — claim from there, not from this line)
+- [ ] todo — re-plumb decision: Phase 2 (pluggable-prior refactor) timing vs. shipping Phase 1
+      (live-axis benchmark extension) first
+- [ ] todo — page comments feature — on hold, not blocking, revisit after the above
+
+### Tasks — CUDA machine (window 2)
+
+Ordered queue for whichever Claude session is running on the office GPU box. Claim a task by
+marking it `[~] doing — cuda-machine` and pushing immediately; mark `[x] done — <result>` and push
+when finished. Don't touch the robot or push to the `dimos` fork/branch from this machine — window
+1 (laptop) owns the branch/PR and the live robot, single-writer.
+
+- [ ] todo — **1. Cold start + GPU verification.** Run §0 cold start on this machine. Then confirm
+      the map pipeline actually uses the GPU: `dimos map global hk_village3 --markers --device
+      CUDA:0`, check the logs name the CUDA device and that wall time is meaningfully faster than
+      the Mac's CPU:0 run (§7 Findings has the CPU:0 reference number to compare against).
+- [ ] todo — **2. Offline eval, full scale.** For each of `hk_village1` through `hk_village5`:
+      ```bash
+      dimos map global <village> --markers --no-gui --device CUDA:0
+      dimos map global <village> --pgo --markers --no-gui --device CUDA:0
+      uv run python -m dimos.mapping.loop_closure.eval <village>
+      ```
+      Build a per-village table: `TOTAL_SPREAD` + raw-vs-PGO marker RMS. The Mac-only village3
+      numbers exist as a reference point to sanity-check against: `TOTAL_SPREAD=4.955m`, raw RMS
+      **0.540m** vs. PGO-corrected RMS **0.577m** (n=4 — one marker, one short recording, roughly a
+      wash; see if bigger villages/more sightings tell a clearer story).
+- [ ] todo — **3. The big map.** `dimos map global go2_hongkong_office --pgo --markers --no-gui
+      --device CUDA:0` — the large tuning/eval map, heavyweight, CUDA-only practical — plus its
+      eval numbers via the same `loop_closure.eval` command.
+- [ ] todo — **4. Platform check.** `uv run pytest dimos/perception/fiducial/
+      dimos/mapping/benchmark/` + `mypy --strict` on the branch, on this Linux/CUDA box — confirms
+      the PR + benchmark devtool are green on their actual target platform (a CI-parity signal the
+      Mac alone can't give).
+- [ ] todo — **5. Write back.** Append every number/table from 1-4 to §7 Findings below, note
+      anything that behaved differently than documented here, commit + push to `main` per the
+      sync protocol in `CLAUDE.md`. Do not touch the robot. Do not push anything to the `dimos`
+      fork/PR from this machine.
+
+## 3. Current state (2026-07-16)
+
+PR **#2808** on `dimensionalOS/dimos` is live at 13 commits — plan-of-record v3, post-review:
+extend the existing offline marker benchmark with a live axis, treat the marker method as a
+pluggable relocalization prior, and add a method manager + graceful degradation path. Module
+renamed to `VisualRelocalizationModule` (capability-named, matches the trial page H1). Trial
+project #1 (active) is the three-way relocalization benchmark: odom-only baseline vs. their
+`RelocalizationModule` (lidar/premap) vs. this fiducial module — see §6 Benchmark below and
+`trial/results/RESULTS.md`.
+
+## 4. Plan of record (v3-final)
+
+Post-review direction for PR #2808, four phases:
+
+- **Phase 1 — Benchmark: live-axis extension.** Reproduce the offline eval (done — village3, see
+  §7 Findings), then extend `dimos/mapping/benchmark/` with a live axis: return error vs. a
+  held-out marker, kidnap→recovery time, bounded-vs-unbounded drift, per method.
+- **Phase 2 — Marker prior: re-plumb.** Turn `VisualRelocalizationModule` from a standalone
+  `world->map` publisher into a pluggable, toggleable high-confidence prior feeding the
+  relocalization ICP step — overrides RANSAC when a marker is visible.
+- **Phase 3 — Benchmark all.** odom-only vs. RANSAC→ICP vs. marker→ICP, offline (villages +
+  go2_hongkong_office) and live.
+- **Phase 4 — Method manager + runtime degradation.** Parallel/toggleable/confidence-weighted
+  method manager, compute-aware, tracking "age of relocalization."
+
+**End state: fusion.** Relocalization becomes a package, not a module — lidar-ICP and visual-tag
+become **sources** under it (`dimos/mapping/relocalization/{base,lidar,visual,fusion}.py`); each
+source emits a pose candidate + confidence + a health signal (lidar: ICP fitness; visual:
+reprojection error + ambiguity ratio + tag count); `fusion.py` is the *only* `world→map` publisher
+— one source active = pass-through, multiple active = gated priority + covariance weighting +
+degradation ladder, never averaging two disagreeing corrections into a meaningless pose.
+`RelocalizationModule` (today's public class) stays as a deprecation alias — nothing that imports
+it today breaks. Trial discipline: build this **additively** (new files only — `base.py`,
+`visual.py`, a `fusion.py` skeleton) — the lidar file itself is lesh's, not touched on this branch;
+propose, don't restructure.
+
+## 5. Linear ticket (draft, ready to post)
+
+> **Title:** Relocalization — marker prior + live benchmark extension (trial project)
+>
+> **Context:** RelocalizationModule direction = method-agnostic pluggable priors feeding ICP (per
+> review); today: FPFH+RANSAC+ICP global reloc (tuned via the #2137 autoresearch harness) + offline
+> marker-ground-truth eval (`loop_closure/eval.py` marker-spread over hk_village recordings); this
+> trial adds the highest-confidence prior (fiducial markers) + extends the eval to live on-robot
+> behavior.
+>
+> **Phase 1 Benchmark live axis:** reproduce offline eval (DONE village3: TOTAL_SPREAD 4.955m;
+> raw-vs-PGO RMS 0.540/0.577m, n=4 — rerun bigger sets on CUDA); extend with return error vs
+> held-out marker, kidnap→recovery time, bounded-vs-unbounded, per method; instrument on branch
+> (`dimos/mapping/benchmark`, `dimos benchmark run --mode odom|lidar|visual`).
+>
+> **Phase 2 Marker prior:** re-plumb PR #2808 module from standalone world→map publisher to
+> pluggable high-confidence prior feeding relocalization ICP; toggleable; overrides RANSAC when
+> visible; marker poses via stream (K/V in map global later).
+>
+> **Phase 3 Benchmark all:** odom · RANSAC→ICP · marker→ICP, offline (villages, go2_hongkong_office)
+> + live.
+>
+> **Phase 4 Method manager + runtime degradation:** parallel/toggleable/confidence-weighted,
+> compute-aware, "age of relocalization."
+>
+> **Deliverables:** live benchmark extension · marker prior integrated · three-method table ·
+> method-manager design (+impl if time).
+>
+> **Open questions:** semantic prior nudge-vs-parallel · stream vs K/V timing · amend #2808 vs
+> follow-up · where live results live.
+>
+> **Needs:** CUDA machine; review @lesh.
+
+## 6. Benchmark
+
+The dimos relocalization benchmark — a fair, repeatable, physically-verifiable comparison of
+dimos's localization correctors (odom-only, lidar-ICP-vs-premap, AprilTag marker correction) on
+one Go2, one office, one instrument. Instrumented by `trial/scripts/bench.py`. Ratified before any
+run counts, so nobody moves a goalpost after seeing a number.
+
+### Routes & modes
+
+- **Loop** (~30m, taped start/end) — drift accumulation + recovery-on-reacquisition, the headline
+  number.
+- **Corridor** (longest feature-poor stretch, ≥15-20m) — stresses ICP's along-corridor aperture
+  degeneracy, the one axis neither odometry nor lidar constrains well.
+- **Kidnap** (carry the robot ~3m mid-run, or cold-start displaced) — bootstrap-free
+  relocalization: closed-form single-frame PnP vs. iterative ICP with no prior.
+- Modes: **odom** (dead-reckoning floor) · **lidar** (`RelocalizationModule` + same-day premap) ·
+  **marker** (`VisualRelocalizationModule` + self-surveyed map) · **fused** (deferred — no
+  arbitration design exists yet, see §4 end-state; scoring it now would score undefined behavior).
+- **Capture:** odom and marker are scored off the *same* drive — `VisualRelocalizationModule`
+  always runs and corrects, but retargets its publish off the live `map` frame
+  (`-o visualrelocalizationmodule.map_frame=map_marker`) so one physical drive doubles as a clean
+  odom-only baseline and a marker-corrected trace. Lidar joins this combined run once
+  `RelocalizationModule` shares the drive with the shadowed marker corrector (Phase 3).
+
+### Metrics — the honest, research-grounded set
+
+Full ATE/RPE (TUM/KITTI-style) need continuous ground truth at every frame — this setup only has
+GT at discrete tag sightings (start/end, or wherever a held-out marker appears), so a "full ATE"
+label would silently overclaim continuous coverage that doesn't exist. The honest move (same math
+as one term inside KITTI's drift-%, or as loop-closure error): report a checkpoint relative-pose
+measurement, not a trajectory curve.
+
+Let `T_start_gt`, `T_end_gt` be the known tag poses (same marker revisited ⇒ closed loop), and
+`T_start_est`, `T_end_est` the pipeline's estimated poses at those instants:
+
+```
+ΔT_gt  = T_start_gt⁻¹ · T_end_gt        (known true relative transform)
+ΔT_est = T_start_est⁻¹ · T_end_est      (pipeline's estimated relative transform)
+E      = ΔT_gt⁻¹ · ΔT_est
+
+e_pos  = ‖trans(E)‖                     (meters)
+e_yaw  = angle(rot(E))                  (degrees, planar/ground-robot case)
+```
+
+- **① Return / checkpoint error** (above) — PRIMARY. TUM's RPE formula with N=1, over the one
+  interval GT actually covers.
+- **② Drift ratio** = `e_pos / distance_traveled × 100` — KITTI-style, one sample instead of
+  hundreds.
+- **③ Max checkpoint error** = `max_k ‖p_est,k − p_gt,k‖` over every instant a tag is visible.
+- **④ RMS over GT-visible samples** (only if N>2) — same shape as ATE, honestly scoped to
+  checkpoints not frames.
+- **⑤ Recovery time / success rate** (kidnap only) — `success=1` if `e_pos < tolerance` (e.g. 0.5m)
+  is reached and held before the tag sighting; `recovery_time` = frames/distance from perturbation
+  to that point.
+- **⑥ Bounded vs. unbounded classification** — run ① across varying path lengths; flat/asymptotic
+  ⇒ bounded (anchored to the marker), growing ⇒ unbounded (pure dead-reckoning between sightings).
+
+**Neutral names for any page/report:** Return error · Drift ratio · Max checkpoint error ·
+Recovery time · Bounded vs. unbounded error growth. Avoid "ATE"/"RMSE" as headline labels unless
+qualified ("checkpoint RMSE, N=2") — those carry a continuous-GT connotation this setup can't back.
+
+`bench.py` also computes, from the log directly: **loop-closure error** (odom vs corrected,
+start==end taped mark), **time-to-recover** (kidnap, wall-clock to first `correction_new`),
+**corrections accepted/rejected/held** (from log records), **corrected-pose coverage %**, and an
+**ATE-proxy** where a `--reference-log` exists (RMSE vs. that reference run — relative only, no
+external ground truth).
+
+### The start/end-tag referee (`--holdout-tag`)
+
+An automated, map-independent end-pose check on top of any run: print one extra tag (any free ID,
+e.g. 42), leave its ID out of every marker map under test, tape it up where the camera sees it at
+drill-start and drill-end. `metrics_logger.py` runs a second, independent solvePnP for that tag
+only; `bench.py stop`/`report` take the median of the first/last 10 sightings as the physical
+truth and diff it against whatever the mode under test claimed over the same window — an automatic
+loop-closure-error-vs-real-reference number instead of an assumed taped start==end. **Shared-
+pipeline caveat:** the referee's PnP runs the same detector/solvePnP code, on the same camera, as
+the mode it's checking — not a fully independent instrument, hence the calibration below.
+
+**Noise floor + bias, once per session, before the first scored run:**
+```
+cd dimos
+uv run python ../trial/scripts/bench.py calibrate-referee --holdout-tag 42
+```
+STEP 1: a static hold (default 60s, don't move) computes per-axis std + a 3-sigma radius for
+position, std/3-sigma spread for rotation — should be well under 2cm radius. STEP 2: slide the
+robot a measured distance (≥1.0m recommended) along a straightedge, enter the tape-measured value
+— reports scale error %. Writes `trial/results/referee-budget.json`; every `bench.py report`
+afterward appends a `start/end tag referee: ±Xmm (3-sigma), scale bias Y% (calibrated <date>)`
+footer to `RESULTS.md`. Re-run whenever the rig changes (new tag print, moved camera).
+
+*Heavier option, week-2+ escalation only if the marker-vs-lidar gap ever needs sub-mm resolution:*
+a mechanical registration jig (carpenter's-square fence) + a fixed overhead ChArUco board (never
+AprilTag — must be a different marker family so it's never confusable with the tags under test) +
+a laser distance meter, noise-floor-tested ISO-9283-style (≥30 cycles, `RP = barycenter deviation +
+3σ`). Not the Project 1 method — not built.
+
+### Fairness rules
+
+Same route/pace across every mode in a comparison. Lidar runs its best case (same-day premap of
+the exact route, never stale). Marker map only from the standard self-survey flow (§8 Runbook) — no
+hand-tuned tag positions. Every run lands in `results/RESULTS.md`, including failed/rejected runs —
+no discarding a bad take. Fixed gates for the whole benchmark (ambiguity ratio 2.0, reprojection
+3px) — no per-run retuning to flatter a number. n≥3 runs per (route, mode) cell before any number
+is quoted.
+
+### Pass bars
+
+Marker ≥3x loop-closure improvement over odom-only (a floor — the synthetic demo suggests 5-7x).
+Kidnap: recovery <10s with tag visible; lidar showing no recovery in this window is expected, not a
+failure (no closed-form kidnap solution). Corridor: marker-corrected run holds bounded lateral
+drift; odom/lidar-only shows unbounded along-corridor drift by the far end.
+
+### The 7-card field battery (no elevator required)
+
+Stash's steer (call, 2026-07-08): test without elevators, outdoor is fine. Every number below is a
+first real-hardware-run estimate, hedged down from the synthetic demo's 5-7x. Demo-day pick:
+**#1 + #2** — both run in minutes, zero narration, best theater.
+
+| # | Card | What it proves | Pass bar |
+|---|---|---|---|
+| 1 | Drift-recovery loop | Tag-corrected beats odom-only drift, real hardware | Route drifts >0.3m odom-only; corrected ≥3x better |
+| 2 | Kidnapped robot / cold start | Single-shot PnP needs no bootstrap, unlike ICP | Marker publishes within one detection cycle (~<1s) vs. lidar's multi-cycle (2s+ poll) |
+| 3 | Outdoor sightline | Tags work where lidar-premap is structurally weak | ≥80% detection within 3m, worst lighting bucket |
+| 4 | Long corridor / feature-poor | ICP's along-corridor aperture problem; a tag supplies the missing constraint | Lateral dev ≤0.15m, along-corridor error ≤0.3m at far end (corrected) |
+| 5 | Glass/reflective lobby *(conditional)* | Specular surfaces wreck lidar ICP; tag ID doesn't care what's behind it | Measurable lidar fitness drop/rejection near glass; marker detection indistinguishable from control |
+| 6 | Head-to-head vs. RelocalizationModule | The single go/no-go number: lidar vs marker vs fused | Fused ATE ≤ better of the two solo runs |
+| 7 | Dynamic clutter *(bonus)* | ICP fitness degrades on unmapped clutter; tags don't care | Marker ATE degrades <20% clear→cluttered |
+
+Grounding for the numbers above: measured envelope for real tags — 150mm tags detect ≥95% to
+4m/55°, trusted single-frame pose tightest inside ~1m; the trial's 100mm tags scale to roughly
+~2.5-3m/~45° detection, same trusted-pose window (conservative 2/3 scaling).
+
+### Relationship to the existing offline eval (don't conflate these two)
+
+- **PR #2137** (`sloptimization/ransac`, lesh, open/unmerged) is **not** the marker-ground-truth
+  benchmark — it's an autoresearch loop that tuned `relocalize.py` (FPFH+RANSAC+multi-scale+ICP
+  global relocalization, no initial pose) against a fixed 60-frame harness built from
+  **PGO-corrected poses**, not markers. This is the existing global-reloc RANSAC implementation
+  `RelocalizationModule` calls today in production (merged via #2160).
+- **The actual existing benchmark** is `dimos/mapping/loop_closure/eval.py`, already on `main`:
+  PGO over the full lidar stream, AprilTag detection, groups sightings by `marker_id`, sums
+  pairwise distance between every PGO-corrected sighting of the same marker (`TOTAL_SPREAD`) — a
+  physical marker never moves, so tight clustering of its repeated sightings *is* the ground-truth
+  signal. Self-consistency only — no raw/odom baseline, no external ground truth.
+  ```bash
+  uv run python -m dimos.mapping.loop_closure.eval             # all hk_village1..6
+  uv run python -m dimos.mapping.loop_closure.eval hk_village3  # one recording
+  ```
+- **What eval.py does NOT cover** (the gap `dimos/mapping/benchmark/` targets instead): live
+  on-robot return error vs. an independent held-out reference, kidnap recovery time, runtime/
+  compute degradation on hardware, relocalization accuracy/success-rate (PR #2137's harness covers
+  a narrow slice of this, one 60-frame set, one office recording).
+
+### CUDA-machine commands
+
+```bash
+# full 6-village loop-closure self-consistency sweep (the existing benchmark, as-is)
+uv run python -m dimos.mapping.loop_closure.eval
+
+# per-village map build + visual marker overlay (raw vs PGO in one .rrd)
+dimos map global hk_village1 --pgo --markers --device CUDA:0   # repeat for 2..6
+
+# PR #2137's RANSAC-tuning harness (own data/ fixtures, not in main's tree —
+# fetch branch `sloptimization/ransac` if resuming that tuning loop)
+git fetch origin sloptimization/ransac && uv run dimos/mapping/relocalization/run.py
+
+# Aaryan's own held-out-tag benchmark (this branch, `dimos benchmark run|report`)
+dimos run unitree-go2-relocalization --daemon   # start the stack first
+dimos benchmark run --mode visual --route <name> --marker-map <path>
+```
+
+## 7. Findings (tonight's hands-on results + verification)
+
+- **village3 run** (Mac, CPU:0, 102s recording, 702 lidar / 1432 color frames):
+  `eval.py hk_village3` → **`TOTAL_SPREAD=4.955m`, `TOTAL_PGO_TIME=2.22s`**. Standalone
+  raw-vs-PGO script on marker id=10's 4 sightings: RAW RMS **0.540m** / max **0.833m** / max-pairwise
+  **1.438m** vs. PGO-corrected RMS **0.577m** / max **0.962m** / max-pairwise **1.370m** — roughly a
+  wash at n=4, one short recording; needs bigger sets (all 6 villages) on CUDA to mean anything
+  (see §2 "Tasks — CUDA machine").
+- **Benchmark kit pre-drive verification** (fresh run, 2026-07-15 evening, macOS, robot offline):
+  6/6 components PASS (start/end referee · survey dumper · in-repo benchmark module · marker
+  localization · replay integration · bench lifecycle); 52/52 pytest tests passed; `mypy --strict`
+  clean on 9 source files; 4/4 live-replay assertions. Zero failures. One diagnosis worth keeping:
+  don't park the robot square-on to the holdout tag for a start/end check — a 20-30° oblique view
+  measurably tightens the referee (near-frontal views leave PnP depth/tilt poorly conditioned on a
+  100mm tag at close range). Reproduce: `cd dimos && uv run pytest ../trial/scripts/tests/`.
+- **Demo harness** (`demo/`, synthetic, real detector on rendered pixels): nominal scenario
+  `ate_rmse_raw_odom_m: 1.75 → ate_rmse_corrected_m: 0.26` (6.76x improvement, post ambiguity-gate;
+  0.33m/5.33x pre-gate, the number cited in the original PR). Detection rate 60.4% of frames saw
+  ≥1 tag. Reproduce: `cd demo && ./run.sh`, read `out/metrics.json`.
+- *(CUDA-machine window: append villages 1-5 + go2_hongkong_office numbers here per §2's task
+  queue, plus anything that behaved differently than this doc predicted.)*
+
+## 8. Runbook — day-of operational essentials
+
+**Self-survey installer flow** (no tape measure, condensed from the execute-verified flow):
+1. Print tags: `dimos apriltag --ids 0-5 --size-mm 100 --family tag36h11 -o markers.pdf`. 100mm
+   matches `unitree_go2_markers`' default. **Print-scale check every sheet:** 100%/Actual Size
+   only, caliper-measure the baked-in ruler — a 5% print-scale error is a systematic 5% range
+   error on every fix.
+2. Build the map with the robot, no hand measuring: `dimos run unitree-go2-markers`, let it see
+   each tag from a couple of angles, read `marker_<id>` transforms off the TF tree (rerun viewer,
+   on by default) into `office_markers.yaml`. Orientation matters more than position — a 2°
+   orientation error displaces the computed camera pose ~3.5cm per meter of range.
+3. Compose + run: `pytest dimos/robot/test_all_blueprints_generation.py` (regenerates the
+   registry, fails "please commit" by design — expected), then
+   `dimos run unitree-go2-visual-relocalization`.
+4. **`--daemon` warning:** crashes on this Mac (`coordinator.start_rpc_service()` panics right
+   after the fork — Zenoh's I/O driver doesn't survive it). **Always run foreground** in its own
+   terminal/pane; `--daemon` leaves orphaned workers `dimos status`/`stop` can't see.
+
+**Metrics logger + report** (attach to any running stack, pure observer, never publishes):
+```bash
+cd dimos
+uv run dimos --replay --replay-db=go2_bigoffice run unitree-go2-visual-relocalization  # or real hw
+# second terminal, once `dimos status` shows it running:
+uv run python ../trial/scripts/metrics_logger.py \
+    --out ../trial/scripts/out/run1.jsonl \
+    --dimos-log "<Log path>/main.jsonl" --duration 480
+# after:
+uv run python ../trial/scripts/report.py \
+    --log ../trial/scripts/out/run1.jsonl --out-dir ../trial/scripts/out/report1
+# accuracy vs silver truth (lidar reference):
+uv run python ../trial/scripts/report.py \
+    --log ../trial/scripts/out/camera_run.jsonl \
+    --reference-log ../trial/scripts/out/lidar_run.jsonl --out-dir ../trial/scripts/out/accuracy_report
+```
+
+**`bench.py`** — wraps the logger with `start`/`stop`/`report`, scores each run, appends to
+`results/benchmarks.csv`, regenerates `results/RESULTS.md`:
+```bash
+cd dimos
+uv run python ../trial/scripts/bench.py start --mode marker --route drift-recovery --notes "loop A"
+uv run python ../trial/scripts/bench.py start --mode marker --route kidnapped-robot --notes "moved 3m"
+uv run python ../trial/scripts/bench.py start --mode lidar  --route head-to-head --notes "pass 1: reloc"
+uv run python ../trial/scripts/bench.py start --mode marker --route head-to-head --notes "pass 2: marker"
+uv run python ../trial/scripts/bench.py start --mode fused  --route head-to-head --notes "pass 3: fused"
+uv run python ../trial/scripts/bench.py report   # regenerate RESULTS.md + table
+# add the start/end referee to any of the above:
+uv run python ../trial/scripts/bench.py start --mode marker --route drift-recovery \
+    --notes "loop A" --holdout-tag 42
+```
+
+**`holdout_overlay.py`** — one-window run controller: live camera view, frozen start/end tag
+outline, START/STOP buttons, wraps `bench.py start`/`stop`. Auto-adopts the most prominent
+unmapped tag in view as the start/end reference (`--holdout-tag` pins it instead). Box recolors by
+distance-to-start (green <2cm / yellow 2-5cm / red >5cm); STOP pulses green once back within 2cm
+for ~1s.
+```bash
+cd dimos
+uv run python ../trial/scripts/holdout_overlay.py --mode marker --route drift-recovery --notes "loop A"
+```
+Run recipe: park facing any unmapped tag → START (outline freezes) → drive the loop → return until
+green/pulsing → STOP (run scored, row appended). Imperfect runs still get recorded — never abort a
+bad one, STOP it.
+
+## 9. History — the arc so far
+
+- **Jul 6** — Stash call (Dimensional CEO): FDE trial scoped around monocular localization.
+  Weighed stickers/fiducials vs. Pudu-style ceiling vSLAM; picked fiducial markers (more
+  achievable in a week, cleanly verifiable, directly additive to dimos's lidar-only stack).
+- **Spec + simulated validation** — code spec written, `MarkerLocalizationModule` prototyped on
+  branch `feat/marker-localization`, synthetic demo harness built (real `cv2.aruco` detector on
+  rendered pixels, real drift/correction math). Dimos branch tests green, mypy strict clean.
+- **PR #2808 progress** — module renamed `VisualRelocalizationModule` (capability-named). Grew to
+  13 commits post-review: benchmark devtool (`dimos/mapping/benchmark/`), CLI (`dimos benchmark
+  run|report`), metrics realigned to the honest checkpoint-error set (§6), Greptile round 3 5/5
+  confidence, all 4 prior P1 findings fixed and verified in source.
+- **Benchmark kit built** — start/end-tag referee, `holdout_overlay.py` run controller,
+  `survey_dump.py`, in-repo benchmark port — verified pre-drive (§7: 6/6 components, 52/52 tests,
+  mypy clean).
+- **Trial started Jul 15** (SF office, 454 Natoma St) — robot "greenwald" connected (IP lesson:
+  DHCP moves it, re-sweep 9991 if the physical tag's IP is stale). Presentation page built and
+  live, posted to the team.
+- **lesh's direction (review feedback)** — relocalization should be pluggable priors feeding ICP,
+  not a standalone publisher; marker overrides RANSAC when visible; marker poses via stream now,
+  K/V in map globally later; relocalization framed as "stolen robot" recovery; needs a CUDA
+  machine for real village-scale runs; wants this run through Dimensional's own Linear-equivalent
+  process.
+- **Corrections made** — PR #2137 is RANSAC-tuning autoresearch, *not* the marker-ground-truth
+  benchmark (that's `loop_closure/eval.py`, TOTAL_SPREAD) — see §6's "don't conflate" box. Ran
+  village3: 4.955m spread, raw-vs-PGO 0.540m/0.577m RMS at n=4 (§7).
+- **Plan v3 written** (§4) — the 4-phase post-review direction, package-based fusion end state.
+- **Open items:** see §2 Next actions.
+
+## 10. Between machines — read-only clone variant
+
+The canonical sibling-clone setup lives in §0 Cold start. Use this variant instead when handing a
+**second machine you don't want full SSH access** a read-only copy of this repo (not `dimos`) —
+scope: this repo only, 30-day expiry.
+
+1. github.com → Settings → Developer settings → Fine-grained personal access tokens → Generate
+   new token.
+2. Resource owner: `AaryanAgrawal`. Repository access: **Only select repositories** →
+   `dimensional-trial`. Expiration: **30 days**. Permissions → Repository permissions →
+   **Contents: Read-only** (leave everything else at No access).
+3. Clone with the token as the password over HTTPS:
+   ```bash
+   git clone https://<PAT>@github.com/AaryanAgrawal/dimensional-trial.git
+   ```

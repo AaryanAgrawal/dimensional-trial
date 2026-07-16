@@ -1,0 +1,15 @@
+# PLACEHOLDER — replaced by real survey.
+#
+# Stand-in marker map so unitree_go2_marker_localization can be smoke-composed
+# before Aaryan's real office survey YAML lands at this same path. One dummy
+# ArUco/AprilTag marker at the map origin, identity rotation. Format matches
+# dimos.perception.fiducial.marker_localization.load_marker_map:
+#   markers:
+#     <id>:
+#       translation: [x, y, z]      # meters, in the `map` frame
+#       rotation: [x, y, z, w]      # quaternion, in the `map` frame
+
+markers:
+  0:
+    translation: [0.0, 0.0, 0.0]
+    rotation: [0.0, 0.0, 0.0, 1.0]

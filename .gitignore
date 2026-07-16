@@ -1,0 +1,62 @@
+# Allowlist model — this repo tracks only the trial's lean working set:
+# CLAUDE.md, WORKSPACE.md, the benchmark instruments (trial/scripts/), the
+# synthetic proof harness (demo/), the physical marker kit (print/, office_markers.yaml).
+# Everything else (spec docs, research notes, day-by-day roadmap, PR drafts, page
+# copy, personal logistics, credentials) stays on disk, untracked — folded into
+# WORKSPACE.md where still load-bearing. See WORKSPACE.md §1 "Where everything lives".
+
+# dimos is its own git repo (cloned separately) — never track as content here
+dimos/
+
+# ignore everything by default, then allowlist back in
+/*
+!/.gitignore
+!/CLAUDE.md
+!/WORKSPACE.md
+!/trial
+!/demo
+!/print
+!/office_markers.yaml
+
+# trial/ — only the benchmark instrument (code + its yaml fixture), nothing else
+/trial/*
+!/trial/scripts
+
+/trial/scripts/*
+!/trial/scripts/*.py
+!/trial/scripts/*.yaml
+!/trial/scripts/tests
+/trial/scripts/out/
+
+/trial/scripts/tests/*
+!/trial/scripts/tests/*.py
+/trial/scripts/tests/out/
+
+# demo/ — the synthetic proof harness: source + the one-command runner + its config
+/demo/*
+!/demo/marker_loc_demo
+!/demo/run.sh
+!/demo/run_sweep.sh
+!/demo/requirements.txt
+!/demo/marker_map.yaml
+
+/demo/marker_loc_demo/*
+!/demo/marker_loc_demo/*.py
+
+/demo/.venv/
+/demo/out*/
+
+# print/ — the printable tag PDFs only
+/print/*
+!/print/*.pdf
+
+# python
+**/__pycache__/
+*.pyc
+.pytest_cache/
+
+# os
+.DS_Store
+
+# secrets — never belongs in git history even privately
+credentials.md
