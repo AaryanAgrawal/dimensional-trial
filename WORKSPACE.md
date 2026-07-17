@@ -1033,6 +1033,18 @@ evidence per Aaryan Jul 17 — awaiting the purpose-built mid360 walk instead). 
 kind only show against a physical marker anchor — which is
 presumably exactly why the team records marker-staring walks.
 
+**Jul 17 — DECORRELATED FIDUCIAL VERDICT (the goal's last open question — HOLDS; mid360 walk,
+n=40 full denominator, replay):** referee tag 4 verifiably ABSENT from all 45 fixes (ids
+{0,1,2,6,7}). ransac 52.5% (21/40; hard 2.78M-pt outdoor premap, 62.5 s solves, wrong-basin
+busts 6.7–72 m) -> ransac+fiducial **72.5% (+20.0)**; covered sections 7/15 -> 15/15 while ALL 25
+uncovered sections returned BYTE-IDENTICAL errors — determinism proves the whole gain is the
+marker fixes. Rescues were catastrophic->5-10 cm. fiducial+judge: 100% of attempted at ~9x
+faster; 37.5% coverage = the limiter (markers help where markers are). Per covered section the
+decorrelated effect is STRONGER than v3's truth-correlated one. v3's 95.8% formally superseded
+(its fixes are empty under the split — its only tag IS the referee): **72.5% decorrelated is THE
+fiducial number.** Residual caveats: frame-level PGO correlation (inherent to silver truth;
+referee-scoring of saved T_est = follow-on), n=40, one recording.
+
 **Jul 17 — GRAVITY-GATE WALKOVER (design bug found by the benchmark, probed bit-exactly; fix
 queued behind running jobs):** refine_candidates' gravity fallback (`upright if upright else all`)
 is pool-global — one near-upright SEED un-empties `upright` and discards the ENTIRE all-tilted
