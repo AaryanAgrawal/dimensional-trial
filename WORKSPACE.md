@@ -73,7 +73,7 @@ Next actions.
 
 | What | Where |
 |---|---|
-| The module + all code changes | `dimos` (cloned inside this repo root, §0) — **ONE working branch: `feat/fiducial-relocalization`** (Aaryan, Jul 16: "keep all this only one branch, my branch") — contains the PR #2808 work + the priors system; LOCAL-ONLY until Aaryan's push go. PR #2808's remote branch (`feat/marker-localization-core`) stays untouched; §0 cold-start checks that branch out until `feat/fiducial-relocalization` is pushed. All new dimos-side work lands on `feat/fiducial-relocalization`, window 1 only. |
+| The module + all code changes | `dimos` (cloned inside this repo root, §0) — **ONE working branch: `feat/fiducial-relocalization`** (Aaryan's naming, Jul 17) — all 16 commits (PR #2808 work + the verified priors system), ON THE FORK (pushed + renamed Jul 17). PR #2808 is currently CLOSED by the rename mishap — see §3 for restore options; **dimos-remote is FROZEN until the work is verified** (§2 CUDA queue). All new dimos-side work lands on this one branch. |
 | The PR | **#2808** — https://github.com/dimensionalOS/dimos/pull/2808 |
 | The public presentation page | https://aaryanagrawal.me/dimensional |
 | Trial page source | github.com/AaryanAgrawal/portfolio → `src/app/dimensional/` (deploys to aaryanagrawal.me/dimensional via `vercel --prod` from that repo's checkout) |
@@ -86,10 +86,9 @@ Next actions.
 
 ## 2. Next actions
 
-- [~] doing — **Phase 1: universal confidence reading** (window 1): BUILT + adversarially
-      verified on LOCAL branch **`feat/fiducial-relocalization`** (renamed from `feat/reloc-priors`
-      per Aaryan Jul 16 — the ONE branch for all dimos trial work; 3 commits, HEAD `a6be7e42e`,
-      base `feat/marker-localization-core`; local only — not pushed, awaiting Aaryan's go).
+- [~] doing — **Phase 1: universal confidence reading**: BUILT + adversarially verified on
+      branch **`feat/fiducial-relocalization`** (the ONE branch for all dimos trial work; 3 new
+      commits on top of the 13 PR commits, HEAD `a6be7e42e`, pushed to the fork Jul 17).
       What landed: `relocalize.py` split into `generate_ransac_candidates()` + `refine_candidates()`
       (public `relocalize()` preserved — parity proven bit-identical against the actual pre-refactor
       code, same seeded scene); new `priors.py` (`Candidate` = T + source + confidence tier;
@@ -106,8 +105,9 @@ Next actions.
       (villages, go2_hongkong_office) and relocalize them against the PGO premap, WITH MARKERS —
       truth = PGO-corrected poses (silver truth) + marker agreement — the CUDA queue below (task 1)
       is its existing-stack baseline half, as already written.
-- [ ] todo — post the Linear ticket (§5) to Dimensional's own tracker — **Aaryan, tomorrow
-      (Jul 17)**; the §5 draft is already v5, ready to paste
+- [ ] todo — post the Linear ticket — **Aaryan, today (Jul 17)**; §5 draft is v5-ready, and §3
+      has the carry-forward set (implements DIM-940; adopt DIM-920's acceptance test; relate
+      DIM-944 + END-76)
 - [ ] todo — CUDA runs: villages 1-5 + go2_hongkong_office at full scale (see "Tasks — CUDA
       machine" immediately below — claim from there, not from this line)
 - [ ] todo — website update to v5 — deferred (Aaryan Jul 16), page still shows the old benchmark
