@@ -1033,6 +1033,20 @@ evidence per Aaryan Jul 17 — awaiting the purpose-built mid360 walk instead). 
 kind only show against a physical marker anchor — which is
 presumably exactly why the team records marker-staring walks.
 
+**Jul 17 — ONLINE PGO: design note (Aaryan: "we will do this — it's important"):** feasible
+ON-ROBOT, no cloud — measured PGO throughput 18–27x realtime CPU-only on this laptop (village3
+~20x, office ~20–26x, mid360 walk 18x/1403 kf/62 loops), and the Go2 lane already computes on a
+host machine (WebRTC). dimos's `PGO()` is already stream-shaped (emits cumulative PoseGraph per
+closure) — online = re-plumb onto the live stream + background-thread closure ICP + live
+world→map_live publisher. PREREQUISITES from our measured findings: (1) fix the odom/loop
+variance ratio FIRST (else the bent-revisit artifact gets built into live maps); (2) jump gate at
+closure snaps; (3) Go2 exploration lane ONLY (measured harm on LIO input); (4) tag-constrained
+closures where tags exist (unmerged jnav precedent). Arbiter seam: exploration mode = online PGO
+owns correction; premap mode = off/demoted to staleness signal. FIRST STEP (replay rung, zero new
+instrumentation): run the incremental path over a recording as-if-live and grade the evolving map
+with the marker-revisit instrument per point in time. Long-mission caveat: graph growth needs
+marginalization/sliding-window eventually; irrelevant at benchmark scales.
+
 **Jul 17 — PGO ACCURACY EVIDENCE SWEEP (repo + Linear read-only; answers Aaryan's "does
 anything show PGO better than ~0.3 m?"): NO.** Nothing anywhere measures dimos PGO against
 external ground truth. Repo: shipping docs disclaim loop closure (deep_dive.md:63); best prior
