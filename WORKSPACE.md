@@ -734,9 +734,26 @@ at N=120 threshold conclusions swing on single samples):**
 - china_office marker revisit (n=3,708, 9 ids): PointLIO already 3–10 cm consistent at 5–18 min
   gaps; offline PGO on top DEGRADES it 10–100×. With village3's stratified result (§ above):
   **"PGO = silver truth" is a per-recording claim — qualify it with the marker revisit test.**
-- Open caveat (verifier still running as of this write): fiducial improvement partially
-  truth-correlated (marker map from same PGO run — deployment-realistic but quantify before
-  claiming); cross-run test is the escape. Treat 95.8% as "with a surveyed-map-quality prior".
+- **Adversarial round 2 (circularity verifier, PARTIAL) — REFRAMING adopted for all claims:**
+  - **Gate split is the decisive cut**: gate-reached sections (≥50k pts, n=50): ransac 50/50 —
+    already 100%, zero improvement available. Gate-missed (n=70): 61.4% → 92.9%. The entire
+    fiducial gain lands on attempts today's live stack REFUSES to make (MIN_LOCAL_POINTS skip).
+    **Honest headline = coverage extension into the early/power-on regime, NOT accuracy fix.**
+  - Circularity quantified: marker map shares truth's PoseGraph → 90/117 sections had a
+    bar-passing candidate PRE-judge (median cand err 0.46 m ≈ tag scatter; max 1.29 m, inside
+    ICP's basin by construction). Benchmark cannot detect "marker map wrong vs reality."
+    Decorrelation next: temporal-split map · different-recording map · ages >30 s.
+  - Failure taxonomy fixed: median err_r 84.8°, only 4/27 near 180° — say "large-rotation
+    wrong-basin", not "yaw-flip". Scenario label: tracking-recovery/power-on-near-tag, NOT
+    kidnap (ages ≤23.5 s, median 3.9 s; the 120 s age model + confidence decay unexercised —
+    age degradation itself real, Spearman 0.50).
+  - **Confidence-blindness finding STANDS and sharpens (circularity-proof, it's about ransac):**
+    fitness stays confident-wrong 2–4% even in the fiducial arm — frame 98 picked a 2.92 m/157°
+    ransac answer at fitness 0.995 OVER a 0.147 m fiducial candidate; frame 116 hit fitness 1.000
+    on a 41°-wrong pose. The judge is source-blind and genuinely exercised (ransac won 89/117
+    covered sections), but fitness saturation on sparse geometry is the enemy.
+  - Real unclaimed win: fiducial+judge = 95.0% at 0.39 s median vs 9.7 s (25× cheaper) — the
+    "markers visible → search stands down" case, same caveats.
 
 **What landed where:**
 - `trial/harness/` (this repo, committed): prep.py / run_bench.py / markers.py / china_markers.py
@@ -764,22 +781,36 @@ at N=120 threshold conclusions swing on single samples):**
    verified on-robot or cross-run.
 5. Rotate the Linear API key when convenient (it transited chat in plaintext).
 
-**Ready-to-paste DIM-920 comment (draft — post only after reading the circularity verdict in §7):**
-> Offline benchmark results (replay, hk_village3, 120 kidnap sections, deterministic seeds,
-> truth = PGO-corrected poses with the noise floor measured; full harness in the trial repo):
-> today's RANSAC→judge: 77.5% success (93/120); at the 0.45 gate 27/120 published answers are
-> >1 m/15° wrong, every one with fitness 0.81–0.96, and no threshold reaches 2% false-accept.
-> With the fiducial prior into the same judge: 95.8% (115/120), 4.2% risk at the same gate, and a
-> 2%-risk gate exists (0.911 / coverage 105/120). Markers-only + judge: 95.0% at 0.4 s median vs
-> 9.7 s (the "RANSAC stands down" case, ~24×). PGO-as-truth was qualified with the marker-revisit
-> test (observe→loop→observe): on village3 PGO reconciles loop-return drift (0.93→0.28 m) but
-> misplaces one revisit pass by ~1.4 m — ablation-verified mechanism: the stiff odom variance
-> (1e-4 m²/edge vs ≥0.015 m² loops) spreads the end-of-drive correction where drift didn't occur
-> (non-monotonic drift is unrepresentable) — and on china_office (PointLIO input) PGO degrades an
-> already-3–10 cm-consistent trajectory 10–100×. Worth knowing wherever PGO poses are treated as
-> ground truth; the odom/loop variance ratio looks like the lever. Caveat: the marker map derives
-> from the same PGO run as truth (deployment-realistic, truth-correlated; per-candidate error vs
-> truth median 0.46 m — real detection+odom noise, not truth copies); cross-run evaluation is next.
+**Ready-to-paste DIM-920 comment (final draft — adversarially verified wording, post in morning):**
+> Offline benchmark results (replay, hk_village3, 120 sections, deterministic seeds, truth =
+> PGO-corrected poses with the noise floor measured; harness in the trial repo; every number
+> independently re-derived by an adversarial verification pass):
+>
+> **Confidence finding (the DIM-940/#2137 "match confidence" question, answered with data):**
+> today's RANSAC→judge publishes fitness that does NOT gate safely on sparse submaps — 27/120
+> answers are >1 m/15° wrong at fitness 0.81–0.96 (the run's HIGHEST-fitness answer, 0.995, is
+> 2.9 m/157° off), no threshold reaches 2% false-accept, and the code-vs-docs gate debate
+> (0.45 vs 0.6) is moot: both give ~22.5% risk. On gate-passing (≥50k pt) submaps it's 50/50 —
+> fitness saturation on sparse geometry is the specific enemy. Submap size belongs in the
+> confidence reading.
+>
+> **Fiducial prior (toggleable, age-decayed, same judge — no bypass):** extends reliable
+> relocalization into exactly the regime the live stack currently refuses (MIN_LOCAL_POINTS
+> skip): small-submap sections 61.4% → 92.9% (gate-passing were already 100% without markers).
+> Markers-only + judge: 95.0% at 0.39 s median vs 9.7 s (~25× cheaper — the "RANSAC stands down
+> when tags are visible" case). Honesty caveats: the marker map derives from the same PGO run as
+> truth (deployment-realistic but truth-correlated — 75% of sections had a bar-passing candidate
+> pre-judge); scenario is tracking-recovery/power-on-near-tag, not kidnap; decorrelation tests
+> (temporal-split map, different-recording map) are next.
+>
+> **PGO-as-truth qualifier (leshy's observe→loop→observe test, stratified):** village3: PGO
+> reconciles loop-return drift (0.93→0.28 m) but misplaces one revisit pass ~1.4 m even at
+> loop-anchor keyframes — ablation-verified mechanism: stiff odom variance (1e-4 m²/edge vs
+> ≥0.015 m² loops) spreads the end-of-drive correction where drift didn't occur; non-monotonic
+> drift is unrepresentable. china_office: PointLIO is already 3–10 cm consistent at 5–18 min
+> revisit gaps and PGO on top degrades it 10–100×. Wherever PGO poses are treated as ground
+> truth, this per-recording check is worth running; the odom/loop variance ratio looks like the
+> lever.
 
 ## 8. Runbook — day-of operational essentials
 

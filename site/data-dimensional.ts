@@ -82,9 +82,9 @@ export const phase2 = {
     "Objective: a marker sighting proposes a high-confidence pose candidate into the same judge — toggleable, age-decayed, and it still has to win on geometry like every other candidate.",
   lines: [
     "FiducialPrior — age-gated marker fixes into the shared judge (PR #3016)",
-    "Toggleable per config; markers visible → the expensive global search can stand down",
-    "On 120 sections of a real recorded drive (replay): success 77.5% → 95.8% with the prior in the pool",
-    "Markers-only + judge: 95.0% at 0.4 s median vs 9.7 s for the full search — ~24× faster when tags are in view",
+    "Extends reliable relocalization into the regime the stack currently skips (small submaps): 61.4% → 92.9% on those sections; large-submap sections were already 100%",
+    "Markers visible → the global search can stand down: 95.0% at 0.4 s median vs 9.7 s — ~25× cheaper",
+    "Adversarially verified framing: marker map is survey-grade by construction (shares the map's own PGO frame); cross-recording decorrelation is the named next test",
   ],
   demo: {
     src: "/dimensional/confidence_risk_coverage.png",
