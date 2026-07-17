@@ -86,18 +86,23 @@ Next actions.
 
 ## 2. Next actions
 
-- [ ] todo — **test existing relocalization first** (Aaryan, Jul 16, supersedes ordering): exercise
-      the existing lidar `RelocalizationModule` per the replay walkthrough in
-      `docs/capabilities/navigation/relocalization.md` (record → `map global --export` →
-      relocalize in replay → live) — this is the CUDA queue below (task 1), as already written.
-      Re-plumb (Phase 2) and the fusion end state (§4) stay pending until after this.
-- [ ] todo — post the Linear ticket (§5) to Dimensional's own tracker
-- [ ] todo — lesh call: align on the fusion re-plumb (§4 end state) before building it — after the
-      above
+- [~] doing — **Phase 1: universal confidence reading** (window 1, in progress on branch
+      `feat/reloc-priors`): pluggable priors (RANSAC today, a last-accepted-pose seed next) propose
+      candidates; ALL candidates are scored by the same shared judge (wall-only fine-fitness at
+      RERANK_DIST) — that score IS the one comparable confidence, published with the answer +
+      winning source — see §4 v5.
+- [ ] todo — **Phase 2: fiducial prior**: plug PR #2808's visual `world→map` estimate in as a
+      high-confidence-tier prior into that same judge — same universal reading, no bypass — after
+      Phase 1 lands.
+- [ ] todo — **Phase 3: sections-harness testing**: cut sections of the recorded PGO maps
+      (villages, go2_hongkong_office) and relocalize them against the PGO premap, WITH MARKERS —
+      truth = PGO-corrected poses (silver truth) + marker agreement — the CUDA queue below (task 1)
+      is its existing-stack baseline half, as already written.
+- [ ] todo — post the Linear ticket (§5) to Dimensional's own tracker — rewrite to v5 first
 - [ ] todo — CUDA runs: villages 1-5 + go2_hongkong_office at full scale (see "Tasks — CUDA
       machine" immediately below — claim from there, not from this line)
-- [ ] todo — re-plumb decision: Phase 2 (pluggable-prior refactor) timing vs. shipping Phase 1
-      (live-axis benchmark extension) first — after the above
+- [ ] todo — website update to v5 — deferred (Aaryan Jul 16), page still shows the old benchmark
+      framing
 - [ ] todo — page comments feature — on hold, not blocking, revisit after the above
 
 ### Tasks — CUDA machine (window 2) — committed first work package (Aaryan, Jul 16)
@@ -106,9 +111,9 @@ GOAL: measure how well the EXISTING stack works, with numbers AND visual/graphic
 odometry vs. PGO (marker scatter, replay), and RelocalizationModule finding itself on a premap —
 before any new code. Truth model (Aaryan, Jul 16): **PGO-corrected poses = silver truth for
 replay work** (best available reference; still the same lidar data optimized, so it can share
-failure modes with what it grades — markers add independent anchoring); **the live start/end-tag
-referee = independent gold truth** for real-robot runs later. Note these runs are **replay of
-real recorded drives** (real sensor data), not simulation — label results "replay," never
+failure modes with what it grades — markers add independent anchoring). Live-robot work later is
+demos/spot-checks, not a benchmark — the real-life benchmark is cut. Note these runs are **replay
+of real recorded drives** (real sensor data), not simulation — label results "replay," never
 "SIMULATED."
 
 - [ ] 0. Sanity: confirm the map pipeline runs on CUDA — quick `dimos map global hk_village3 --markers --no-gui`; should be much faster than CPU (~3 min on the Mac). Fix device selection if not.
@@ -143,30 +148,33 @@ Rules reminder inside the section (one line): claim a task by marking `[~] doing
 
 ## 3. Current state (2026-07-16)
 
-PR **#2808** on `dimensionalOS/dimos` is live at 13 commits — plan-of-record v3, post-review:
-extend the existing offline marker benchmark with a live axis, treat the marker method as a
-pluggable relocalization prior, and add a method manager + graceful degradation path. Module
-renamed to `VisualRelocalizationModule` (capability-named, matches the trial page H1). Trial
-project #1 (active) is the three-way relocalization benchmark: odom-only baseline vs. their
-`RelocalizationModule` (lidar/premap) vs. this fiducial module — see §6 Benchmark below and
-`trial/results/RESULTS.md`. Direction as of Jul 16 (Aaryan): test the existing lidar
-`RelocalizationModule` first (§2 top action) before further re-plumb/fusion work.
+PR **#2808** on `dimensionalOS/dimos` is live at 13 commits. Plan-of-record v5 (Aaryan, Jul 16,
+supersedes the same-day v4 draft): Phase 1 gives every relocalization answer one universal
+confidence reading via a shared judge over pluggable priors (in progress, branch
+`feat/reloc-priors`); Phase 2 adds the fiducial module (#2808) as a high-confidence prior into
+that same judge; Phase 3 tests offline against sections of the recorded PGO maps with markers —
+see §6 Testing below. The real-life benchmark is cut.
 
-## 4. Plan of record (v3-final)
+## 4. Plan of record (v5)
 
-Post-review direction for PR #2808, four phases:
+Direction as of Jul 16 (Aaryan, latest burst — supersedes the same-day v4 draft, which itself
+superseded v3): the real-life benchmark is gone. Three phases, then the fusion end state:
 
-- **Phase 1 — Benchmark: live-axis extension.** Reproduce the offline eval (done — village3, see
-  §7 Findings), then extend `dimos/mapping/benchmark/` with a live axis: return error vs. a
-  held-out marker, kidnap→recovery time, bounded-vs-unbounded drift, per method.
-- **Phase 2 — Marker prior: re-plumb.** Turn `VisualRelocalizationModule` from a standalone
-  `world->map` publisher into a pluggable, toggleable high-confidence prior feeding the
-  relocalization ICP step — overrides RANSAC when a marker is visible.
-- **Phase 3 — Benchmark all.** odom-only vs. RANSAC→ICP vs. marker→ICP, offline (villages +
-  go2_hongkong_office) and live.
-- **Phase 4 — Method manager + runtime degradation.** Parallel/toggleable/confidence-weighted
-  method manager, compute-aware, tracking "age of relocalization." Knobs tuned by autoresearch
-  against the benchmark (committed to the plan, Aaryan Jul 16 — see the autoresearch block below).
+- **Phase 1 — Universal confidence reading (now, in progress on branch `feat/reloc-priors`).**
+  Every relocalization answer carries ONE comparable confidence measure, regardless of method.
+  Mechanism: pluggable priors propose candidates — RANSAC (today's SCALE_PLAN loop) is the first
+  prior, feeding fine ICP; a last-accepted-pose seed is the cheap second — and ALL candidates are
+  scored by the same shared judge (wall-only fine-fitness at RERANK_DIST). That score IS the
+  universal confidence, published with the answer + winning source. This is lesh's own #2137
+  next-step ("we need a match confidence measure").
+- **Phase 2 — Fiducial as prior.** The visual module's `world→map` estimate (PR #2808) proposes
+  into the same judge as a high-confidence-tier prior — same universal reading, no bypass.
+- **Phase 3 — Testing, offline, dimos-native.** Cut SECTIONS of the recorded PGO maps (villages,
+  go2_hongkong_office) and relocalize them against the PGO premap, WITH MARKERS — truth =
+  PGO-corrected poses (silver truth) + marker agreement (independent anchoring). #2137's 60-frame
+  harness is the exact pattern; rerun visualization for eyeballing. The real-life benchmark —
+  start/end-tag referee, live routes, kidnap runs, pass bars, field battery — is cut (Aaryan,
+  Jul 16). Live robot use later = demos/spot-checks, not a benchmark.
 
 **End state: fusion.** Relocalization becomes a package, not a module — lidar-ICP and visual-tag
 become **sources** under it (`dimos/mapping/relocalization/{base,lidar,visual,fusion}.py`); each
@@ -195,178 +203,75 @@ is beyond standard practice, not a copy of it).
 monitor/fusion knobs (fitness gates, mode-switch thresholds, hysteresis, jump-gate width,
 per-tier rate/compute budgets) get tuned by an autoresearch loop in the exact #2137 pattern:
 - **One modifiable file** — the monitor/fusion policy (thresholds + mode logic), nothing else.
-- **A read-only harness** — the Phase 1 benchmark with its start/end-tag ground truth (replay
-  recordings + kidnap variant), fixed time budget, deterministic seeds. This is the "better data —
+- **A read-only harness** — the Phase 3 sections-of-PGO-maps harness (PGO-corrected pose silver
+  truth + marker agreement), fixed time budget, deterministic seeds. This is the "better data —
   fiducial markers as ground truth" the #2137 next-steps section asked for.
-- **A results ledger** (`results.tsv` style) with a strict metric hierarchy — return error vs
-  fiducial GT, then kidnap recovery time, then compute cost — keep/discard per experiment, every
-  row reproducible.
-The agent grinds the knob space against the referee; humans review the ledger, not the guesses.
+- **A results ledger** (`results.tsv` style) with a strict metric hierarchy — error vs PGO silver
+  truth, then marker-agreement spread, then compute cost — keep/discard per experiment, every row
+  reproducible.
+The agent grinds the knob space against the Phase 3 harness; humans review the ledger, not the
+guesses.
+
+**Superseded 2026-07-16 (Aaryan):** the v4 draft (same day) and the custom real-life benchmark —
+start/end-tag referee, routes, kidnap runs, fairness rules, pass bars, field battery, benchmark
+CLI plan — cut by Aaryan Jul 16; full text in git history ≤ e54ea3c; instruments remain in
+`trial/scripts` + the branch, unplanned.
 
 ## 5. Linear ticket (draft, ready to post)
 
-> **Title:** Relocalization — marker prior + live benchmark extension (trial project)
+> **Title:** Relocalization — universal confidence reading + fiducial prior (trial project)
 >
 > **Context:** RelocalizationModule direction = method-agnostic pluggable priors feeding ICP (per
 > review); today: FPFH+RANSAC+ICP global reloc (tuned via the #2137 autoresearch harness) + offline
 > marker-ground-truth eval (`loop_closure/eval.py` marker-spread over hk_village recordings); this
-> trial adds the highest-confidence prior (fiducial markers) + extends the eval to live on-robot
-> behavior.
+> trial adds a universal confidence reading across all priors, then the highest-confidence prior
+> (fiducial markers), then offline sections-based testing. The real-life benchmark is cut.
 >
-> **Phase 1 Benchmark live axis:** reproduce offline eval (DONE village3: TOTAL_SPREAD 4.955m;
-> raw-vs-PGO RMS 0.540/0.577m, n=4 — rerun bigger sets on CUDA); extend with return error vs
-> held-out marker, kidnap→recovery time, bounded-vs-unbounded, per method; instrument on branch
-> (`dimos/mapping/benchmark`, `dimos benchmark run --mode odom|lidar|visual`).
+> **Phase 1 Universal confidence reading:** pluggable priors (RANSAC first, a last-accepted-pose
+> seed second) propose candidates; all are scored by the same shared judge (wall-only fine-fitness
+> at RERANK_DIST) — that score is the one comparable confidence published with every answer +
+> winning source. Answers lesh's #2137 next-step ("we need a match confidence measure"). In
+> progress on branch `feat/reloc-priors`.
 >
-> **Phase 2 Marker prior:** re-plumb PR #2808 module from standalone world→map publisher to
-> pluggable high-confidence prior feeding relocalization ICP; toggleable; overrides RANSAC when
-> visible; marker poses via stream (K/V in map global later).
+> **Phase 2 Fiducial prior:** PR #2808's visual `world→map` estimate proposes into the same judge
+> as a high-confidence-tier prior — same universal reading, no bypass; marker poses via stream
+> (K/V in map global later).
 >
-> **Phase 3 Benchmark all:** odom · RANSAC→ICP · marker→ICP, offline (villages, go2_hongkong_office)
-> + live.
+> **Phase 3 Testing (offline, dimos-native):** cut sections/frames from the recorded PGO maps
+> (villages, go2_hongkong_office), relocalize each against the PGO-exported premap, WITH MARKERS —
+> score vs. PGO-corrected pose (silver truth) + marker agreement (independent anchoring). #2137's
+> 60-frame harness is the template; rerun visualization for eyeballing.
 >
 > **Phase 4 Method manager + runtime degradation:** parallel/toggleable/confidence-weighted,
-> compute-aware, "age of relocalization."
+> compute-aware, "age of relocalization" — knobs tuned by autoresearch against the Phase 3 harness.
 >
-> **Deliverables:** live benchmark extension · marker prior integrated · three-method table ·
-> method-manager design (+impl if time).
+> **Deliverables:** universal confidence measure shipped across all priors · fiducial prior
+> integrated · sections-harness results table · method-manager design (+impl if time).
 >
 > **Open questions:** semantic prior nudge-vs-parallel · stream vs K/V timing · amend #2808 vs
-> follow-up · where live results live.
+> follow-up · where results live.
 >
 > **Needs:** CUDA machine; review @lesh.
 
-## 6. Benchmark
+## 6. Testing (Phase 3 — offline, dimos-native)
 
-The dimos relocalization benchmark — a fair, repeatable, physically-verifiable comparison of
-dimos's localization correctors (odom-only, lidar-ICP-vs-premap, AprilTag marker correction) on
-one Go2, one office, one instrument. Instrumented by `trial/scripts/bench.py`. Ratified before any
-run counts, so nobody moves a goalpost after seeing a number.
+**Superseded 2026-07-16 (Aaryan):** the custom real-life benchmark — Routes & modes, the
+honest metrics set, the start/end-tag referee (`--holdout-tag`), Fairness rules, Pass bars, and
+the 7-card field battery — is cut; full text in git history ≤ e54ea3c. The instruments it
+produced (`trial/scripts/bench.py`, `holdout_overlay.py`, `metrics_logger.py`, `report.py`)
+remain in `trial/scripts/` and on the branch, unplanned — not deleted, just not the testing method
+going forward. Testing is now the sections harness below, offline, against PGO silver truth +
+markers.
 
-### Routes & modes
+### The sections harness (Phase 3 method)
 
-- **Loop** (~30m, taped start/end) — drift accumulation + recovery-on-reacquisition, the headline
-  number.
-- **Corridor** (longest feature-poor stretch, ≥15-20m) — stresses ICP's along-corridor aperture
-  degeneracy, the one axis neither odometry nor lidar constrains well.
-- **Kidnap** (carry the robot ~3m mid-run, or cold-start displaced) — bootstrap-free
-  relocalization: closed-form single-frame PnP vs. iterative ICP with no prior.
-- Modes: **odom** (dead-reckoning floor) · **lidar** (`RelocalizationModule` + same-day premap) ·
-  **marker** (`VisualRelocalizationModule` + self-surveyed map) · **fused** (deferred — no
-  arbitration design exists yet, see §4 end-state; scoring it now would score undefined behavior).
-- **Capture:** odom and marker are scored off the *same* drive — `VisualRelocalizationModule`
-  always runs and corrects, but retargets its publish off the live `map` frame
-  (`-o visualrelocalizationmodule.map_frame=map_marker`) so one physical drive doubles as a clean
-  odom-only baseline and a marker-corrected trace. Lidar joins this combined run once
-  `RelocalizationModule` shares the drive with the shadowed marker corrector (Phase 3).
-
-### Metrics — the honest, research-grounded set
-
-Full ATE/RPE (TUM/KITTI-style) need continuous ground truth at every frame — this setup only has
-GT at discrete tag sightings (start/end, or wherever a held-out marker appears), so a "full ATE"
-label would silently overclaim continuous coverage that doesn't exist. The honest move (same math
-as one term inside KITTI's drift-%, or as loop-closure error): report a checkpoint relative-pose
-measurement, not a trajectory curve.
-
-Let `T_start_gt`, `T_end_gt` be the known tag poses (same marker revisited ⇒ closed loop), and
-`T_start_est`, `T_end_est` the pipeline's estimated poses at those instants:
-
-```
-ΔT_gt  = T_start_gt⁻¹ · T_end_gt        (known true relative transform)
-ΔT_est = T_start_est⁻¹ · T_end_est      (pipeline's estimated relative transform)
-E      = ΔT_gt⁻¹ · ΔT_est
-
-e_pos  = ‖trans(E)‖                     (meters)
-e_yaw  = angle(rot(E))                  (degrees, planar/ground-robot case)
-```
-
-- **① Return / checkpoint error** (above) — PRIMARY. TUM's RPE formula with N=1, over the one
-  interval GT actually covers.
-- **② Drift ratio** = `e_pos / distance_traveled × 100` — KITTI-style, one sample instead of
-  hundreds.
-- **③ Max checkpoint error** = `max_k ‖p_est,k − p_gt,k‖` over every instant a tag is visible.
-- **④ RMS over GT-visible samples** (only if N>2) — same shape as ATE, honestly scoped to
-  checkpoints not frames.
-- **⑤ Recovery time / success rate** (kidnap only) — `success=1` if `e_pos < tolerance` (e.g. 0.5m)
-  is reached and held before the tag sighting; `recovery_time` = frames/distance from perturbation
-  to that point.
-- **⑥ Bounded vs. unbounded classification** — run ① across varying path lengths; flat/asymptotic
-  ⇒ bounded (anchored to the marker), growing ⇒ unbounded (pure dead-reckoning between sightings).
-
-**Neutral names for any page/report:** Return error · Drift ratio · Max checkpoint error ·
-Recovery time · Bounded vs. unbounded error growth. Avoid "ATE"/"RMSE" as headline labels unless
-qualified ("checkpoint RMSE, N=2") — those carry a continuous-GT connotation this setup can't back.
-
-`bench.py` also computes, from the log directly: **loop-closure error** (odom vs corrected,
-start==end taped mark), **time-to-recover** (kidnap, wall-clock to first `correction_new`),
-**corrections accepted/rejected/held** (from log records), **corrected-pose coverage %**, and an
-**ATE-proxy** where a `--reference-log` exists (RMSE vs. that reference run — relative only, no
-external ground truth).
-
-### The start/end-tag referee (`--holdout-tag`)
-
-An automated, map-independent end-pose check on top of any run: print one extra tag (any free ID,
-e.g. 42), leave its ID out of every marker map under test, tape it up where the camera sees it at
-drill-start and drill-end. `metrics_logger.py` runs a second, independent solvePnP for that tag
-only; `bench.py stop`/`report` take the median of the first/last 10 sightings as the physical
-truth and diff it against whatever the mode under test claimed over the same window — an automatic
-loop-closure-error-vs-real-reference number instead of an assumed taped start==end. **Shared-
-pipeline caveat:** the referee's PnP runs the same detector/solvePnP code, on the same camera, as
-the mode it's checking — not a fully independent instrument, hence the calibration below.
-
-**Noise floor + bias, once per session, before the first scored run:**
-```
-cd dimos
-uv run python ../trial/scripts/bench.py calibrate-referee --holdout-tag 42
-```
-STEP 1: a static hold (default 60s, don't move) computes per-axis std + a 3-sigma radius for
-position, std/3-sigma spread for rotation — should be well under 2cm radius. STEP 2: slide the
-robot a measured distance (≥1.0m recommended) along a straightedge, enter the tape-measured value
-— reports scale error %. Writes `trial/results/referee-budget.json`; every `bench.py report`
-afterward appends a `start/end tag referee: ±Xmm (3-sigma), scale bias Y% (calibrated <date>)`
-footer to `RESULTS.md`. Re-run whenever the rig changes (new tag print, moved camera).
-
-*Heavier option, week-2+ escalation only if the marker-vs-lidar gap ever needs sub-mm resolution:*
-a mechanical registration jig (carpenter's-square fence) + a fixed overhead ChArUco board (never
-AprilTag — must be a different marker family so it's never confusable with the tags under test) +
-a laser distance meter, noise-floor-tested ISO-9283-style (≥30 cycles, `RP = barycenter deviation +
-3σ`). Not the Project 1 method — not built.
-
-### Fairness rules
-
-Same route/pace across every mode in a comparison. Lidar runs its best case (same-day premap of
-the exact route, never stale). Marker map only from the standard self-survey flow (§8 Runbook) — no
-hand-tuned tag positions. Every run lands in `results/RESULTS.md`, including failed/rejected runs —
-no discarding a bad take. Fixed gates for the whole benchmark (ambiguity ratio 2.0, reprojection
-3px) — no per-run retuning to flatter a number. n≥3 runs per (route, mode) cell before any number
-is quoted.
-
-### Pass bars
-
-Marker ≥3x loop-closure improvement over odom-only (a floor — the synthetic demo suggests 5-7x).
-Kidnap: recovery <10s with tag visible; lidar showing no recovery in this window is expected, not a
-failure (no closed-form kidnap solution). Corridor: marker-corrected run holds bounded lateral
-drift; odom/lidar-only shows unbounded along-corridor drift by the far end.
-
-### The 7-card field battery (no elevator required)
-
-Stash's steer (call, 2026-07-08): test without elevators, outdoor is fine. Every number below is a
-first real-hardware-run estimate, hedged down from the synthetic demo's 5-7x. Demo-day pick:
-**#1 + #2** — both run in minutes, zero narration, best theater.
-
-| # | Card | What it proves | Pass bar |
-|---|---|---|---|
-| 1 | Drift-recovery loop | Tag-corrected beats odom-only drift, real hardware | Route drifts >0.3m odom-only; corrected ≥3x better |
-| 2 | Kidnapped robot / cold start | Single-shot PnP needs no bootstrap, unlike ICP | Marker publishes within one detection cycle (~<1s) vs. lidar's multi-cycle (2s+ poll) |
-| 3 | Outdoor sightline | Tags work where lidar-premap is structurally weak | ≥80% detection within 3m, worst lighting bucket |
-| 4 | Long corridor / feature-poor | ICP's along-corridor aperture problem; a tag supplies the missing constraint | Lateral dev ≤0.15m, along-corridor error ≤0.3m at far end (corrected) |
-| 5 | Glass/reflective lobby *(conditional)* | Specular surfaces wreck lidar ICP; tag ID doesn't care what's behind it | Measurable lidar fitness drop/rejection near glass; marker detection indistinguishable from control |
-| 6 | Head-to-head vs. RelocalizationModule | The single go/no-go number: lidar vs marker vs fused | Fused ATE ≤ better of the two solo runs |
-| 7 | Dynamic clutter *(bonus)* | ICP fitness degrades on unmapped clutter; tags don't care | Marker ATE degrades <20% clear→cluttered |
-
-Grounding for the numbers above: measured envelope for real tags — 150mm tags detect ≥95% to
-4m/55°, trusted single-frame pose tightest inside ~1m; the trial's 100mm tags scale to roughly
-~2.5-3m/~45° detection, same trusted-pose window (conservative 2/3 scaling).
+Cut sections/frames from the recorded drives (villages, go2_hongkong_office), relocalize each
+against the PGO-exported premap, and score against PGO-corrected pose (silver truth) + marker
+agreement (independent anchoring — a physical marker never moves, so tight clustering of its
+repeated sightings is a truth signal that doesn't share PGO's own failure modes). #2137's
+`run.py` / 60-frame harness is the exact template: one modifiable file, a read-only harness, a
+results ledger, deterministic seeds. Rerun visualization (`.rrd`) for eyeballing, same as the
+sim → replay ladder below.
 
 ### Relationship to the existing offline eval (don't conflate these two)
 
@@ -624,6 +529,11 @@ bad one, STOP it.
   benchmark (that's `loop_closure/eval.py`, TOTAL_SPREAD) — see §6's "don't conflate" box. Ran
   village3: 4.955m spread, raw-vs-PGO 0.540m/0.577m RMS at n=4 (§7).
 - **Plan v3 written** (§4) — the 4-phase post-review direction, package-based fusion end state.
+- **Jul 16 (later, same day) — Plan v5** (Aaryan, latest burst): v4 draft (§2's "priors system"
+  wording) superseded within the hour; plan rewritten around a universal confidence reading
+  (Phase 1) → fiducial prior (Phase 2) → sections-of-PGO-maps testing with markers (Phase 3); the
+  real-life benchmark — start/end-tag referee, live routes, kidnap runs, pass bars, field battery
+  — cut (§4, §6). Phase 1 build in progress on branch `feat/reloc-priors` (window 1).
 - **Open items:** see §2 Next actions.
 
 ## Team feedback (direction ledger)
