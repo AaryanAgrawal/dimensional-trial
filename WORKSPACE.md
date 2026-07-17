@@ -86,12 +86,18 @@ Next actions.
 
 ## 2. Next actions
 
+- [ ] todo — **test existing relocalization first** (Aaryan, Jul 16, supersedes ordering): exercise
+      the existing lidar `RelocalizationModule` per the replay walkthrough in
+      `docs/capabilities/navigation/relocalization.md` (record → `map global --export` →
+      relocalize in replay → live) — this is the CUDA queue below (task 1), as already written.
+      Re-plumb (Phase 2) and the fusion end state (§4) stay pending until after this.
 - [ ] todo — post the Linear ticket (§5) to Dimensional's own tracker
-- [ ] todo — lesh call: align on the fusion re-plumb (§4 end state) before building it
+- [ ] todo — lesh call: align on the fusion re-plumb (§4 end state) before building it — after the
+      above
 - [ ] todo — CUDA runs: villages 1-5 + go2_hongkong_office at full scale (see "Tasks — CUDA
       machine" immediately below — claim from there, not from this line)
 - [ ] todo — re-plumb decision: Phase 2 (pluggable-prior refactor) timing vs. shipping Phase 1
-      (live-axis benchmark extension) first
+      (live-axis benchmark extension) first — after the above
 - [ ] todo — page comments feature — on hold, not blocking, revisit after the above
 
 ### Tasks — CUDA machine (window 2)
@@ -114,7 +120,8 @@ pluggable relocalization prior, and add a method manager + graceful degradation 
 renamed to `VisualRelocalizationModule` (capability-named, matches the trial page H1). Trial
 project #1 (active) is the three-way relocalization benchmark: odom-only baseline vs. their
 `RelocalizationModule` (lidar/premap) vs. this fiducial module — see §6 Benchmark below and
-`trial/results/RESULTS.md`.
+`trial/results/RESULTS.md`. Direction as of Jul 16 (Aaryan): test the existing lidar
+`RelocalizationModule` first (§2 top action) before further re-plumb/fusion work.
 
 ## 4. Plan of record (v3-final)
 
@@ -141,6 +148,19 @@ degradation ladder, never averaging two disagreeing corrections into a meaningle
 it today breaks. Trial discipline: build this **additively** (new files only — `base.py`,
 `visual.py`, a `fusion.py` skeleton) — the lidar file itself is lesh's, not touched on this branch;
 propose, don't restructure.
+
+**Phase 4 candidate design (Jul 16 study, not yet agreed with the team).** Three-part split: global
+search on demand (the existing `relocalize()`, fired at boot/kidnap/health-collapse instead of on a
+timer) · cheap continuous tracking (ICP seeded by the last `world→map`, plus the marker prior when a
+tag is visible — mostly re-plumbing of the pipeline's existing tail stage) · a health monitor that
+owns `world→map` and decides which mode runs (inputs: fitness + trend, reprojection error,
+ambiguity ratio, jump-implausibility gate, age-of-relocalization — mostly numbers the pipeline
+already computes). Compute-aware: same architecture on every machine tier, only rate/budget config
+differs. Industry-pattern claim (global-search-once + cheap-seeded-tracking + monitor-triggered
+re-search, REP-105 frame conventions, AMCL-style mode split) is from-knowledge; a primary-source
+verification sweep is in flight and its results will be folded in when done. Phase-4 tuning knobs
+could themselves be tuned by an autoresearch-style loop against the benchmark ground truth (same
+`program.md` pattern).
 
 ## 5. Linear ticket (draft, ready to post)
 
@@ -406,6 +426,38 @@ dimos benchmark run --mode visual --route <name> --marker-map <path>
   `ate_rmse_raw_odom_m: 1.75 → ate_rmse_corrected_m: 0.26` (6.76x improvement, post ambiguity-gate;
   0.33m/5.33x pre-gate, the number cited in the original PR). Detection rate 60.4% of frames saw
   ≥1 tag. Reproduce: `cd demo && ./run.sh`, read `out/metrics.json`.
+- **RelocalizationModule scheduling, verified in `module.py` (Jul 16):** runs unconditionally
+  whenever a premap is configured — live accumulated map stream throttled to one attempt per 2s
+  (`RELOC_INTERVAL`), skipped under 50k points, dropped while a previous attempt still computes
+  (attempts take 3-8s per the capability doc's own logs). Every attempt is the FULL global search
+  (multi-scale multi-restart FPFH+RANSAC → inlier re-rank → fine ICP) from scratch — it never seeds
+  from its previous answer. Only gate is post-hoc fitness (code default 0.45; the capability doc's
+  example logs show 0.6 — provenance of the difference unknown). No confidence trigger, no "am I
+  lost?" check, no jump/consistency guard — any fitness-passing answer replaces the `world→map` TF.
+  A separate 2s heartbeat republishes the last accepted TF. With no `map_file` the module logs
+  "disabled": all correction in the stack today is premap-relative; the odometry trail
+  (`world→base_link`) is never corrected by anything.
+- **PR #2137 "Autoresearch on relocalization" — what it actually is, verified Jul 16** (leshy,
+  opened 2026-05-17, still open, branch `sloptimization/ransac`; read from the PR body + `program.md`
+  + `results.tsv`): "autoresearch" = an autonomous LLM experiment loop. `program.md` is the loop's
+  instruction file: edit `relocalize.py` (only modifiable file) → run read-only harness `run.py` →
+  log a row to `results.tsv` → keep/discard by strict metric hierarchy (success_rate, then
+  median_distance, then total_seconds), deterministic per-frame seeds, explicit "NEVER STOP"
+  autonomy clause, simplicity criterion. Harness: 60 kidnapped-robot test frames from
+  `go2_hongkong_office` vs. PGO-corrected ground truth, success = within 1m AND 15°, 90s total
+  budget. `results.tsv` ledger: success 25% → 91.7% (winning ideas: multi-restart RANSAC,
+  fine-scale fitness re-rank, top-K ICP re-rank, wall-only scoring, FPFH caching). Residual ~8%
+  failures documented as 180° yaw flips (corridor symmetry) and wrong-room matches (FPFH
+  descriptors not globally unique) — the failure class a uniquely-identified marker removes.
+  `program.md`'s own failure-modes list includes "high RANSAC fitness paired with low ICP fitness
+  at fine scale" — their docs acknowledging fitness alone is an imperfect confidence measure.
+  leshy's PR next-steps (paraphrased): better data from multiple independent loop-closed runs or
+  fiducial markers as ground truth; a match-confidence measure that corresponds to ground-truth
+  quality; a runtime-vs-number-of-points quality curve; open "continuous alignment" questions
+  (always search for a better match? can the mapper change its mind?). Timing caveat: ~1.1s/frame
+  is wall-clock across ALL workstation CPU cores in parallel (single-core per-call cost is
+  seconds; not an onboard number). leshy's comment on the PR: kept open as an artefact of work
+  that's a good example for others, just shared with the candidate.
 - *(CUDA-machine window: once §2 "Tasks — CUDA machine" has an assigned task, append the
   resulting numbers here, plus anything that behaved differently than this doc predicted.)*
 
@@ -597,6 +649,9 @@ conversation with him. ★ = deep-dived, can defend on a call, not just recite.
   Same schema either way — swap the plumbing, not the math. Repo reality: §7 first finding.
 - Semantic search: embed views into vectors, nearest-neighbor place recognition; coarse and
   aliasing-prone (resemblance, not identity) → weak prior that narrows RANSAC's search.
+- Search vs tracking: relocalization = find-me from nothing (rare, global, jumps allowed) vs. odom
+  correction = keep-me-found (constant, local, smooth nudges); today dimos corrects only the
+  `world→map` lens, never the odometry trail, and only when a premap exists.
 
 ## 11. Between machines — read-only clone variant
 
