@@ -1033,6 +1033,20 @@ evidence per Aaryan Jul 17 — awaiting the purpose-built mid360 walk instead). 
 kind only show against a physical marker anchor — which is
 presumably exactly why the team records marker-staring walks.
 
+**Jul 17 — PGO ACCURACY EVIDENCE SWEEP (repo + Linear read-only; answers Aaryan's "does
+anything show PGO better than ~0.3 m?"): NO.** Nothing anywhere measures dimos PGO against
+external ground truth. Repo: shipping docs disclaim loop closure (deep_dive.md:63); best prior
+measurement = never-merged comparison report, tag spread 2.0->0.40 m (flagship) — consistent with
+our 0.28-0.35 m; the autoresearch tuning branch's own author wrote TOTAL_SPREAD "only tells you
+when corrections diverge — not whether they converge to the right place", measured ~36%
+UNDER-correction, and asked for ground truth that didn't exist. All sub-0.3 m instances are
+artifacts (near-zero-drift recording / artificial drift / same-recording self-reloc / KITTI
+ATE~0 with GT fed as odometry). #2137's "PGO-corrected groundtruth" = assumption, never
+quantified. Linear: only sub-0.3 m figures are FAST-LIO2 literature specs in a drone PROPOSAL
+(DIM-1088, "Estimated Value"); reloc thresholds elsewhere are placeholders. **Conclusion: the
+marker-revisit numbers from this trial are the first externally-anchored PGO accuracy evidence
+at Dimensional, and prior internal (unmerged) work independently lands in the same range.**
+
 **Jul 17 — GRAVITY WALKOVER FIXED (dimos branch, local commit; found->fixed->verified same
 day by the benchmark loop):** `refine_candidates` gains `sources=` — per-source gravity gating
 (each source falls back to its own tilted pool only if IT has no upright member; default path
