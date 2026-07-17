@@ -169,6 +169,17 @@ Rules reminder inside the section (one line): claim a task by marking `[~] doing
 
 **Aaryan is now driving from window 2 (the CUDA machine).** Window 1 (laptop) is standby.
 
+**dimos on this machine (set up Jul 17):** the pre-existing clone at `~/dimos` (25G data, synced
+venv, fork remote already configured, also used for non-trial work on this box) is **symlinked**
+into the repo root (`dimensional-trial/dimos → /home/dimos/dimos`) — satisfies §0's layout without
+moving 40G or breaking the machine's other references. Local branch `feat/fiducial-relocalization`
+@ `a6be7e42e` tracking `fork/feat/marker-localization-core` (16 commits over the origin/main
+merge-base). Phase-1 suite **re-verified on this machine: 6/6 green** (`uv run pytest
+dimos/mapping/relocalization/test_relocalize.py`). Data present: `hk_village3.db` (325MB, real —
+§7's "no villages" blocker is now partial), `china_office.db`, `go2_china_office.db`,
+`go2_short.db`. Still missing for the CUDA queue: `hk_village{1,2,4,5}.db`,
+`go2_hongkong_office.db` → `git lfs pull --include="data/hk_village*.db" --include="data/go2_hongkong_office.db"`.
+
 **Code state — one PR, restored (Jul 17):**
 - **PR #2808 is OPEN again** — the Jul 17 rename mishap is fully reverted: branch renamed back to
   `feat/marker-localization-core` on the fork, PR reopened, review history intact, now **16
