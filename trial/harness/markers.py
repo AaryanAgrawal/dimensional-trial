@@ -306,6 +306,9 @@ def main() -> int:
                 "BENCHMARK ONLY — never enters the marker map, never produces "
                 "fiducial fixes (benchmark_setup.yaml decorrelation rule)")},
             "n_sightings": len(ref_rows),
+            # the referee's scatter/revisit entry (same as scatter.json's), so this
+            # file alone carries the raw-vs-pgo revisit evidence it referees with
+            "revisit_stats": stats.get(str(referee)),
             # consensus mirrors derive_marker_map: reproj-gated, PGO-corrected centroid
             "consensus_map_position_m": pos.mean(0).tolist() if len(gated) else None,
             "consensus_n_used": len(gated),
