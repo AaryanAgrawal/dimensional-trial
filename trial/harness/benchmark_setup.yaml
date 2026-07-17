@@ -22,12 +22,19 @@ recordings:
     role: primary multi-tag benchmark run (BOTH lidar lanes in one file)
     referee_tag: 4          # seen 0.0% -> 98.7% of the 780 s run; span 769.6 s
     fiducial_tags: [0, 1, 2, 6, 7]   # id 6 is weak (24.5 s span) but valid
-    lanes: {go2: {lidar: lidar, odom: odom, note: lidar obs poses are placeholders — re-pose from odom payload},
-            mid360_fastlio: {lidar: fastlio_lidar, odom: fastlio_odometry,
-                             note: placeholder poses too — re-pose from fastlio_odometry payload;
-                             MEASURED (Jul 17): 300s+ revisit raw 0.035–0.111 m (LIO drift ~2 cm
-                             over 13 min; ~100–250x tighter than go2 lane's 8.80 m); PGO on top
-                             benign-to-mildly-helpful — unnecessary, not harmful}}
+    lanes:
+      go2:
+        lidar: lidar
+        odom: odom
+        note: "lidar obs poses are placeholders — re-pose from odom payload"
+      mid360_fastlio:
+        lidar: fastlio_lidar
+        odom: fastlio_odometry
+        note: "placeholder poses too — re-pose from fastlio_odometry payload.
+          MEASURED (Jul 17) — 300s+ revisit raw 0.035–0.111 m (LIO drift ~2 cm over
+          13 min; ~100–250x tighter than go2 lane's 8.80 m); PGO on top
+          benign-to-mildly-helpful — unnecessary, not harmful"
+
   markers_go2:
     role: REMOVED from the set (Aaryan Jul 17) — lidar obs carry no poses, so it
           can never grade PGO or the module; detector-dev recording only
