@@ -1033,6 +1033,15 @@ evidence per Aaryan Jul 17 — awaiting the purpose-built mid360 walk instead). 
 kind only show against a physical marker anchor — which is
 presumably exactly why the team records marker-staring walks.
 
+**Jul 17 — GRAVITY WALKOVER FIXED (dimos branch, local commit; found->fixed->verified same
+day by the benchmark loop):** `refine_candidates` gains `sources=` — per-source gravity gating
+(each source falls back to its own tilted pool only if IT has no upright member; default path
+bit-identical). Regression test reproduces the walkover under the old gate and asserts the fix
+(10/10 suite green, mypy clean). Field re-run on the fixed code: v1 lastpose 0.625->0.708, v5
+0.792->0.875, ZERO lastpose-source failures remain on either. FiducialPrior inherits the
+protection (all priors flow through the per-source gate). This is the benchmark's development
+loop closing end-to-end: benchmark finds -> probe isolates -> fix lands -> benchmark confirms.
+
 **Jul 17 — DECORRELATED FIDUCIAL VERDICT (the goal's last open question — HOLDS; mid360 walk,
 n=40 full denominator, replay):** referee tag 4 verifiably ABSENT from all 45 fixes (ids
 {0,1,2,6,7}). ransac 52.5% (21/40; hard 2.78M-pt outdoor premap, 62.5 s solves, wrong-basin
