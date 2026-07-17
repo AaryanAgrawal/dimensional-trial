@@ -10,7 +10,9 @@ never lives inside dimos.
 
 ```bash
 uv run python ../trial/harness/prep.py hk_village3 --n-queries 120   # sections + premap + PGO truth
-uv run python ../trial/harness/markers.py hk_village3               # scatter + marker map + fiducial fixes
+uv run python ../trial/harness/markers.py hk_village3               # scatter + marker map + fixes + referee.json
+#   referee tag (benchmark_setup.yaml, or --benchmark-tag) is BENCHMARK ONLY:
+#   in scatter/referee.json, never in the marker map or fixes (decorrelation)
 uv run python ../trial/harness/run_bench.py hk_village3 --config ransac
 uv run python ../trial/harness/run_bench.py hk_village3 --config ransac+fiducial \
     --fiducial-fixes ../trial/harness/out/markers/hk_village3.fixes.json
