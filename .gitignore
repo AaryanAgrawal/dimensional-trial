@@ -61,3 +61,11 @@ dimos/
 
 # secrets — never belongs in git history even privately
 credentials.md
+
+# trial/results — raw run output stays untracked; comparison FIGURES are tracked
+# (visual proof shared between machines — CUDA queue task 6)
+!/trial/results
+/trial/results/*
+!/trial/results/figures
+/trial/results/figures/*
+!/trial/results/figures/*.png

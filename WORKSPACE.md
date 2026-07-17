@@ -81,7 +81,7 @@ Next actions.
 | Benchmark instruments (logger, bench runner, referee, overlay, survey dumper) | `trial/scripts/` in this repo |
 | Synthetic proof harness (real detector, rendered pixels, no hardware) | `demo/` in this repo — `cd demo && ./run.sh` |
 | Physical marker kit (printable tags, surveyed map) | `print/*.pdf`, `office_markers.yaml`, this repo |
-| Real benchmark run output (generated, not tracked) | `trial/results/` and `trial/scripts/out/` — created on first run by the scripts themselves |
+| Real benchmark run output | `trial/results/` and `trial/scripts/out/` — generated, untracked; EXCEPT `trial/results/figures/*.png` (comparison graphs — tracked, shared between machines) |
 | Everything else from the trial (spec docs, research notes, day-by-day roadmap, PR drafts, page copy) | local disk only, untracked — folded into this doc's sections below where still load-bearing |
 
 ## 2. Next actions
@@ -100,15 +100,44 @@ Next actions.
       (live-axis benchmark extension) first — after the above
 - [ ] todo — page comments feature — on hold, not blocking, revisit after the above
 
-### Tasks — CUDA machine (window 2)
+### Tasks — CUDA machine (window 2) — committed first work package (Aaryan, Jul 16)
+
+GOAL: measure how well the EXISTING stack works, with numbers AND visual/graphical proof — raw
+odometry vs. PGO (marker scatter, replay), and RelocalizationModule finding itself on a premap —
+before any new code. Truth model (Aaryan, Jul 16): **PGO-corrected poses = silver truth for
+replay work** (best available reference; still the same lidar data optimized, so it can share
+failure modes with what it grades — markers add independent anchoring); **the live start/end-tag
+referee = independent gold truth** for real-robot runs later. Note these runs are **replay of
+real recorded drives** (real sensor data), not simulation — label results "replay," never
+"SIMULATED."
 
 - [ ] 0. Sanity: confirm the map pipeline runs on CUDA — quick `dimos map global hk_village3 --markers --no-gui`; should be much faster than CPU (~3 min on the Mac). Fix device selection if not.
-- [ ] 1. Walk docs/capabilities/navigation/relocalization.md end-to-end on a village recording: build the loop-closed global map, `--export` a premap, then run relocalization against it in replay — watch RelocalizationModule find itself on the map.
-- [ ] 2. Odometry test: `dimos map global hk_village4 --markers --no-gui` (map + marker poses from raw odometry).
-- [ ] 3. Comparison: `dimos map global hk_village4 --pgo --markers --no-gui` — compare marker agreement vs task 2 (avg distance between repeated marker sightings).
-- [ ] 4. Full offline baseline table: repeat 2+3 across hk_village1..5 + `uv run python -m dimos.mapping.loop_closure.eval <village>` per village → per-village TOTAL_SPREAD + raw-vs-PGO marker RMS. (Reference: Mac CPU run of village3 = SPREAD 4.955m, raw-vs-PGO RMS 0.540/0.577, n=4.)
+- [ ] 1. Walk docs/capabilities/navigation/relocalization.md end-to-end on a village recording: build the loop-closed global map, `--export` a premap, then run relocalization against it in replay — watch RelocalizationModule find itself on the map. **Capture the run log** (fitness, time_cost, accepted vs rejected counts, warmup skips) — it feeds the graphs in task 6.
+- [ ] 2. Odometry test: `dimos map global hk_village4 --markers --no-gui` (map + marker poses from raw odometry). Save the `.rrd`.
+- [ ] 3. Comparison: `dimos map global hk_village4 --pgo --markers --no-gui` — compare marker agreement vs task 2 (avg distance between repeated marker sightings). Save the `.rrd`.
+- [ ] 4. Full offline baseline table: repeat 2+3 across hk_village1..5 + `uv run python -m dimos.mapping.loop_closure.eval <village>` per village → per-village TOTAL_SPREAD + raw-vs-PGO marker RMS.
 - [ ] 5. The big eval map: `dimos map global go2_hongkong_office --pgo --markers --no-gui` + its numbers.
-- [ ] 6. Write all numbers/tables into ## Findings, note anything that behaved differently than documented, push.
+- [ ] 6. **Graphs — the visual/graphical proof comparing both (required deliverable, Aaryan):**
+      (a) per-village grouped bar chart: marker scatter raw-odom vs PGO, side by side;
+      (b) per-marker top-down scatter plot: the same physical marker's repeated sighting
+      positions, raw vs PGO overlaid on shared axes — the drift made visible;
+      (c) from task 1's log: fitness-over-time and correction-magnitude-over-time series,
+      accepted vs rejected attempts marked;
+      (d) side-by-side `.rrd` screenshots of the raw vs PGO marker overlays.
+      Matplotlib, exact command + git rev printed on/beside each figure, PNGs committed to
+      `trial/results/figures/` in this repo (tracked — see .gitignore) + pushed.
+- [ ] 7. Write all numbers/tables into §7 Findings, note anything that behaved differently than documented, push.
+
+**Expected numbers (priors, each with its source — the runs verify or refute; results replace
+these):**
+- Raw-odom marker scatter: meters-scale over a multi-minute loop (drift is unbounded/super-linear;
+  village3 Mac reference: TOTAL_SPREAD 4.955, raw-vs-PGO marker RMS 0.540/0.577 m, n=4).
+- PGO marker scatter: sub-meter, order tens of cm (village3 RMS ~0.5 m level).
+- Reloc-in-replay (task 1): skips until the live submap reaches 50k points; each solve 3–8 s
+  (capability doc's own logs); accepted fixes at fitness ≈0.45–0.7 (doc logs show 0.657–0.684
+  accepted); converged correction magnitudes cm-to-tens-of-cm (doc logs `published_t`
+  ≈0.06–0.17 m). Global-search success prior: ~90% within 1 m/15° on go2_hongkong_office
+  (#2137's tuned pipeline, 60-frame harness) — may be lower on villages.
 
 Rules reminder inside the section (one line): claim a task by marking `[~] doing — window 2` + push (the push is the claim); finish with `[x] + one-line result`; do not touch the robot or push to the dimos fork/PR from window 2.
 
