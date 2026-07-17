@@ -985,6 +985,23 @@ ready to post to Dimensional's own tracker; the "relocalization" vs. "odometry c
 vocabulary distinction was corrected across the docs; PR #2137 vs. `loop_closure/eval.py` was
 disambiguated (§6, "don't conflate these two").
 
+**Jul 17 (~2:25 AM) — lesh (Discord, via Aaryan):**
+- Production platforms carry better lidars — **mid360 focus for now** ("it's everywhere"); recent
+  research may eventually fold Go2 into the "serious lidar processing" codebase via good raw
+  Go2 lidar data.
+- **Both PGO and relocalization algos are Go2-specific** (WebRTC data path) — not transferable to
+  other platforms.
+- Realtime PGO: "last thing worth investing in though, it's a one day job."
+
+Acted on (same night): all benchmark numbers re-labeled by lane (village3 = Go2 lane, explicitly
+non-transferable per lesh; china_office = the mid360+PointLIO production lane — its finding that
+PGO degrades PointLIO 10–100× is the production-relevant one); the trial's value story reframed
+around the transferable layer (priors/judge architecture, camera-based fiducial prior, confidence
+-benchmark methodology, marker-revisit PGO qualifier — all embodiment-agnostic, answering
+DIM-944's embodiment complaint); age-decay constants noted as per-lane knobs (near-drift-free
+PointLIO ages marker fixes slowly — Phase-4 autoresearch tunes per embodiment). Realtime PGO:
+never proposed, nothing to unwind. DIM-920 draft comment updated with the lane note.
+
 *Updated whenever the team gives direction; feedback lands here same-day.*
 
 ## 10. Learning log — Aaryan's working vocabulary (ramped 2026-07-16)
