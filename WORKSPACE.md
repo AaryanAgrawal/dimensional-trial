@@ -86,6 +86,16 @@ Next actions.
 
 ## 2. Next actions
 
+**GOAL OF RECORD (Aaryan, Jul 17, via chat — window 2 executes end-to-end, best-judgment
+decisions):** (1) an industry-backed way to **benchmark relocalization confidence** — not just
+success rate, but whether the published confidence *predicts* true error (risk–coverage /
+calibration against PGO silver truth + marker agreement; grounds the 0.45-vs-0.6 fitness-gate
+question in data instead of folklore); (2) **priors wrapped in ICP** (the Phase 1 system — built,
+re-verified 6/6 on this box Jul 17); (3) **the fiducial prior on top, gated by confidence + age**
+(Phase 2 + the Phase 4 monitor elements). Sequence: benchmark first, then wire, then fiducial.
+Constraint kept: no pushes to the dimos fork/PR from window 2 until work is verified — local
+dimos commits OK, harness code lives in THIS repo (`trial/harness/`).
+
 - [~] doing — **Phase 1: universal confidence reading**: BUILT + adversarially verified on
       branch **`feat/fiducial-relocalization`** (the ONE branch for all dimos trial work; 3 new
       commits on top of the 13 PR commits, HEAD `a6be7e42e`, pushed to the fork Jul 17).
