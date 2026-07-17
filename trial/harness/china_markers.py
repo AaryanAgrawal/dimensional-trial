@@ -46,7 +46,7 @@ TF_TOL_S = 0.15
 
 
 def main() -> int:
-    dimos_root = Path(__file__).resolve().parents[3] / "dimos"
+    dimos_root = Path(__file__).resolve().parents[2] / "dimos"
     store = SqliteStore(path=str(dimos_root / "data" / "china_office.db"), must_exist=True)
     out: dict = {"meta": {
         "recording": "china_office", "lidar_stream": "gt_pointlio_lidar",

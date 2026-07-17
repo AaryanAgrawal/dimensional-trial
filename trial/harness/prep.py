@@ -183,7 +183,7 @@ def build_sections(
 
 
 def prepare(recording: str, lidar_stream: str, n_queries: int, device: str) -> Path:
-    dimos_root = Path(__file__).resolve().parents[3] / "dimos"
+    dimos_root = Path(__file__).resolve().parents[2] / "dimos"
     trial_root = Path(__file__).resolve().parents[1]
     db = dimos_root / "data" / f"{recording}.db"
     store = SqliteStore(path=str(db), must_exist=True)

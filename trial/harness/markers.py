@@ -195,7 +195,7 @@ def main() -> int:
         prep = pickle.load(f)
     graph = pickle.loads(prep["pose_graph_bytes"])
 
-    dimos_root = Path(__file__).resolve().parents[3] / "dimos"
+    dimos_root = Path(__file__).resolve().parents[2] / "dimos"
     store = SqliteStore(path=str(dimos_root / "data" / f"{a.recording}.db"), must_exist=True)
     with store:
         t0 = time.perf_counter()
