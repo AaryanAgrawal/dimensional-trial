@@ -18,6 +18,7 @@ dimos/
 !/demo
 !/print
 !/office_markers.yaml
+!/site
 
 # trial/ — only the benchmark instrument (code + its yaml fixture), nothing else
 /trial/*
@@ -69,3 +70,15 @@ credentials.md
 !/trial/results/figures
 /trial/results/figures/*
 !/trial/results/figures/*.png
+
+# site/ — the /dimensional page source + assets (canonical copy; deploys from the portfolio repo)
+/site/*
+!/site/*.tsx
+!/site/*.ts
+!/site/assets
+/site/assets/*
+!/site/assets/*.png
+!/site/assets/*.gif
+!/site/assets/flow
+/site/assets/flow/*
+!/site/assets/flow/*.png

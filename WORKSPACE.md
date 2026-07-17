@@ -76,7 +76,7 @@ Next actions.
 | The module + all code changes | `dimos` (cloned inside this repo root, §0) — ONE working branch **`feat/fiducial-relocalization`** (local + fork, identical), all 16 commits: the reviewed marker-localization module + the verified Phase 1 priors system. The fork is the PR channel (fork-and-pull — standard practice, Aaryan confirmed keep, Jul 17; **never delete the fork**). The fork also still has `feat/marker-localization-core` (head of closed #2808) — delete only on Aaryan's word. |
 | The PR | **#3016** — https://github.com/dimensionalOS/dimos/pull/3016 (supersedes #2808, closed Jul 17 with a pointer — same history, correctly-named branch) |
 | The public presentation page | https://aaryanagrawal.me/dimensional |
-| Trial page source | github.com/AaryanAgrawal/portfolio → `src/app/dimensional/` (deploys to aaryanagrawal.me/dimensional via `vercel --prod` from that repo's checkout) |
+| Trial page source | **`site/` in THIS repo (canonical copy — window 2 owns the website lane, Aaryan Jul 17)**: `page.tsx` (route), `data-dimensional.ts` (content data, lives at `src/data/dimensional.ts` in the portfolio repo), `assets/` (`public/dimensional/` there). Deploy home stays github.com/AaryanAgrawal/portfolio — to ship: copy the three pieces into the portfolio checkout, `npx tsc --noEmit && next build`, `vercel --prod` (scope servicerobotco, project aaryan-portfolio). Edit here first, sync on deploy — keep both in step. |
 | This repo | context/plan/benchmark-protocol/history only — `dimos` sits inside this folder on disk but is its own git repo, gitignored, never tracked as content here |
 | Benchmark instruments (logger, bench runner, referee, overlay, survey dumper) | `trial/scripts/` in this repo |
 | Synthetic proof harness (real detector, rendered pixels, no hardware) | `demo/` in this repo — `cd demo && ./run.sh` |
@@ -110,8 +110,8 @@ Next actions.
       DIM-944 + END-76)
 - [ ] todo — CUDA runs: villages 1-5 + go2_hongkong_office at full scale (see "Tasks — CUDA
       machine" immediately below — claim from there, not from this line)
-- [ ] todo — website update to v5 — deferred (Aaryan Jul 16), page still shows the old benchmark
-      framing
+- [ ] todo — website update to v5 — **window 2's lane now** (Aaryan Jul 17); source is `site/` in
+      this repo (§1), page still shows the old benchmark framing; deploy via the portfolio repo
 - [ ] todo — page comments feature — on hold, not blocking, revisit after the above
 
 ### Tasks — CUDA machine (window 2) — committed first work package (Aaryan, Jul 16)
