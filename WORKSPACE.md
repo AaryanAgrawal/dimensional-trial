@@ -1058,6 +1058,18 @@ evidence per Aaryan Jul 17 — awaiting the purpose-built mid360 walk instead). 
 kind only show against a physical marker anchor — which is
 presumably exactly why the team records marker-staring walks.
 
+**Jul 17 — LIO LANE MEASURED (plan-v6 step 1 DONE; the number the mid360 strategy rests on):**
+FAST-LIO revisit consistency on the purpose-built walk, all 6 tags, n=2,979 positioned
+detections: **300s+ gaps raw 0.035–0.111 m** (referee tag 4: 0.035 m median over the 12.8-min
+start<->end revisit, vs a 0.017 m same-moment detection floor -> true LIO drift ~2 cm over 13 min
+/ ~400 m). Same walk, Go2 lane raw = 8.80 m: **LIO is ~100–250x more consistent.** The mid360
+premise is now measured fact. CORRECTION (anchor-on-truth): "PGO degrades LIO 10–100x" came ONLY
+from the excluded recording and DOES NOT REPRODUCE here — PGO over FAST-LIO is benign-to-mildly-
+helpful (0.083->0.059, 0.111->0.072; 61 clean closures, residuals 0.006–0.04). Standing statement
+softened: on the LIO lane PGO is UNNECESSARY (mm–cm gains), not demonstrably harmful. Strategic
+conclusion unchanged: LIO carries the pose, markers anchor it (LIO is relative — world->map still
+needs a writer), fiducial-first runtime justified by measurement.
+
 **Jul 17 — ONLINE PGO: design note (Aaryan: "we will do this — it's important"):** feasible
 ON-ROBOT, no cloud — measured PGO throughput 18–27x realtime CPU-only on this laptop (village3
 ~20x, office ~20–26x, mid360 walk 18x/1403 kf/62 loops), and the Go2 lane already computes on a
