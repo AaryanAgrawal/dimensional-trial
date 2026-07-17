@@ -73,7 +73,7 @@ Next actions.
 
 | What | Where |
 |---|---|
-| The module + all code changes | `dimos` (cloned inside this repo root, §0) — **ONE working branch: `feat/fiducial-relocalization`** (Aaryan's naming, Jul 17) — all 16 commits (PR #2808 work + the verified priors system), ON THE FORK (pushed + renamed Jul 17). PR #2808 is currently CLOSED by the rename mishap — see §3 for restore options; **dimos-remote is FROZEN until the work is verified** (§2 CUDA queue). All new dimos-side work lands on this one branch. |
+| The module + all code changes | `dimos` (cloned inside this repo root, §0) — ONE working branch, all 16 commits (PR work + verified priors system). **PR #2808 is OPEN (restored Jul 17)** from fork branch `feat/marker-localization-core` — that remote name is PR-pinned (renaming a fork branch behind a cross-repo PR closes it; learned twice, never again). Local working branch name: `feat/fiducial-relocalization` (Aaryan's naming — becomes the real branch name on dimensionalOS/dimos once the team grants write access; until then the fork is the ONLY PR channel — **never delete it**, it is #2808's head repo). |
 | The PR | **#2808** — https://github.com/dimensionalOS/dimos/pull/2808 |
 | The public presentation page | https://aaryanagrawal.me/dimensional |
 | Trial page source | github.com/AaryanAgrawal/portfolio → `src/app/dimensional/` (deploys to aaryanagrawal.me/dimensional via `vercel --prod` from that repo's checkout) |
