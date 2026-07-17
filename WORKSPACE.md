@@ -6,9 +6,9 @@ not separate files. Any machine should be able to clone this repo and start work
 file alone.*
 
 This is Aaryan's working context for the Forward Deployed Engineer trial at **Dimensional**
-(dimensionalOS/dimos — "the OS for robotics"). The actual code changes live in a separate sibling
-clone of `dimos` (see §0) — this repo never contains `dimos` as content, only as a sibling
-checkout.
+(dimensionalOS/dimos — "the OS for robotics"). The actual code changes live in `dimos/`, a
+separate git repo cloned inside this folder (see §0) — gitignored here, never tracked as content,
+so this repo's CLAUDE.md and docs govern dimos work too.
 
 ---
 
@@ -600,7 +600,7 @@ conversation with him. ★ = deep-dived, can defend on a call, not just recite.
 
 ## 11. Between machines — read-only clone variant
 
-The canonical sibling-clone setup lives in §0 Cold start. Use this variant instead when handing a
+The canonical setup (this repo as root, `dimos` cloned inside it) lives in §0 Cold start. Use this variant instead when handing a
 **second machine you don't want full SSH access** a read-only copy of this repo (not `dimos`) —
 scope: this repo only, 30-day expiry.
 
