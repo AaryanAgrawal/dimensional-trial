@@ -6,6 +6,12 @@ otherwise its "Next actions." It has the actual state, plan, and history; this f
 work. Follow the sync protocol below, and update `WORKSPACE.md` + push after every meaningful step
 — never leave a session's findings only in chat.
 
+## Layout
+
+This repo folder is the root. `dimos` is cloned inside it (gitignored, its own git repo — never
+tracked as content here). Every session, including work inside `dimos/`, starts from this root and
+follows this file + `WORKSPACE.md`.
+
 ## The four rules
 
 1. **Verify by execution, not by reading code.** Sim → replay → hardware, in that order — each

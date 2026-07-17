@@ -13,6 +13,7 @@ dimos/
 !/.gitignore
 !/CLAUDE.md
 !/WORKSPACE.md
+!/README.md
 !/trial
 !/demo
 !/print
