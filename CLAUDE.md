@@ -70,9 +70,8 @@ say so plainly — agreement is not a deliverable, and an echo helps no one. "I 
   merge the meaning, not just the diff.
 - **Never commit credentials, tokens, or personal/financial matter.** `credentials.md` is
   gitignored on purpose. When in doubt, leave it out and mention it instead of committing it.
-- **Machine roles:** window 1 (laptop) owns the `dimos` branch/PR + the live robot; window 2
-  (CUDA machine) owns offline eval/compute; both own `WORKSPACE.md` via pull-rebase. Don't touch
-  the other window's lane — see `WORKSPACE.md` §2 for what each owns right now.
+- **Machine roles:** current ownership lives in `WORKSPACE.md` §2/§3 — read it before working;
+  don't touch a lane another window has claimed. Both windows own `WORKSPACE.md` via pull-rebase.
 - **Tasks live in `WORKSPACE.md`**, as checkboxes with an owner + status, not in chat. To take
   one: mark it `[~] doing — <window>` and push immediately — the push *is* the claim. When
   finished: `[x] done — <one-line result>` and push. Never work a task another window has already

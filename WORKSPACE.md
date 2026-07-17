@@ -30,7 +30,7 @@ Next actions.
    cd dimos
    git remote add fork https://github.com/AaryanAgrawal/dimos
    git fetch fork
-   git checkout feat/marker-localization-core
+   git checkout feat/fiducial-relocalization
    ```
    `GIT_LFS_SKIP_SMUDGE=1` skips pulling every LFS asset (recordings, weights) at clone time — the
    repo is otherwise ~3GB. Pull specific LFS data on demand later: `git lfs pull --include=<path>`.
@@ -73,7 +73,7 @@ Next actions.
 
 | What | Where |
 |---|---|
-| The module + all code changes | `dimos` (cloned inside this repo root, §0) — **ONE working branch: `fiducial-relocalization`** (Aaryan, Jul 16: "keep all this only one branch, my branch") — contains the PR #2808 work + the priors system; LOCAL-ONLY until Aaryan's push go. PR #2808's remote branch (`feat/marker-localization-core`) stays untouched; §0 cold-start checks that branch out until `fiducial-relocalization` is pushed. All new dimos-side work lands on `fiducial-relocalization`, window 1 only. |
+| The module + all code changes | `dimos` (cloned inside this repo root, §0) — **ONE working branch: `feat/fiducial-relocalization`** (Aaryan, Jul 16: "keep all this only one branch, my branch") — contains the PR #2808 work + the priors system; LOCAL-ONLY until Aaryan's push go. PR #2808's remote branch (`feat/marker-localization-core`) stays untouched; §0 cold-start checks that branch out until `feat/fiducial-relocalization` is pushed. All new dimos-side work lands on `feat/fiducial-relocalization`, window 1 only. |
 | The PR | **#2808** — https://github.com/dimensionalOS/dimos/pull/2808 |
 | The public presentation page | https://aaryanagrawal.me/dimensional |
 | Trial page source | github.com/AaryanAgrawal/portfolio → `src/app/dimensional/` (deploys to aaryanagrawal.me/dimensional via `vercel --prod` from that repo's checkout) |
@@ -87,7 +87,7 @@ Next actions.
 ## 2. Next actions
 
 - [~] doing — **Phase 1: universal confidence reading** (window 1): BUILT + adversarially
-      verified on LOCAL branch **`fiducial-relocalization`** (renamed from `feat/reloc-priors`
+      verified on LOCAL branch **`feat/fiducial-relocalization`** (renamed from `feat/reloc-priors`
       per Aaryan Jul 16 — the ONE branch for all dimos trial work; 3 commits, HEAD `a6be7e42e`,
       base `feat/marker-localization-core`; local only — not pushed, awaiting Aaryan's go).
       What landed: `relocalize.py` split into `generate_ransac_candidates()` + `refine_candidates()`
@@ -165,14 +165,54 @@ these):**
 
 Rules reminder inside the section (one line): claim a task by marking `[~] doing — window 2` + push (the push is the claim); finish with `[x] + one-line result`; do not touch the robot or push to the dimos fork/PR from window 2.
 
-## 3. Current state (2026-07-16)
+## 3. Current state (2026-07-17 — READ THIS FIRST on the CUDA machine)
 
-PR **#2808** on `dimensionalOS/dimos` is live at 13 commits. Plan-of-record v5 (Aaryan, Jul 16,
-supersedes the same-day v4 draft): Phase 1 gives every relocalization answer one universal
-confidence reading via a shared judge over pluggable priors (in progress, branch
-`feat/reloc-priors`); Phase 2 adds the fiducial module (#2808) as a high-confidence prior into
-that same judge; Phase 3 tests offline against sections of the recorded PGO maps with markers —
-see §6 Testing below. The real-life benchmark is cut.
+**Aaryan is now driving from window 2 (the CUDA machine).** Window 1 (laptop) is standby.
+
+**Code state — ONE branch, one intended PR:**
+- Fork branch **`feat/fiducial-relocalization`** (renamed from `feat/marker-localization-core`)
+  carries ALL 16 commits: the 13 reviewed PR commits + 3 new, adversarially verified commits
+  (Phase 1 priors/universal-confidence system — see §2 Phase 1 item for exactly what landed).
+- **PR #2808 is currently CLOSED — by mistake.** The branch rename orphaned the PR's head ref:
+  GitHub auto-retargets renames only for same-repo PRs, NOT cross-repo (fork→upstream) PRs.
+  Lesson recorded. Restore options when ready: (a) rename the fork branch back + reopen #2808
+  (most likely restores the full review thread; the 3 new commits are already on the branch),
+  (b) try reopening as-is, (c) fresh PR from `feat/fiducial-relocalization` (clean name, loses the
+  #2808 review thread).
+- **REMOTE FREEZE (Aaryan, Jul 17): no dimos-remote mutations of any kind** — no pushes, no
+  PR reopen/create, no renames — **until the work is verified** ("we will only do it once
+  things are verified"). Verification = the §2 CUDA queue (tasks 0–8). This trial repo's `main`
+  is the one exception (Aaryan: "put it all in" — the coordination channel stays live).
+
+**Plan-of-record v5** (Aaryan, Jul 16): Phase 1 universal confidence reading via a shared judge
+over pluggable priors — BUILT + verified, local+fork branch `feat/fiducial-relocalization`; Phase 2
+fiducial module as a high-confidence prior into the same judge; Phase 3 offline testing on
+sections of the recorded PGO maps with markers (§6). Real-life benchmark cut.
+
+**Linear (Dimensional's tracker) — how the trial organizes from here (Aaryan, Jul 17):**
+- Auth: Aaryan's API key is in the laptop's `credentials.md` (gitignored) — on the CUDA machine,
+  paste it into a local `credentials.md` there (NEVER commit it; `.gitignore` already covers it).
+  Verified working: acts as aaryan@dimensionalos.com, org `dimensional`, teams incl. DIM
+  (Engineering). API: POST https://api.linear.app/graphql, header `Authorization: <key>`.
+- **Existing issues to carry forward (searched Jul 17 — do NOT open a duplicate):**
+  - **DIM-940 [Backlog] "Pluggable Relocalization Heuristics"** (lesh, from GitHub #2209) — IS
+    Phase 1+2: "aruco tags are actual poses with high confidence... should run somewhere in
+    relocalization function." Our priors system implements this issue.
+  - **DIM-920 [In Review] "AprilTag relocalization"** (Dan & Ivan's parallel track) — carries a
+    ready-made acceptance test: "In a room with 2 known AprilTags, robot publishes correct
+    map→world TF within 5s of seeing a single tag." Adopt as Phase 2's acceptance bar; their
+    building blocks (#2107 detector, #2044 recordings) are what our module already consumes.
+  - **DIM-944 [Backlog] "Relocalization tuning system, wrap autoresearch toolkit"** (lesh) — IS
+    Phase 3/4: deterministic autoresearch eval (pegged seeds, process-per-core), "chainable
+    toolset with tunable hyperparams per step," AND lesh's own circularity warning: never
+    evaluate relocalization on the dataset the target map was built from — same rule as ours.
+  - **END-76 [Backlog, Product] "Re-localization"** — the index issue (links #2160 merged,
+    #2143 spec OPEN, #2107, #2044).
+- **Recommended ticket (Aaryan posts, his call):** ONE issue in DIM titled
+  "Relocalization: universal confidence reading + fiducial prior (FDE trial)" — body = §5 draft;
+  set relations: implements DIM-940, related DIM-920 (adopt its acceptance test) + DIM-944
+  (Phase 3/4) + END-76; add the PR link once the PR is restored. Alternative (leaner): skip a
+  new issue — comment the v5 plan on DIM-940 and claim it.
 
 ## 4. Plan of record (v5)
 
@@ -553,6 +593,16 @@ bad one, STOP it.
   (Phase 1) → fiducial prior (Phase 2) → sections-of-PGO-maps testing with markers (Phase 3); the
   real-life benchmark — start/end-tag referee, live routes, kidnap runs, pass bars, field battery
   — cut (§4, §6). Phase 1 build in progress on branch `feat/reloc-priors` (window 1).
+- **Jul 17 — Phase 1 verified · one branch · PR mishap · move to CUDA.** Phase 1
+  (priors/universal-confidence system) built + adversarially verified (parity vs pre-refactor
+  proven bit-identical; no-bypass tested); consolidated per Aaryan onto ONE branch
+  `feat/fiducial-relocalization` (renamed from `feat/marker-localization-core`, all 16 commits,
+  pushed to the fork). The rename CLOSED PR #2808 — cross-repo PRs don't follow fork-branch
+  renames (mistake, lesson recorded; restore options in §3). Aaryan froze dimos-remote
+  mutations until the work is verified (§2 CUDA queue = the gate) and moved to drive everything
+  from the CUDA machine. Dimensional's Linear searched: DIM-940/DIM-920/DIM-944/END-76 are the
+  carry-forward set (§3); ticket recommendation written, Aaryan posts. Trial repo confirmed
+  only-main.
 - **Open items:** see §2 Next actions.
 
 ## Team feedback (direction ledger)
