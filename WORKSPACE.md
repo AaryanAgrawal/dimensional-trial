@@ -693,14 +693,25 @@ must match — stratified by sighting time gap, marker 10, 156 sightings, villag
 - **RETRACTION of tonight's earlier aggregate claim "PGO makes marker scatter worse (0.387→0.478 m
   RMS)"** — true as computed but a composition artifact: short-gap pairs (no drift to correct)
   dominate the mixture. Kept visibly per anchor-on-truth.
-- Stratified truth: 60s+ **loop-return pairs: raw 0.934 m → PGO 0.280 m (3.3× better — PGO does
-  its job; leshy's verification PASSES)**. But 30–60 s mid-trajectory pairs: raw 0.471 m → PGO
-  **1.375 m (3× WORSE)** — slerp/lerp-interpolated corrections between sparse loop-closure anchors
-  BEND the mid-trajectory. 0–10 s: 4–5 mm both.
-- Consequence for every vs-PGO number: **silver truth is anchor-accurate, mid-segment-soft** —
-  section truth error can reach ~1 m mid-segment on this recording. Sections benchmark stays
-  honest via the 1 m/15° bar + marker co-truth; TOTAL_SPREAD (mixes all pairs) inherits the same
-  composition trap — worth telling the team.
+- Stratified truth (all four bucket numbers adversarially re-derived, exact): 60s+ loop-return
+  pairs raw 0.934 m → PGO 0.280 m (leshy's verification PASSES — caveat: 78% of those pairs are
+  first-vs-last-visit; pairs touching the bad pass below stay ~1.49 m). 30–60 s pairs raw
+  0.471 m → PGO 1.375 m. 0–10 s: 4–5 mm both.
+- **Mechanism (my first reading REFUTED by the verifier; this is the ablation-supported one):**
+  the 30–60 s damage is ONE misplaced revisit pass (t≈58–68 s, wrong ~1.3–1.5 m even AT
+  loop-anchor keyframes — so NOT interpolation-between-anchors). **PGO spreads the end-of-drive
+  correction smoothly along the stiff odom chain (odom var 1e-4 m²/edge vs loop var ≥0.015 m²)
+  and cannot represent this drive's non-monotonic drift** (+0.5 m by 58 s reversing to −0.95 m by
+  91 s). No loop subset fixes both buckets (ablated at thresh 0.3/0.15/0.10). Actionable for the
+  team: the odom/loop variance ratio, not the loop detector, is the lever.
+- Consequence for every vs-PGO number: silver truth is soft wherever drift was non-monotonic —
+  and (frames-audit finding) **the truth floor on long-window sections is decimeter-scale**
+  (submap accumulates over drifting odom inside its window while truth is the single correction
+  at query ts; measured 0.116 m median / 0.328 m max inside a 30 s window). Accepted-answer
+  medians ~0.24–0.32 m are near that floor — never quote them as precision. The 1 m/15° success
+  bar stands. TOTAL_SPREAD (mixes all pairs) inherits the composition trap — worth telling the
+  team. Latent dimos footgun found on the way (not affecting results): `Transform.__init__`
+  silently replaces ts=0.0 with wall-clock time (Transform.py:56).
 
 ### Jul 17 night session — goal executed end-to-end (window 2, autonomous; ALL COMMITS LOCAL-ONLY per Aaryan's no-remote rule — push checklist below)
 
@@ -761,11 +772,14 @@ at N=120 threshold conclusions swing on single samples):**
 > With the fiducial prior into the same judge: 95.8% (115/120), 4.2% risk at the same gate, and a
 > 2%-risk gate exists (0.911 / coverage 105/120). Markers-only + judge: 95.0% at 0.4 s median vs
 > 9.7 s (the "RANSAC stands down" case, ~24×). PGO-as-truth was qualified with the marker-revisit
-> test (observe→loop→observe): PGO helps exactly at loop-return gaps on village3 (0.93→0.28 m)
-> but distorts mid-segment (0.47→1.38 m), and on china_office (PointLIO input) it degrades an
-> already-3–10 cm-consistent trajectory 10–100× — worth knowing wherever PGO poses are treated
-> as ground truth. Caveat: the marker map derives from the same PGO run as truth
-> (deployment-realistic, truth-correlated); cross-run evaluation is next.
+> test (observe→loop→observe): on village3 PGO reconciles loop-return drift (0.93→0.28 m) but
+> misplaces one revisit pass by ~1.4 m — ablation-verified mechanism: the stiff odom variance
+> (1e-4 m²/edge vs ≥0.015 m² loops) spreads the end-of-drive correction where drift didn't occur
+> (non-monotonic drift is unrepresentable) — and on china_office (PointLIO input) PGO degrades an
+> already-3–10 cm-consistent trajectory 10–100×. Worth knowing wherever PGO poses are treated as
+> ground truth; the odom/loop variance ratio looks like the lever. Caveat: the marker map derives
+> from the same PGO run as truth (deployment-realistic, truth-correlated; per-candidate error vs
+> truth median 0.46 m — real detection+odom noise, not truth copies); cross-run evaluation is next.
 
 ## 8. Runbook — day-of operational essentials
 

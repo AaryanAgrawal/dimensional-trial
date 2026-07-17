@@ -94,10 +94,16 @@ def scatter_stats(rows: list[dict]) -> dict:
     """Per-marker agreement, stratified by sighting time gap (leshy's PGO
     verification: observe marker -> drive a loop -> observe again -> the two
     locations must match). Aggregate scatter alone is a composition trap:
-    short-gap pairs (no drift accrued) dilute it — measured live on village3,
-    where the aggregate said "PGO worse" while the 60s+ loop-return pairs said
-    "PGO 3.3x better" and the 30-60s mid-trajectory pairs exposed interpolated
-    corrections distorting poses between loop anchors."""
+    short-gap pairs (no drift accrued) dilute it.
+
+    Read bucket results per-visit, not per-gap: on village3 the entire 30-60s
+    damage was ONE misplaced revisit pass (t~58-68s, wrong by ~1.3-1.5m even
+    AT loop-anchor keyframes) — adversarially verified mechanism: PGO spreads
+    the end-of-drive correction smoothly along the stiff odom chain (odom var
+    1e-4 m2/edge vs loop var >=0.015 m2) and cannot represent non-monotonic
+    drift (+0.5m by 58s reversing to -0.95m by 91s). No loop subset fixes it
+    (ablated at thresh 0.3/0.15/0.10). Long-gap medians can likewise be
+    dominated by particular visit pairs — quote which visits carry a bucket."""
     out = {}
     by_id = defaultdict(list)
     for r in rows:
