@@ -25,10 +25,8 @@ recordings:
     lanes: {go2: {lidar: lidar, odom: odom, note: lidar obs poses are placeholders — re-pose from odom payload},
             mid360_fastlio: {lidar: fastlio_lidar, odom: fastlio_odometry}}
   markers_go2:
-    role: pure referee run (start/end-tag by construction)
-    referee_tag: 1          # only id; seen 0.7% -> 99.8% of the 102 s run
-    fiducial_tags: []
-    note: lidar obs carry no poses — camera/odom-payload path only
+    role: REMOVED from the set (Aaryan Jul 17) — lidar obs carry no poses, so it
+          can never grade PGO or the module; detector-dev recording only
   hk_village1: {role: referee-only, referee_tag: 10, fiducial_tags: []}
   hk_village3: {role: referee-only, referee_tag: 10, fiducial_tags: []}
   hk_village5: {role: referee-only, referee_tag: 10, fiducial_tags: []}
@@ -36,8 +34,15 @@ recordings:
   hk_village2: {role: EXCLUDED, reason: 3 physical tags share id 10 (cluster check)}
   hk_village4: {role: EXCLUDED, reason: 2 physical tags share id 10 (cluster check)}
   hk_building_all_around:
-    role: no-markers drift-profile instrument only (PGO self-consistency at 192 m scale)
-    referee_tag: null       # VERIFIED no tags: 0 detections in 663 sampled frames
+    role: PGO-truth-only benchmark run (replaces markers_go2, Aaryan Jul 17) —
+          sections vs qualified PGO truth + the 192 m drift profile; NO marker
+          referee possible (VERIFIED no tags: 0 detections in 663 sampled frames)
+    referee_tag: null
+  go2_hongkong_office:
+    role: PGO-truth-only benchmark run — no tags (verified, 0/398 sampled frames);
+          measured 80% (32/40, full denominator) ransac, 0.033 m median on
+          successes, 41 s median solve on the 850k-pt premap
+    referee_tag: null
   china_office: {role: EXCLUDED, reason: Aaryan 2026-07-17 — do not use}
 
 protocol:
