@@ -30,6 +30,7 @@ dimos/
 !/trial/harness/*.py
 !/trial/harness/*.md
 !/trial/harness/*.yaml
+!/trial/harness/*.sh
 !/trial/harness/tests
 /trial/harness/tests/*
 !/trial/harness/tests/*.py
