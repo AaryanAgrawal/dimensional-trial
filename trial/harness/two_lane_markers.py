@@ -174,6 +174,11 @@ def main() -> int:
     base_T_opt = base_T_front @ front_T_opt  # lane A mount
     mid_T_opt = np.linalg.inv(front_T_mid) @ front_T_opt  # lane B mount (body=mid360 assumed)
 
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--lane", choices=["go2", "mid360_fastlio", "both"], default="both")
+    lane_arg = ap.parse_args().lane
+
     result = {"meta": {"recording": RECORDING, "unix": time.time(),
                        "caveats": [
                            "lane B assumes FAST-LIO body == mid360_link; constant mount error "
@@ -182,10 +187,12 @@ def main() -> int:
               "lanes": {}}
     with store:
         dets = detect_optical_T_tag(store)
-        for lane, (lidar_stream, pose_stream, pose_type, mount) in {
+        lanes_all = {
             "go2": ("lidar", "odom", PoseStamped, base_T_opt),
             "mid360_fastlio": ("fastlio_lidar", "fastlio_odometry", Odometry, mid_T_opt),
-        }.items():
+        }
+        lanes = lanes_all if lane_arg == "both" else {lane_arg: lanes_all[lane_arg]}
+        for lane, (lidar_stream, pose_stream, pose_type, mount) in lanes.items():
             t0 = time.perf_counter()
             graph = store.stream(lidar_stream, PointCloud2).transform(PGO()).last().data
             print(f"[{lane}] PGO: {len(graph.keyframes)} kf, {len(graph.loops)} loops, "
