@@ -326,6 +326,35 @@ Grounding for the numbers above: measured envelope for real tags — 150mm tags 
   compute degradation on hardware, relocalization accuracy/success-rate (PR #2137's harness covers
   a narrow slice of this, one 60-frame set, one office recording).
 
+### Testing without the robot — the sim → replay ladder
+
+How the benchmark is exercised with no live robot (lesh, Jul 16: the existing recordings support
+most of the development without the robot; his homework = walk relocalization.md end-to-end in
+replay):
+
+1. **Sim / unit** (done, this branch): synthetic tag renders through the real PnP path — the 33+
+   tests, the envelope sweep; the ambiguity gate came out of this rung. Proves the math; proves
+   nothing about real sensors.
+2. **Replay** (the workhorse — the CUDA queue in §2 is exactly this): recorded drives
+   (`hk_village1..5`, `go2_hongkong_office`, `go2_bigoffice`) played back through the REAL stack
+   (`dimos --replay --replay-db=<name>`). All villages observe markers, so all three modes can run
+   on identical input:
+   - odom mode = replay with relocalization off;
+   - lidar mode = replay + `RelocalizationModule` against an exported premap;
+   - visual mode = replay + `VisualRelocalizationModule` against surveyed marker poses.
+   Replay beats live for FAIRNESS: same drive, bit-identical sensor input, three processing
+   configs — impossible live (you can never drive the same route twice). Offline scoring = marker
+   agreement (TOTAL_SPREAD via `loop_closure.eval`) + raw-vs-PGO marker RMS.
+   - **Kidnap in replay**: start relocalization with no initial pose against the premap
+     mid-recording — the stolen-robot condition exactly (lesh's homework item 1 is this: "watch
+     RelocalizationModule find itself on the map"); recovery time is measurable offline.
+3. **Hardware** (the only rung that needs greenwald): the live start/end-tag referee closure (a
+   replayed robot can't be commanded to return), the physical pick-up/place-down kidnap, compute/
+   runtime degradation on the real onboard budget, new route variants.
+
+Each rung proves strictly more than the last; every claim is labeled by the highest rung that
+produced it (SIMULATED / replay / hardware) — CLAUDE.md rule 1.
+
 ### CUDA-machine commands
 
 ```bash
@@ -345,6 +374,18 @@ dimos benchmark run --mode visual --route <name> --marker-map <path>
 ```
 
 ## 7. Findings (tonight's hands-on results + verification)
+
+- **Marker-pose storage, verified in-repo (Jul 16, answers lesh's K/V line):** upstream `main`
+  already has a live marker-**detections** stream (`MarkerDetectionStreamModule`, #2278 —
+  `Detection3DArray` per frame for LCM consumers) and `MarkerTfModule` mirroring detections into
+  TF. What does NOT exist anywhere upstream: persisted **known** marker poses in the map frame.
+  `map global --markers` computes PGO-corrected marker poses but only draws them into the `.rrd`
+  visualization (`world/pgo_map/markers`); `--export` writes the point cloud only
+  (`<dataset>.pc2.lcm`), no marker artifact; `loop_closure/eval.py` prints TOTAL_SPREAD and
+  persists nothing; the replay marker scripts are self-described throwaways. So lesh's "should
+  offer a K/V store" is a real gap — and this branch's `office_markers.yaml` + `load_marker_map`
+  is exactly that missing artifact, done as a file (the K/V shape; a stream publisher can carry
+  the same schema "for now" per his direction).
 
 - **village3 run** (Mac, CPU:0, 102s recording, 702 lidar / 1432 color frames):
   `eval.py hk_village3` → **`TOTAL_SPREAD=4.955m`, `TOTAL_PGO_TIME=2.22s`**. Standalone
@@ -497,7 +538,9 @@ Acted on: the deeper technical direction below (Jul 16) came from that referral.
   doc) — is an open question whether it nudges RANSAC or runs in parallel with it.
 - Vocabulary correction: "relocalization" refers specifically to the stolen-robot problem (finding
   yourself on the map from an unknown pose). Odometry correction via pluggable methods is a
-  separate, lower-priority track for now.
+  separate, lower-priority track for now — he framed that track as live PGO-style heuristics
+  (pluggable constraints on the pose trail, beyond today's lidar PGO at map-build time), said it
+  lines up with the trial page's framing, and explicitly deprioritized it for now.
 - Marker-pose storage: a stream for now; a K/V store under `dimos map global` later.
 - The benchmark he'd point to already exists offline: marker-ground-truth over recordings, via
   `dimos map global hk_village4 --markers` (odometry test) vs. `--pgo --markers` (compare by
@@ -518,7 +561,42 @@ disambiguated (§6, "don't conflate these two").
 
 *Updated whenever the team gives direction; feedback lands here same-day.*
 
-## 10. Between machines — read-only clone variant
+## 10. Learning log — Aaryan's working vocabulary (ramped 2026-07-16)
+
+Concepts taught to fluency, one line each, so any window knows what can be assumed in
+conversation with him. ★ = deep-dived, can defend on a call, not just recite.
+
+- Frames: `world` = odom origin (boot-relative, drifts, restarts) · `map` = premap frame
+  (persistent) · `base_link` = body. Corrections land ONLY on the `world→map` edge — `base_link`
+  never teleports. dimos `world` ≈ ROS `odom` (naming inverted vs. convention).
+- Odometry/drift: self-counted motion; errors only accumulate; early heading error compounds;
+  super-linear, unbounded.
+- Relocalization = the stolen-robot problem (team vocabulary): global "where am I" from nothing.
+  Distinct from continuous odom/drift correction — lesh's separate, deprioritized track (live
+  PGO-style heuristic constraints on the pose trail).
+- Their lidar pipeline: FPFH (neighborhood-shape fingerprints → candidate matches) → RANSAC
+  (random minimal samples → inlier voting; truth is consistent, garbage isn't; fooled by
+  self-similar spaces) → multi-scale ICP (a polisher, needs a seed) → fitness gate → world→map.
+- Map build: loop closure = measured drift; PGO = springs relaxing over the pose trail
+  (offline-only on stock Go2); voxel map → costmap.
+- ★ PnP/IPPE + planar pose ambiguity: 4 uniquely-labeled corners → full pose from one frame;
+  near-frontal, the mirror tilt slides every corner along its own viewing ray (cos +θ = cos −θ;
+  only the perspective denominator differs — sub-pixel at 2 m). Not a labeling confusion;
+  specific to flat targets. Fix: candidate-ratio gate ≥2.0 + park 20–30° oblique (measured:
+  39 mm frontal vs 3–7 mm oblique).
+- Benchmark honesty: ground truth must be external to the system under test (circularity trap);
+  "return error vs fiducial GT," never claimed as ATE; TOTAL_SPREAD = marker self-agreement;
+  recovery time; bounded-vs-unbounded; measure the noise floor before claiming differences.
+- Fusion: sources emit candidate + confidence + health; marker = identity (high), RANSAC =
+  consensus (medium), semantic = resemblance (weak — search-space hint only, never publishes);
+  Mahalanobis-gate implausible jumps; never average a disagreement; "age of relocalization."
+- ★ Stream vs K/V (lesh's storage line): stream = dimos-native broadcast, zero new infra, his
+  "for now"; K/V = persistent `marker_id → pose` lookup under `dimos map global`, his "later."
+  Same schema either way — swap the plumbing, not the math. Repo reality: §7 first finding.
+- Semantic search: embed views into vectors, nearest-neighbor place recognition; coarse and
+  aliasing-prone (resemblance, not identity) → weak prior that narrows RANSAC's search.
+
+## 11. Between machines — read-only clone variant
 
 The canonical sibling-clone setup lives in §0 Cold start. Use this variant instead when handing a
 **second machine you don't want full SSH access** a read-only copy of this repo (not `dimos`) —
