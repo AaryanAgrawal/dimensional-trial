@@ -61,16 +61,37 @@ Figures land in `trial/results/figures/` (tracked); raw results in
   recording, queries from another) is the escape from this correlation —
   future work, data permitting.
 
-## Results so far (hk_village3, 120 sections, replay, PGO-silver truth ±soft mid-segment)
+## Results (hk_village3, 120 sections, replay, PGO-silver truth ±decimeter floor on long windows)
 
-All numbers independently re-derived by an adversarial verifier (exact match).
+All numbers independently re-derived by an adversarial verification pass
+(bit-identical reruns; every rate re-counted; mechanisms ablation-tested).
 
 | config | success | risk @0.45 gate | risk @0.60 | risk ≤2% gate exists? | median dt |
 |---|---|---|---|---|---|
 | ransac (today) | 77.5% (93/120) | 22.5% (27/120 accepted wrong) | 22.7% | **no** (best 1/45 @0.959) | 9.7 s |
+| ransac+lastpose | 77.5% (93/120) | seed entrenches busts on sparse submaps (4 failures won by the seed) | — | — | 7.2 s |
 | ransac+fiducial | 95.8% (115/120) | 4.2% (5/120) | 4.2% | yes: thr 0.911, coverage 0.875 (2/105) | 11.0 s |
 | fiducial+judge | 95.0% (114/120, 3 no-marker = failures) | 2.6% (3/117) | 2.6% | ~ (thr 0.82, coverage 0.88) | **0.4 s** |
 
-Fragility note: at N=120 the threshold conclusions swing on single samples —
-raw counts above matter more than the rates. Sharpest single fact: ransac's
-highest-fitness answer of the whole run (0.995) is wrong by 2.9 m / 157°.
+**Read via the gate split (the decisive cut, adversarially established):**
+gate-reached sections (>=50k pts, n=50) — ransac already 50/50; the entire
+fiducial gain is on gate-missed sections (61.4% -> 92.9%), i.e. attempts the
+live stack refuses today (MIN_LOCAL_POINTS skip). The honest fiducial
+headline is **coverage extension into the early/power-on regime + ~25x
+compute reduction when tags are visible** — not an accuracy fix of live
+behavior. Circularity caveat: the marker map shares the truth's PoseGraph
+(90/117 sections had a bar-passing candidate pre-judge, median candidate
+error 0.46 m); decorrelation tests (temporal-split map, different-recording
+map) are the named next step. Scenario label: tracking-recovery /
+power-on-near-tag (candidate ages <=23.5 s) — not kidnap, which severs the
+odometry bridge the candidates ride.
+
+**The confidence finding is circularity-proof and is the headline:** fitness
+does not gate safely on sparse submaps — 27 confident busts at 0.81–0.96
+(failure rotations median 85°, large-rotation wrong-basin class), the run's
+highest-fitness answer (0.995) wrong by 2.9 m/157°, no safe threshold
+exists, the 0.45-vs-0.6 gate debate is moot (both ~22.5% risk), and even in
+the fiducial arm fitness stayed confident-wrong ~2–4% (a 0.995-fitness
+2.9 m bust beat a 0.147 m fiducial candidate). Submap size belongs in the
+confidence reading. Fragility note: at N=120, threshold conclusions swing on
+single samples — quote raw counts.
