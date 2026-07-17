@@ -73,8 +73,8 @@ Next actions.
 
 | What | Where |
 |---|---|
-| The module + all code changes | `dimos` (cloned inside this repo root, §0) — ONE working branch, all 16 commits (PR work + verified priors system). **PR #2808 is OPEN (restored Jul 17)** from fork branch `feat/marker-localization-core` — that remote name is PR-pinned (renaming a fork branch behind a cross-repo PR closes it; learned twice, never again). Local working branch name: `feat/fiducial-relocalization` (Aaryan's naming — becomes the real branch name on dimensionalOS/dimos once the team grants write access; until then the fork is the ONLY PR channel — **never delete it**, it is #2808's head repo). |
-| The PR | **#2808** — https://github.com/dimensionalOS/dimos/pull/2808 |
+| The module + all code changes | `dimos` (cloned inside this repo root, §0) — ONE working branch **`feat/fiducial-relocalization`** (local + fork, identical), all 16 commits: the reviewed marker-localization module + the verified Phase 1 priors system. The fork is the PR channel (fork-and-pull — standard practice, Aaryan confirmed keep, Jul 17; **never delete the fork**). The fork also still has `feat/marker-localization-core` (head of closed #2808) — delete only on Aaryan's word. |
+| The PR | **#3016** — https://github.com/dimensionalOS/dimos/pull/3016 (supersedes #2808, closed Jul 17 with a pointer — same history, correctly-named branch) |
 | The public presentation page | https://aaryanagrawal.me/dimensional |
 | Trial page source | github.com/AaryanAgrawal/portfolio → `src/app/dimensional/` (deploys to aaryanagrawal.me/dimensional via `vercel --prod` from that repo's checkout) |
 | This repo | context/plan/benchmark-protocol/history only — `dimos` sits inside this folder on disk but is its own git repo, gitignored, never tracked as content here |
@@ -96,9 +96,9 @@ Next actions.
       fitness, winning_source)); `module.py` gains `use_last_pose_seed` config (default off = today's
       behavior) + `source=` in the accept log. No source bypasses the judge — confidence never
       overrides fitness (tested). Tests: 6/6 new suite green; fiducial suite 65/66 with the 1
-      failure proven pre-existing at the base commit (LCM-timing flake). Remaining for Phase 1
-      close: decide push/PR form with the team context — see §4 v5.
-- [ ] todo — **Phase 2: fiducial prior**: plug PR #2808's visual `world→map` estimate in as a
+      failure proven pre-existing at the base commit (LCM-timing flake). Pushed to the fork; live in
+      **PR #3016**. Remaining for Phase 1 close: Phase 3 verification runs + team review.
+- [ ] todo — **Phase 2: fiducial prior**: plug the visual module's `world→map` estimate (PR #3016) in as a
       high-confidence-tier prior into that same judge — same universal reading, no bypass — after
       Phase 1 lands.
 - [ ] todo — **Phase 3: sections-harness testing**: cut sections of the recorded PGO maps
@@ -180,21 +180,21 @@ dimos/mapping/relocalization/test_relocalize.py`). Data present: `hk_village3.db
 `go2_short.db`. Still missing for the CUDA queue: `hk_village{1,2,4,5}.db`,
 `go2_hongkong_office.db` → `git lfs pull --include="data/hk_village*.db" --include="data/go2_hongkong_office.db"`.
 
-**Code state — one PR, restored (Jul 17):**
-- **PR #2808 is OPEN again** — the Jul 17 rename mishap is fully reverted: branch renamed back to
-  `feat/marker-localization-core` on the fork, PR reopened, review history intact, now **16
-  commits** (13 reviewed + the 3 verified Phase 1 priors commits, which were already on the
-  branch).
-- **A "no-fork" PR is impossible until Dimensional grants write access**: verified live —
-  `git push origin` → "Permission to dimensionalOS/dimos.git denied to AaryanAgrawal" (403), and
-  the API shows `push: false`. The fork is the only PR channel. **Do NOT delete the fork** — it
-  is the head repo of #2808; deleting it kills the PR permanently.
-- **Aaryan's ask to the team (one message): write access to dimensionalOS/dimos.** Once granted:
-  push `feat/fiducial-relocalization` (his chosen name — currently the LOCAL branch name, same
-  16 commits) directly to their repo, open the same-repo PR from it, then retire the fork.
-- Until then: local working branch = `feat/fiducial-relocalization` (tracks the fork branch,
-  which keeps its PR-pinned name `feat/marker-localization-core` — renaming a fork branch behind
-  a cross-repo PR closes the PR; learned the hard way).
+*(Window 2: after the PR transition below, retrack — `git fetch fork && git branch --set-upstream-to=fork/feat/fiducial-relocalization feat/fiducial-relocalization`; the old fork branch name is now only closed #2808's head.)*
+
+**Code state — one branch, one PR (final form, Jul 17):**
+- **PR #3016 is THE PR** — open, 16 commits, from fork branch `feat/fiducial-relocalization`
+  (Aaryan's chosen name), title "perception/fiducial: marker-map robot localization + pluggable
+  relocalization priors". **#2808 is closed-superseded** with a pointer comment both ways — its
+  review history remains readable there.
+- **Fork-and-pull is the confirmed standing practice** (Aaryan, Jul 17: "if it is then keep doing
+  this") — Aaryan has no write access to dimensionalOS/dimos (live-verified 403), so the fork is
+  the only PR channel. NEVER delete the fork. NEVER rename a fork branch behind an open cross-repo
+  PR (closes it — happened once, reverted).
+- Optional, Aaryan's call: ask the team for write access → branch moves onto their repo, fork
+  retires. Not required for anything current.
+- The fork still carries `feat/marker-localization-core` (closed #2808's head) — harmless;
+  delete only on Aaryan's word.
 
 **Plan-of-record v5** (Aaryan, Jul 16): Phase 1 universal confidence reading via a shared judge
 over pluggable priors — BUILT + verified, local+fork branch `feat/fiducial-relocalization`; Phase 2
@@ -238,7 +238,7 @@ superseded v3): the real-life benchmark is gone. Three phases, then the fusion e
   scored by the same shared judge (wall-only fine-fitness at RERANK_DIST). That score IS the
   universal confidence, published with the answer + winning source. This is lesh's own #2137
   next-step ("we need a match confidence measure").
-- **Phase 2 — Fiducial as prior.** The visual module's `world→map` estimate (PR #2808) proposes
+- **Phase 2 — Fiducial as prior.** The visual module's `world→map` estimate (PR #3016) proposes
   into the same judge as a high-confidence-tier prior — same universal reading, no bypass.
 - **Phase 3 — Testing, offline, dimos-native.** Cut SECTIONS of the recorded PGO maps (villages,
   go2_hongkong_office) and relocalize them against the PGO premap, WITH MARKERS — truth =
@@ -304,7 +304,7 @@ CLI plan — cut by Aaryan Jul 16; full text in git history ≤ e54ea3c; instrum
 > winning source. Answers lesh's #2137 next-step ("we need a match confidence measure"). In
 > progress on branch `feat/reloc-priors`.
 >
-> **Phase 2 Fiducial prior:** PR #2808's visual `world→map` estimate proposes into the same judge
+> **Phase 2 Fiducial prior:** the visual module's `world→map` estimate (PR #3016) proposes into the same judge
 > as a high-confidence-tier prior — same universal reading, no bypass; marker poses via stream
 > (K/V in map global later).
 >
@@ -319,7 +319,7 @@ CLI plan — cut by Aaryan Jul 16; full text in git history ≤ e54ea3c; instrum
 > **Deliverables:** universal confidence measure shipped across all priors · fiducial prior
 > integrated · sections-harness results table · method-manager design (+impl if time).
 >
-> **Open questions:** semantic prior nudge-vs-parallel · stream vs K/V timing · amend #2808 vs
+> **Open questions:** semantic prior nudge-vs-parallel · stream vs K/V timing · review cadence on #3016 vs
 > follow-up · where results live.
 >
 > **Needs:** CUDA machine; review @lesh.
@@ -710,6 +710,12 @@ bad one, STOP it.
   from the CUDA machine. Dimensional's Linear searched: DIM-940/DIM-920/DIM-944/END-76 are the
   carry-forward set (§3); ticket recommendation written, Aaryan posts. Trial repo confirmed
   only-main.
+- **Jul 17 (later) — PR #3016 supersedes #2808, name resolved.** Aaryan confirmed fork-and-pull
+  as standing practice ("if it is then keep doing this") but wanted the branch name right:
+  `feat/fiducial-relocalization` pushed to the fork as a new branch (no rename — renames close
+  cross-repo PRs), successor **PR #3016** opened from it (same 16 commits, title now includes the
+  priors work), then #2808 closed with pointer comments both ways. Never a moment without a live
+  PR. CUDA window active in parallel (task 0 done; LFS-assets blocker found + fixed on the board).
 - **Open items:** see §2 Next actions.
 
 ## Team feedback (direction ledger)
