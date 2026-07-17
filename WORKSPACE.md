@@ -156,9 +156,10 @@ tag is visible — mostly re-plumbing of the pipeline's existing tail stage) · 
 owns `world→map` and decides which mode runs (inputs: fitness + trend, reprojection error,
 ambiguity ratio, jump-implausibility gate, age-of-relocalization — mostly numbers the pipeline
 already computes). Compute-aware: same architecture on every machine tier, only rate/budget config
-differs. Industry-pattern claim (global-search-once + cheap-seeded-tracking + monitor-triggered
-re-search, REP-105 frame conventions, AMCL-style mode split) is from-knowledge; a primary-source
-verification sweep is in flight and its results will be folded in when done. Phase-4 tuning knobs
+differs. Industry-pattern claim verified against primary sources Jul 16 — see "Industry practice,
+primary-sourced" in §7: largely confirmed, with two corrections (tracking is motion-gated or 2-8 Hz,
+not 10-40 Hz; and production systems mostly HALT and ask on lost — auto-triggered global re-search
+is beyond standard practice, not a copy of it). Phase-4 tuning knobs
 could themselves be tuned by an autoresearch-style loop against the benchmark ground truth (same
 `program.md` pattern).
 
@@ -458,6 +459,38 @@ dimos benchmark run --mode visual --route <name> --marker-map <path>
   is wall-clock across ALL workstation CPU cores in parallel (single-core per-call cost is
   seconds; not an onboard number). leshy's comment on the PR: kept open as an artefact of work
   that's a good example for others, just shared with the candidate.
+- **Industry practice, primary-sourced (Jul 16 — 5-lens research sweep: REP-105 text, Nav2/AMCL
+  docs+source, AMR vendor manuals, SLAM papers, Spot GraphNav SDK docs):**
+  - **Never rewrite odometry — universal.** REP-105 verbatim: the `odom` frame "is guaranteed to
+    be continuous… without discrete jumps" and drifts "without any bounds"; the localizer "does
+    not broadcast the transform from map to base_link… it broadcasts the transform from map to
+    odom." dimos's `world→map` architecture matches the standard exactly.
+  - **Tracking is motion-gated or 2-8 Hz, not 10-40 Hz** (corrects the from-knowledge figure).
+    AMCL's expensive update fires only after the robot moves `update_min_d`=0.25m or
+    `update_min_a`=0.2rad — scan-driven and motion-gated, no fixed rate. SICK NAV350/LiDAR-LOC:
+    ~8 Hz. Spot GraphNav: "updates localization at least twice a second." Directly borrowable for
+    dimos: today's module burns a full search every 2s even parked — a motion gate is a free win.
+  - **On "lost," production systems mostly HALT and ask — automatic kidnap recovery is NOT
+    standard** (corrects the from-knowledge claim). Nav2 ships `ReinitializeGlobalLocalization`
+    as a primitive but wires it into ZERO default behavior trees (verified by grepping the shipped
+    XML). MiR: lost → error after timeout, operator re-places the position. Omron: manual
+    re-localize via UI; health signal = localization score (<70% → act). Spot GraphNav: maintains
+    a lost/stuck assessment and "will refuse to navigate autonomously" when lost — fix is
+    operator/re-record. So: health *signals* are ubiquitous; auto-triggered re-search is beyond
+    standard practice (a design choice, not a copy) — and a v1 monitor that just declares lost +
+    stops trusting is itself industry-standard behavior.
+  - **Fiducials in production — solid precedent, two grades.** SICK NAV350: reflectors ARE the
+    primary continuous localization (≥3 visible, ~8 Hz, output = position + quality metric, the
+    vehicle controller decides how much to correct). Spot GraphNav: AprilTags REQUIRED at every
+    Autowalk mission start and in "feature deserts," opportunistic loop-closure anchors otherwise.
+    Locus: barcode fiducials as fine anchors over SLAM. Go2's camera-based marker prior sits in a
+    well-trodden lane.
+  - **Live trajectory re-optimization is standard only in SLAM-grade systems** — Cartographer
+    (background PGO "periodically optimized"), LIO-SAM (iSAM2 on node insertion), ORB-SLAM3 (BA
+    in an independent thread) — all reconciling jumps with smoothness via the dual-frame/dual-graph
+    split; FAST-LIO2 is the deliberate counter-example (odometry-only, no loop closure, by the
+    authors' own description). Deferring live PGO while operating on premaps matches common
+    practice.
 - *(CUDA-machine window: once §2 "Tasks — CUDA machine" has an assigned task, append the
   resulting numbers here, plus anything that behaved differently than this doc predicted.)*
 
