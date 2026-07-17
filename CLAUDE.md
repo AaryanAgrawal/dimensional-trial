@@ -77,6 +77,14 @@ say so plainly — agreement is not a deliverable, and an echo helps no one. "I 
   finished: `[x] done — <one-line result>` and push. Never work a task another window has already
   marked `doing`.
 
+## Workflows (Aaryan, Jul 17)
+
+**Always use ultracode workflows for everything substantive** — recon sweeps, design, writing
+deliverable copy, verification of results, code review. Solo tool-calls are for trivial mechanical
+steps and orchestration glue only. Findings from workflow agents get adversarially verified before
+they land on the board (the night of Jul 17 is the template: every headline number independently
+re-derived, two claims reframed by the verifiers).
+
 ## When stuck
 
 State the assumption, name the simpler path, ask only if it's a real fork in the road — otherwise
