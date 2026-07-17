@@ -20,9 +20,19 @@ dimos/
 !/office_markers.yaml
 !/site
 
-# trial/ — only the benchmark instrument (code + its yaml fixture), nothing else
+# trial/ — only the benchmark instruments (code + yaml fixtures), nothing else
 /trial/*
 !/trial/scripts
+!/trial/harness
+
+# trial/harness — the offline confidence benchmark (sections harness); out/ stays untracked
+/trial/harness/*
+!/trial/harness/*.py
+!/trial/harness/*.md
+!/trial/harness/tests
+/trial/harness/tests/*
+!/trial/harness/tests/*.py
+/trial/harness/out/
 
 /trial/scripts/*
 !/trial/scripts/*.py

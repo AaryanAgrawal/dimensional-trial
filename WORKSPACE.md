@@ -615,6 +615,70 @@ test generalization"* — is lesh's cross-run test, documented and unrun.
   shrinks the denominator** — unfinished frames are dropped and `succ = ok.mean()` averages only
   completed ones, so a budget overrun reads as success rather than failure.
 
+### CUDA-window — Jul 17 night: recon digest + benchmark design (all claims execution-verified by a 6-agent sweep; full reports in session scratchpad, load-bearing facts here)
+
+**Corrections to earlier beliefs (each verified by running code):**
+- **PGO is NOT bit-deterministic**: same input, same box, 3 runs → keyframe count stable (220) but
+  optimized poses differ up to **6.0 cm**, one loop-closure target flipped between runs, TOTAL_SPREAD
+  4.955 (Mac) / 4.959 / 4.960 (here). No seed knob exists. **~6 cm = the silver-truth noise floor**;
+  every "error vs PGO" number carries it as an error bar. (There is NO PGO accuracy eval anywhere
+  in-repo — TOTAL_SPREAD is self-consistency only; PGO-as-truth remains unproven, measured tonight
+  via marker scatter at real n.)
+- **The published fitness is the STAGE-2 wall-only Tukey-ICP fitness** of the winning candidate
+  (relocalize.py:237,248), not the final full-cloud ICP fitness. This exact number is what the
+  confidence benchmark evaluates. Accept gate: fitness >= 0.45 (module.py:56,158; docs' 0.6 stale).
+- **`eval.py` crashes on china_office** (verified: LookupError at .last()) — its `lidar` stream
+  exists with 0 rows; no fallback to livox/pointlio streams.
+- **BUG in our own branch (PR #3016 code): `visual_relocalization.py:84,90` never passes
+  `distortion_model` to PnP** — Go2 camera is `equidistant` FISHEYE (front_camera_720.yaml); its 4
+  coeffs get misread as radtan k1,k2,p1,p2. `marker_detect.py:91,115` and benchmark cli.py do pass
+  it. Fix + test = Phase 2 work item (tonight).
+- **#2137's data-prep code was never committed anywhere** (`dimos.mapping.prepare` is a dangling
+  reference; blobs committed opaque). Empirically recovered: global_map = 0.05m two-pass PGO voxel
+  map of go2_hongkong_office; 60 evenly-spaced test centers, body-frame accumulated submaps
+  (20-57k pts), gt = SLERP-interpolated PGO pose. Its 2 defects confirmed at exact lines (5 frames
+  hard-excluded incl. 3 "not disambiguable without a pose prior" — exactly the frames a fiducial
+  prior must re-include; timeout silently shrinks the success denominator — results.tsv rows show
+  it happening in real runs).
+- **`color_image.pose` semantics differ per recording** (verified numerically): hk_village3 =
+  world_T_optical (correct for DetectMarkers); go2_short = world_T_base_link (markers would be
+  misplaced by the mount); go2_china_office = NO poses (0/1951 — DetectMarkers yields nothing
+  without pose_fill re-posing); china_office = matches NOTHING tested (unknown provenance — derive
+  camera pose from go2_odom/tf instead).
+- **china_office lidar for PGO**: only `gt_pointlio_lidar` satisfies PGO's contract ('odom'-frame
+  clouds + poses). livox/go2_lidar have no obs.pose; pointlio_lidar clouds are sensor-frame
+  (50 keyframes/0 loops on a 300-frame probe — geometrically wrong). Its `april_tags_raw` = 3,959
+  camera_T_tag PoseStamped rows (ids {1,3,5,92,93,94,96,97,98}, tag36h11 verified, ~0.1 m tags,
+  per-row health: reproj_px/sharpness/speed) — written by an external recorder, no in-repo writer.
+- **No real marker map exists in-repo** (office_markers.yaml is an explicit placeholder);
+  map_T_tag must be derived from the PGO run itself (eval.py pattern) — same as a deployment
+  survey would, so fine for evaluating the PRIOR (the judge still decides).
+- **`dimos map global` writes no machine-readable trajectory** — silver truth requires re-running
+  PGO offline (`lidar.transform(PGO()).last().data`; village3 ≈ 5 s). `--device CUDA:0` only
+  accelerates VoxelGrid accumulation; relocalize.py is legacy-o3d CPU-only; PGO is CPU.
+
+**Benchmark design (decided, building now in `trial/harness/`):**
+- **Sections harness**: per query frame — trailing-window VoxelGrid accumulation (carve ON,
+  live-mimic) until >=50k pts (the live gate), re-anchored to the query frame's body frame;
+  relocalize against the offline-rebuilt PGO premap (carve OFF, CLI-mimic); truth =
+  world_corrected_T_body(ts) from the same PGO graph. Success = <1 m AND <15° (#2137-comparable).
+- **Full accounting, no exclusions**: every frame counted; crashed/unfinished = failure in the
+  denominator (fixes both #2137 defects); per-frame seeds = frame_idx (o3d+np+random),
+  OMP_NUM_THREADS=1 before o3d import, process-per-frame pool, sorted order.
+- **Confidence quality is the headline metric** (trial/harness/confidence.py, 8/8 unit tests
+  green): risk–coverage curve (selective prediction) → data-grounded accept threshold vs the 0.45
+  folklore; AUROC (does fitness rank success); reliability/ECE (is 0.7 "70% sure"); operating
+  points at 0.45 AND 0.6 (answers the code-vs-docs discrepancy with data).
+- **Configs**: ransac-only (today's stack) · +last-pose (Phase 1 flag) · +fiducial (Phase 2, after
+  the branch work) — same judge, same frames, same seeds; per-source attribution from
+  winning_source.
+- **Marker-agreement experiment** (PGO-accuracy evidence at real n): DetectMarkers per-sighting
+  world poses, raw vs graph.correct()ed scatter per marker id — hk_village3 first;
+  china_office via derived camera poses (go2_odom + recorded-tf mount) vs gt_pointlio_lidar PGO,
+  clearly labeled. If PGO doesn't tighten scatter, vs-PGO numbers demote to indicative.
+- **Truth labels on every number**: `replay` rung, truth = "PGO silver (±6 cm floor)" or "marker
+  agreement (independent)". Nothing labeled plain "ground truth".
+
 ## 8. Runbook — day-of operational essentials
 
 **Self-survey installer flow** (no tape measure, condensed from the execute-verified flow):
