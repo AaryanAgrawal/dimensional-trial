@@ -35,8 +35,10 @@ recordings:
   hk_village4: {role: EXCLUDED, reason: 2 physical tags share id 10 (cluster check)}
   hk_building_all_around:
     role: PGO-truth-only benchmark run (replaces markers_go2, Aaryan Jul 17) —
-          sections vs qualified PGO truth + the 192 m drift profile; NO marker
-          referee possible (VERIFIED no tags: 0 detections in 663 sampled frames)
+          measured 83.3% (20/24) ransac, 0.028 m median on successes, 24.6 s median
+          solve on the 1.4M-pt premap; failures at fitness 0.32-0.66 (the 0.45 gate
+          correctly rejects 3 of 4 HERE — unlike the villages); only 3 loop closures,
+          truth thin; NO marker referee (VERIFIED tag-free, 0/663 sampled frames)
     referee_tag: null
   go2_hongkong_office:
     role: PGO-truth-only benchmark run — no tags (verified, 0/398 sampled frames);
