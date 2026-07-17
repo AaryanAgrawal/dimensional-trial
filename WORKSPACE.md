@@ -86,6 +86,24 @@ Next actions.
 
 ## 2. Next actions
 
+**NAMING (Aaryan, Jul 17 morning — use these terms everywhere from now on):**
+- **"Relocalization benchmark"** = the MARKER instrument: physical tags as external truth —
+  the revisit test (observe → walk → observe again), marker scatter, marker-truth scoring,
+  the duplicate-id/cluster validity check. (`trial/harness/markers.py`,
+  `allaround_profile.py`, the six-village sweep.)
+- **"Relocalization confidence"** = the SEPARATE track: the universal confidence reading
+  (pluggable priors → one shared judge → one published score + source) and its quality
+  analysis — risk–coverage, AUROC, calibration, data-grounded accept gates.
+  (`priors.py`/`relocalize.py` on the branch; `trial/harness/{prep,run_bench,analyze,confidence}.py`.)
+- **Runtime split (Aaryan, Jul 17): relocalization confidence RUNS REAL-TIME** — it is what
+  decides between priors on-robot (today: one judge, source-blind, winner-take-all — live on the
+  branch) and later fuses them (Phase 4 arbiter: calibrated composite confidence = fitness +
+  submap size + source tier + age + marker-innovation; fuse only agreeing candidates, never
+  average a disagreement). **The relocalization benchmark runs OFFLINE** as the referee that
+  calibrates those knobs; its runtime echo = the live marker-innovation spot-check.
+- Morning Linear tidy-up (remote, Aaryan or on your word): retitle DIM-1254 to match
+  ("relocalization benchmark (marker-truth, offline)"), keep DIM-1252 as the confidence track.
+
 **GOAL OF RECORD (Aaryan, Jul 17, via chat — window 2 executes end-to-end, best-judgment
 decisions):** (1) an industry-backed way to **benchmark relocalization confidence** — not just
 success rate, but whether the published confidence *predicts* true error (risk–coverage /
