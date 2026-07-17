@@ -136,7 +136,8 @@ Post-review direction for PR #2808, four phases:
 - **Phase 3 — Benchmark all.** odom-only vs. RANSAC→ICP vs. marker→ICP, offline (villages +
   go2_hongkong_office) and live.
 - **Phase 4 — Method manager + runtime degradation.** Parallel/toggleable/confidence-weighted
-  method manager, compute-aware, tracking "age of relocalization."
+  method manager, compute-aware, tracking "age of relocalization." Knobs tuned by autoresearch
+  against the benchmark (committed to the plan, Aaryan Jul 16 — see the autoresearch block below).
 
 **End state: fusion.** Relocalization becomes a package, not a module — lidar-ICP and visual-tag
 become **sources** under it (`dimos/mapping/relocalization/{base,lidar,visual,fusion}.py`); each
@@ -159,9 +160,19 @@ already computes). Compute-aware: same architecture on every machine tier, only 
 differs. Industry-pattern claim verified against primary sources Jul 16 — see "Industry practice,
 primary-sourced" in §7: largely confirmed, with two corrections (tracking is motion-gated or 2-8 Hz,
 not 10-40 Hz; and production systems mostly HALT and ask on lost — auto-triggered global re-search
-is beyond standard practice, not a copy of it). Phase-4 tuning knobs
-could themselves be tuned by an autoresearch-style loop against the benchmark ground truth (same
-`program.md` pattern).
+is beyond standard practice, not a copy of it).
+
+**Phase 4 tuning = autoresearch (Aaryan, Jul 16 — part of the plan, not a maybe).** The
+monitor/fusion knobs (fitness gates, mode-switch thresholds, hysteresis, jump-gate width,
+per-tier rate/compute budgets) get tuned by an autoresearch loop in the exact #2137 pattern:
+- **One modifiable file** — the monitor/fusion policy (thresholds + mode logic), nothing else.
+- **A read-only harness** — the Phase 1 benchmark with its start/end-tag ground truth (replay
+  recordings + kidnap variant), fixed time budget, deterministic seeds. This is the "better data —
+  fiducial markers as ground truth" the #2137 next-steps section asked for.
+- **A results ledger** (`results.tsv` style) with a strict metric hierarchy — return error vs
+  fiducial GT, then kidnap recovery time, then compute cost — keep/discard per experiment, every
+  row reproducible.
+The agent grinds the knob space against the referee; humans review the ledger, not the guesses.
 
 ## 5. Linear ticket (draft, ready to post)
 
