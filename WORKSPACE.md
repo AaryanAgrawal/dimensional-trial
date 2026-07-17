@@ -985,13 +985,32 @@ ready to post to Dimensional's own tracker; the "relocalization" vs. "odometry c
 vocabulary distinction was corrected across the docs; PR #2137 vs. `loop_closure/eval.py` was
 disambiguated (§6, "don't conflate these two").
 
-**Jul 17 (~2:25 AM) — lesh (Discord, via Aaryan):**
+**Jul 17 (1:44–2:25 AM) — lesh (Discord, Aaryan asked "do we have proof anywhere of PGO being
+accurate?"):**
+- **PGO verification protocol = the marker revisit test**: observe the marker, do a very large
+  walk, come back, observe again — PGO should make the marker locations overlap. (Confirms the
+  method this window implemented independently the same night.)
+- `dimos map global hk_building_all_around --pgo` = the large-walk example (no markers, but at
+  that scale drift is visually obvious; "PGO fails are usually very obvious"). Nearly impossible
+  data for Go2 lidar (outdoors, pedestrians) yet the pipeline does well on it.
+- **"We have mid360 scans of long walks then staring at markers for that reason"** — purpose-built
+  production-lane verification recordings EXIST. LFS catalog candidates (checked same night):
+  `recording_go2_mid360_2026-05-29_4-45pm-PST.db` (+`_corrected` twin), `markers_go2.db`,
+  `go2_mid360_stairs.db`, `hk_building_{all_around,elevator,enterance,park}.db`.
+- Rerun tip: with `--pgo` turn off the raw-map layer — it renders raw and PGO maps overlapped.
+- Realtime PGO: nice-to-have, "algo runs 30x realtime so it's easy," just not done because of
+  Go2 downprioritization — "last thing worth investing in though, it's a one day job."
 - Production platforms carry better lidars — **mid360 focus for now** ("it's everywhere"); recent
   research may eventually fold Go2 into the "serious lidar processing" codebase via good raw
   Go2 lidar data.
 - **Both PGO and relocalization algos are Go2-specific** (WebRTC data path) — not transferable to
   other platforms.
-- Realtime PGO: "last thing worth investing in though, it's a one day job."
+
+Same-night data note vs lesh's "PGO fails are usually very obvious": the revisit test at scale
+found two NON-obvious classes — village3's ~1.4 m misplaced revisit pass (map overlay looks
+fine; stiff-odom-variance artifact) and china_office's 10–100× degradation of already-tight
+PointLIO (map still renders crisp). Both only show against a physical marker anchor — which is
+presumably exactly why the team records marker-staring walks.
 
 Acted on (same night): all benchmark numbers re-labeled by lane (village3 = Go2 lane, explicitly
 non-transferable per lesh; china_office = the mid360+PointLIO production lane — its finding that
