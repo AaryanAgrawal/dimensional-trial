@@ -169,20 +169,21 @@ Rules reminder inside the section (one line): claim a task by marking `[~] doing
 
 **Aaryan is now driving from window 2 (the CUDA machine).** Window 1 (laptop) is standby.
 
-**Code state — ONE branch, one intended PR:**
-- Fork branch **`feat/fiducial-relocalization`** (renamed from `feat/marker-localization-core`)
-  carries ALL 16 commits: the 13 reviewed PR commits + 3 new, adversarially verified commits
-  (Phase 1 priors/universal-confidence system — see §2 Phase 1 item for exactly what landed).
-- **PR #2808 is currently CLOSED — by mistake.** The branch rename orphaned the PR's head ref:
-  GitHub auto-retargets renames only for same-repo PRs, NOT cross-repo (fork→upstream) PRs.
-  Lesson recorded. Restore options when ready: (a) rename the fork branch back + reopen #2808
-  (most likely restores the full review thread; the 3 new commits are already on the branch),
-  (b) try reopening as-is, (c) fresh PR from `feat/fiducial-relocalization` (clean name, loses the
-  #2808 review thread).
-- **REMOTE FREEZE (Aaryan, Jul 17): no dimos-remote mutations of any kind** — no pushes, no
-  PR reopen/create, no renames — **until the work is verified** ("we will only do it once
-  things are verified"). Verification = the §2 CUDA queue (tasks 0–8). This trial repo's `main`
-  is the one exception (Aaryan: "put it all in" — the coordination channel stays live).
+**Code state — one PR, restored (Jul 17):**
+- **PR #2808 is OPEN again** — the Jul 17 rename mishap is fully reverted: branch renamed back to
+  `feat/marker-localization-core` on the fork, PR reopened, review history intact, now **16
+  commits** (13 reviewed + the 3 verified Phase 1 priors commits, which were already on the
+  branch).
+- **A "no-fork" PR is impossible until Dimensional grants write access**: verified live —
+  `git push origin` → "Permission to dimensionalOS/dimos.git denied to AaryanAgrawal" (403), and
+  the API shows `push: false`. The fork is the only PR channel. **Do NOT delete the fork** — it
+  is the head repo of #2808; deleting it kills the PR permanently.
+- **Aaryan's ask to the team (one message): write access to dimensionalOS/dimos.** Once granted:
+  push `feat/fiducial-relocalization` (his chosen name — currently the LOCAL branch name, same
+  16 commits) directly to their repo, open the same-repo PR from it, then retire the fork.
+- Until then: local working branch = `feat/fiducial-relocalization` (tracks the fork branch,
+  which keeps its PR-pinned name `feat/marker-localization-core` — renaming a fork branch behind
+  a cross-repo PR closes the PR; learned the hard way).
 
 **Plan-of-record v5** (Aaryan, Jul 16): Phase 1 universal confidence reading via a shared judge
 over pluggable priors — BUILT + verified, local+fork branch `feat/fiducial-relocalization`; Phase 2
