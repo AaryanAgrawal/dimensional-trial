@@ -1012,6 +1012,17 @@ fine; stiff-odom-variance artifact) and china_office's 10–100× degradation of
 PointLIO (map still renders crisp). Both only show against a physical marker anchor — which is
 presumably exactly why the team records marker-staring walks.
 
+Same-night follow-through on lesh's pointers (window 2):
+- Pulled `markers_go2.db` (0.33 GB) — **unusable for PGO: 0/795 lidar obs carry a real pose**
+  (detector-dev recording, likely #2044-era). Noted, set aside.
+- Pulled `recording_go2_mid360_2026-05-29_4-45pm-PST.db` (3.3 GB) — **the purpose-built one**:
+  13-min, >100 m walk, 6 tag ids each revisited at gaps up to ~12 min, and BOTH lidar chains in
+  one file (`lidar` go2-WebRTC + `fastlio_lidar` mid360/FAST-LIO, both fully posed; fastlio scans
+  ~15× denser: 3,926 vs 265 pts first frame; the two 'world' frames are independent). Two-lane
+  marker-revisit experiment (`trial/harness/two_lane_markers.py`): same walk, same tags, same
+  pixels — lesh's verification on the Go2 lane AND the production lane simultaneously. RUNNING
+  as of this write; results land below when done.
+
 Acted on (same night): all benchmark numbers re-labeled by lane (village3 = Go2 lane, explicitly
 non-transferable per lesh; china_office = the mid360+PointLIO production lane — its finding that
 PGO degrades PointLIO 10–100× is the production-relevant one); the trial's value story reframed
