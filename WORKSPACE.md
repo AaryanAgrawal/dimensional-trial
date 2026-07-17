@@ -503,14 +503,29 @@ dimos benchmark run --mode visual --route <name> --marker-map <path>
 (score 0.0984 f67→1; 0.0653 f92→0), PGO pass 1 35.6× realtime / pass 2 41.9× realtime, ~2 min
 wall. Wrote `go2_short.pc2.lcm` + `.rrd`. Ran on `go2_short`, not a village — see next item.
 
-**BLOCKER, and it fails silently — the village recordings are not on this box.** §0's
-`GIT_LFS_SKIP_SMUDGE=1` means no LFS assets were pulled: `data/` holds only `china_office.db`,
-`go2_china_office.db`, `go2_short.db`. No `hk_village*`, no `go2_hongkong_office`. And
-`SqliteStoreConfig.must_exist` defaults `False` (`sqlite.py:43`), which `eval.py:73` never
-overrides — so a missing `.db` is **silently created empty and the eval prints zeros** instead of
-erroring. CUDA tasks 2-5 run today would produce clean-looking zeros. Fix first, then verify
-non-zero counts via `dimos mem summary <db>` before trusting any number:
-`git lfs pull --include="data/hk_village*.db" --include="data/go2_hongkong_office.db"`
+**CORRECTED — an earlier revision of this section claimed the villages were missing and that
+`eval.py` would silently print zeros. Both parts were wrong; retracted here rather than edited
+away.** The false claim came from an `ls data/ | head` that truncated the listing (`hk_village3.db`
+sorts *after* `go2_short.db`), and a source-read that missed `get_data`. Corrected by running it:
+
+- **`hk_village3.db` was present all along** (340 MB). Absent: villages 1/2/4/5/6 +
+  `go2_hongkong_office` — but see next point, absence appears to self-heal.
+- **`get_data` (`utils/data.py:259`) auto-pulls AND decompresses from LFS on demand**, and
+  `eval.py` calls it — so a missing recording is very likely fetched, not silently zeroed. The
+  `must_exist` concern was reasoned from source without executing it. **Still unverified:** the
+  absent-village path (an `eval.py hk_village4` run was cut off before it completed). Verify
+  before trusting any village number, but do NOT treat this as a blocker.
+
+**VERIFIED — task 4 partial, and the existing benchmark reproduces across machines.**
+`uv run python -m dimos.mapping.loop_closure.eval hk_village3` on this box:
+**`TOTAL_SPREAD=4.959`** vs the Mac CPU run's **4.955** (§7 above) — a 4 mm delta across two
+machines and two OSes, so the metric is near-deterministic and the Mac number is trustworthy.
+Loop closures found: score 0.0302 s198→t119; 0.0152 s216→t45. `WALL_TIME=17.83s`.
+**`TOTAL_PGO_TIME=4.87s` vs the Mac's 2.22s — the CUDA box is 2.2× SLOWER at PGO.** Expected on
+reflection (PGO is GTSAM/iSAM2 on CPU; the GPU does nothing for it, and `eval.py` takes no
+`--device` flag at all) — but it undercuts the "villages need the CUDA machine" premise: **the
+CUDA box only helps the voxel/map-rebuild half (`dimos map global --device CUDA:0`), not the eval
+itself.** Worth knowing before scheduling the full 6-village sweep here.
 
 **Undocumented Linux setup, once per boot** — without it every `dimos run` dies with
 `CalledProcessError` before doing anything (dimos names the exact cmd in its own error):
