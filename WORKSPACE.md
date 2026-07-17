@@ -1015,6 +1015,28 @@ evidence per Aaryan Jul 17 — awaiting the purpose-built mid360 walk instead). 
 kind only show against a physical marker anchor — which is
 presumably exactly why the team records marker-staring walks.
 
+**Jul 17 morning — lesh's named instruments, executed (villages + hk_building_all_around;
+china_office excluded per Aaryan):**
+- **Marker-revisit across ALL SIX villages** (672 sightings; spatial-cluster validity check run
+  per village): v1/v3/v5/v6 carry a single physical tag (stats valid); **v2 and v4 have MULTIPLE
+  physical tags sharing id 10** (3 and 2 cm-tight clusters, 2.4–4.8 m apart — naive same-id
+  revisit stats invalid there; excluded from the verdict).
+- **Verdict on lesh's protocol, Go2 lane, 4 valid recordings — 60 s+ loop-return gaps (median
+  raw→PGO, m):** v1 0.600→0.353 · v3 0.934→0.280 · v5 0.368→0.345 · v6 0.674→0.150. **PGO
+  improves loop-return agreement in 3/4, neutral in 1, never worse at this gap — his claim HOLDS
+  at the protocol's intended case.** Mid-gap (10–60 s) is hit-or-miss (v6 better, v1 mixed,
+  v3/v5 worse — the stiff-chain spread artifact is common but not universal). Policy unchanged:
+  qualify PGO truth per recording via this test.
+- **Duplicate-id lesson for DIM-920/fiducial prior:** same-id physical tags poison a marker map
+  and would poison fiducial fixes (wrong-room class reintroduced). Deployment rule: unique ids
+  per space (or multi-hypothesis handling in the prior). The harness now detects this
+  (cluster check) before trusting any marker map.
+- **hk_building_all_around** (`--pgo` rrd written; profile figure + JSON): 192 m walk, 231 s,
+  441 keyframes, only 3 loop closures (all at the return-to-start); PGO's own correction:
+  median 1.01 m, max 1.45 m (~0.75% of path). At this scale drift IS eyeball-visible in the
+  raw-vs-PGO overlay — lesh's point stands for LARGE walks; the marker test remains the
+  instrument for sub-meter failures. Open: `rerun dimos/hk_building_all_around.rrd`.
+
 Same-night follow-through on lesh's pointers (window 2):
 - Pulled `markers_go2.db` (0.33 GB) — **unusable for PGO: 0/795 lidar obs carry a real pose**
   (detector-dev recording, likely #2044-era). Noted, set aside.
