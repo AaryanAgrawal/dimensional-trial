@@ -1058,6 +1058,27 @@ from probe_gravity_walkover.py (repro: hk_village1 frame 831). Caveat: 3/72 rate
 stride (~40 frames between sections; seed maximally stale) — mechanism stride-independent, rate
 may differ live.
 
+**Jul 17 — MID360 DECORRELATED BENCHMARK (replay, 40 sections, PGO-silver truth + tag-4 referee;
+results jsons in harness out/, instrument `trial/harness/referee_verdict.py`, commit 621b92a):**
+- ransac 52.5% (21/40) -> ransac+fiducial 72.5% (29/40) -> fiducial+judge 37.5% (15/40 full
+  denominator; all 15 fix-covered sections succeed, median 6.8 s vs ransac's ~56-62 s). All 8
+  flips F->S (0 regressions), errors 21-72 m -> 0.05-0.10 m, judge fitness 0.94-0.99 — each flip
+  a MERIT win (fiducial fitness > ransac's counterfactual from the ransac-only run, so the
+  walkover bug above cannot explain them; per-source attribution 28/12 may shift post-fix).
+- **Referee verdict (the decorrelation answer): the within-section test is EMPTY on this walk** —
+  4/40 sections saw tag 4 in-window (159/313 start, 5869/6024 end), NONE carry fiducial fixes
+  (referee bookends the walk; fiducials live mid-walk; nearest miss 6.3 s). Both arms bit-identical
+  there (|dT|=0). What the referee DOES certify: T_true agrees with consensus 0.06-0.26 m at all 4
+  (truth is hard exactly where the referee watches; PGO rebuild wobble there 1-7 cm vs up to
+  1.8 m mid-walk — measured pkl-vs-bak); it confirms all 4 PGO verdicts incl. convicting frame
+  159's confident bust (fitness 0.58 > gate, 26 m wrong, referee sees 25.2 m). vs village3
+  77.5->95.8: the mid-walk gain stays truth-correlated (44/45 candidates in-bar pre-judge, same-
+  graph map — same circularity class); the referee-ID split decorrelates the INSTRUMENT, not the
+  fixes. True decorrelation still needs temporal-split/cross-recording maps or referee-covisible
+  fiducials (deployment note: place a fiducial in the referee's view field).
+- Ops: two sessions raced the same result files (~12:29-12:36); deterministic fields verified
+  equal across writes, dt/wall contended (ransac+fiducial's 113.7 s median is ~2x inflated).
+
 **Jul 17 — CROSS-RECORDING CONFIDENCE (pooled, N=232, triple-verified, commit 35cff6c):**
 - **The design conclusion for the runtime track: fitness ranks correctness well WITHIN an
   environment (AUROC v6 1.000, office 1.000, v5 0.94, v1 0.92, v3 0.84) but thresholds do NOT
