@@ -15,7 +15,7 @@ uv run python ../trial/harness/run_bench.py hk_village3 --config ransac
 uv run python ../trial/harness/run_bench.py hk_village3 --config ransac+fiducial \
     --fiducial-fixes ../trial/harness/out/markers/hk_village3.fixes.json
 uv run python ../trial/harness/analyze.py hk_village3.ransac hk_village3.ransac_fiducial
-uv run python ../trial/harness/china_markers.py                     # PGO-accuracy evidence at scale
+# uv run python ../trial/harness/china_markers.py    # EXCLUDED from evidence (Aaryan Jul 17: don't use china_office)
 uv run pytest ../trial/harness/tests/                               # confidence math unit tests
 ```
 
@@ -50,9 +50,10 @@ Figures land in `trial/results/figures/` (tracked); raw results in
   pairs have no drift to correct and drown the loop-return pairs the test is
   about. Measured consequences so far: village3 — PGO 3.3× better at 60 s+
   loop returns, 3× WORSE at 30–60 s mid-segment (interpolated corrections
-  bend the trajectory between anchors); china_office — PointLIO is already
-  3–10 cm consistent over 5–18 min and the offline PGO on top degrades it
-  10–100×. "PGO = silver truth" is a per-recording claim, never a constant.
+  bend the trajectory between anchors). (A china_office measurement existed
+  but is EXCLUDED per Aaryan Jul 17 — don't cite it; the production-lane
+  version should come from the purpose-built mid360 walk recording instead.)
+  "PGO = silver truth" is a per-recording claim, never a constant.
 - **Fiducial fixes are honest about circularity**: the marker map derives
   from the same PoseGraph as the truth (exactly what a deployment survey
   would produce, but truth-correlated); candidates are built from real

@@ -674,8 +674,8 @@ test generalization"* — is lesh's cross-run test, documented and unrun.
   winning_source.
 - **Marker-agreement experiment** (PGO-accuracy evidence at real n): DetectMarkers per-sighting
   world poses, raw vs graph.correct()ed scatter per marker id — hk_village3 first;
-  china_office via derived camera poses (go2_odom + recorded-tf mount) vs gt_pointlio_lidar PGO,
-  clearly labeled. If PGO doesn't tighten scatter, vs-PGO numbers demote to indicative.
+  (china_office variant EXCLUDED per Aaryan Jul 17; production-lane version to come from the
+  purpose-built mid360 walk recording). If PGO doesn't tighten scatter, vs-PGO numbers demote to indicative.
 - **Truth labels on every number**: `replay` rung, truth = "PGO silver (±6 cm floor)" or "marker
   agreement (independent)". Nothing labeled plain "ground truth".
 
@@ -731,9 +731,13 @@ at N=120 threshold conclusions swing on single samples):**
   answer (0.995) is wrong by 2.9 m/157°. The 0.45-vs-0.6 debate is moot — measured.
 - Live-stack note: all failures are sub-50k-pt submaps — MIN_LOCAL_POINTS is what protects the
   robot today, not fitness. fiducial+judge = lesh's "RANSAC stands down" case: ~24× cheaper.
-- china_office marker revisit (n=3,708, 9 ids): PointLIO already 3–10 cm consistent at 5–18 min
-  gaps; offline PGO on top DEGRADES it 10–100×. With village3's stratified result (§ above):
-  **"PGO = silver truth" is a per-recording claim — qualify it with the marker revisit test.**
+- ~~china_office marker revisit (n=3,708, 9 ids): PointLIO already 3–10 cm consistent at 5–18 min
+  gaps; offline PGO on top DEGRADES it 10–100×.~~ **EXCLUDED (Aaryan, Jul 17 morning: "don't use
+  china office recording") — do not cite china_office-derived numbers anywhere.** The
+  per-recording-truth principle stands on village3 alone: **"PGO = silver truth" is a
+  per-recording claim — qualify it with the marker revisit test.** The production-lane version of
+  this measurement should come from `recording_go2_mid360_...` (lesh's purpose-built walk, lane B)
+  instead — experiment scaffolded, paused.
 - **Adversarial round 2 (circularity verifier, PARTIAL) — REFRAMING adopted for all claims:**
   - **Gate split is the decisive cut**: gate-reached sections (≥50k pts, n=50): ransac 50/50 —
     already 100%, zero improvement available. Gate-missed (n=70): 61.4% → 92.9%. The entire
@@ -807,10 +811,8 @@ at N=120 threshold conclusions swing on single samples):**
 > reconciles loop-return drift (0.93→0.28 m) but misplaces one revisit pass ~1.4 m even at
 > loop-anchor keyframes — ablation-verified mechanism: stiff odom variance (1e-4 m²/edge vs
 > ≥0.015 m² loops) spreads the end-of-drive correction where drift didn't occur; non-monotonic
-> drift is unrepresentable. china_office: PointLIO is already 3–10 cm consistent at 5–18 min
-> revisit gaps and PGO on top degrades it 10–100×. Wherever PGO poses are treated as ground
-> truth, this per-recording check is worth running; the odom/loop variance ratio looks like the
-> lever.
+> drift is unrepresentable. Wherever PGO poses are treated as ground truth, this per-recording
+> check is worth running; the odom/loop variance ratio looks like the lever.
 
 ## 8. Runbook — day-of operational essentials
 
@@ -1008,8 +1010,9 @@ accurate?"):**
 
 Same-night data note vs lesh's "PGO fails are usually very obvious": the revisit test at scale
 found two NON-obvious classes — village3's ~1.4 m misplaced revisit pass (map overlay looks
-fine; stiff-odom-variance artifact) and china_office's 10–100× degradation of already-tight
-PointLIO (map still renders crisp). Both only show against a physical marker anchor — which is
+fine; stiff-odom-variance artifact) and a second class seen on china_office (EXCLUDED as
+evidence per Aaryan Jul 17 — awaiting the purpose-built mid360 walk instead). Failures of this
+kind only show against a physical marker anchor — which is
 presumably exactly why the team records marker-staring walks.
 
 Same-night follow-through on lesh's pointers (window 2):
@@ -1024,8 +1027,8 @@ Same-night follow-through on lesh's pointers (window 2):
   as of this write; results land below when done.
 
 Acted on (same night): all benchmark numbers re-labeled by lane (village3 = Go2 lane, explicitly
-non-transferable per lesh; china_office = the mid360+PointLIO production lane — its finding that
-PGO degrades PointLIO 10–100× is the production-relevant one); the trial's value story reframed
+non-transferable per lesh; the production-lane measurement must come from the purpose-built
+mid360 walk recording — china_office numbers EXCLUDED per Aaryan Jul 17); the trial's value story reframed
 around the transferable layer (priors/judge architecture, camera-based fiducial prior, confidence
 -benchmark methodology, marker-revisit PGO qualifier — all embodiment-agnostic, answering
 DIM-944's embodiment complaint); age-decay constants noted as per-lane knobs (near-drift-free

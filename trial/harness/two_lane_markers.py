@@ -60,19 +60,10 @@ REVISIT_BUCKETS_S = [(0, 10), (10, 60), (60, 300), (300, float("inf"))]
 
 
 def _static_map() -> dict[tuple[str, str], np.ndarray]:
-    out = {}
-    for spec in statics.FRAMES:
-        tf = spec if isinstance(spec, Transform) else getattr(spec, "transform", None)
-        if tf is None:
-            # FrameSpec-like: build from attributes
-            t = spec.translation
-            q = spec.rotation
-            T = pose7_to_mat((t[0], t[1], t[2], q[0], q[1], q[2], q[3])) \
-                if not hasattr(t, "x") else pose7_to_mat((t.x, t.y, t.z, q.x, q.y, q.z, q.w))
-            out[(spec.frame_id, spec.child_frame_id)] = T
-        else:
-            out[(tf.frame_id, tf.child_frame_id)] = transform_to_mat(tf)
-    return out
+    from dimos.protocol.tf.static_tf_publisher import frames_to_edge_transforms
+
+    return {(t.frame_id, t.child_frame_id): transform_to_mat(t)
+            for t in frames_to_edge_transforms(statics.FRAMES)}
 
 
 def detect_optical_T_tag(store: SqliteStore) -> list[dict]:
