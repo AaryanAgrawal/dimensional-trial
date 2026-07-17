@@ -1033,6 +1033,19 @@ evidence per Aaryan Jul 17 — awaiting the purpose-built mid360 walk instead). 
 kind only show against a physical marker anchor — which is
 presumably exactly why the team records marker-staring walks.
 
+**Jul 17 — GRAVITY-GATE WALKOVER (design bug found by the benchmark, probed bit-exactly; fix
+queued behind running jobs):** refine_candidates' gravity fallback (`upright if upright else all`)
+is pool-global — one near-upright SEED un-empties `upright` and discards the ENTIRE all-tilted
+RANSAC pool, so the stale seed wins by walkover. Measured: lastpose flag destroys wins on v1/v5
+(56/72 -> 53/72 aggregate, zero rescues; one walkover bust PASSES the 0.45 gate at 0.586 — a live
+confident bust CREATED by the flag). CORRECTIONS: v3 "seed entrenchment" was outcome-NEUTRAL
+(relabeled existing failures); FiducialPrior has identical exposure (near-upright fixes) — Phase-2
+red flag caught pre-live. FIX (after suite + mid360 workflow finish): per-source gravity gating
+(each source falls back to its own tilted pool only if IT has no upright member) + regression test
+from probe_gravity_walkover.py (repro: hk_village1 frame 831). Caveat: 3/72 rate is at benchmark
+stride (~40 frames between sections; seed maximally stale) — mechanism stride-independent, rate
+may differ live.
+
 **Jul 17 — CROSS-RECORDING CONFIDENCE (pooled, N=232, triple-verified, commit 35cff6c):**
 - **The design conclusion for the runtime track: fitness ranks correctness well WITHIN an
   environment (AUROC v6 1.000, office 1.000, v5 0.94, v1 0.92, v3 0.84) but thresholds do NOT
