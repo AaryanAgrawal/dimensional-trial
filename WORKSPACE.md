@@ -73,7 +73,7 @@ Next actions.
 
 | What | Where |
 |---|---|
-| The module + all code changes | `dimos` fork, branch `feat/marker-localization-core` (cloned inside this repo root, §0) |
+| The module + all code changes | `dimos` (cloned inside this repo root, §0) — **ONE working branch: `fiducial-relocalization`** (Aaryan, Jul 16: "keep all this only one branch, my branch") — contains the PR #2808 work + the priors system; LOCAL-ONLY until Aaryan's push go. PR #2808's remote branch (`feat/marker-localization-core`) stays untouched; §0 cold-start checks that branch out until `fiducial-relocalization` is pushed. All new dimos-side work lands on `fiducial-relocalization`, window 1 only. |
 | The PR | **#2808** — https://github.com/dimensionalOS/dimos/pull/2808 |
 | The public presentation page | https://aaryanagrawal.me/dimensional |
 | Trial page source | github.com/AaryanAgrawal/portfolio → `src/app/dimensional/` (deploys to aaryanagrawal.me/dimensional via `vercel --prod` from that repo's checkout) |
@@ -87,8 +87,9 @@ Next actions.
 ## 2. Next actions
 
 - [~] doing — **Phase 1: universal confidence reading** (window 1): BUILT + adversarially
-      verified on LOCAL branch `feat/reloc-priors` (3 commits, HEAD `a6be7e42e`, base
-      `feat/marker-localization-core`; local only — not pushed, awaiting Aaryan's go).
+      verified on LOCAL branch **`fiducial-relocalization`** (renamed from `feat/reloc-priors`
+      per Aaryan Jul 16 — the ONE branch for all dimos trial work; 3 commits, HEAD `a6be7e42e`,
+      base `feat/marker-localization-core`; local only — not pushed, awaiting Aaryan's go).
       What landed: `relocalize.py` split into `generate_ransac_candidates()` + `refine_candidates()`
       (public `relocalize()` preserved — parity proven bit-identical against the actual pre-refactor
       code, same seeded scene); new `priors.py` (`Candidate` = T + source + confidence tier;
@@ -105,7 +106,8 @@ Next actions.
       (villages, go2_hongkong_office) and relocalize them against the PGO premap, WITH MARKERS —
       truth = PGO-corrected poses (silver truth) + marker agreement — the CUDA queue below (task 1)
       is its existing-stack baseline half, as already written.
-- [ ] todo — post the Linear ticket (§5) to Dimensional's own tracker — rewrite to v5 first
+- [ ] todo — post the Linear ticket (§5) to Dimensional's own tracker — **Aaryan, tomorrow
+      (Jul 17)**; the §5 draft is already v5, ready to paste
 - [ ] todo — CUDA runs: villages 1-5 + go2_hongkong_office at full scale (see "Tasks — CUDA
       machine" immediately below — claim from there, not from this line)
 - [ ] todo — website update to v5 — deferred (Aaryan Jul 16), page still shows the old benchmark
@@ -139,6 +141,16 @@ of real recorded drives** (real sensor data), not simulation — label results "
       Matplotlib, exact command + git rev printed on/beside each figure, PNGs committed to
       `trial/results/figures/` in this repo (tracked — see .gitignore) + pushed.
 - [ ] 7. Write all numbers/tables into §7 Findings, note anything that behaved differently than documented, push.
+- [ ] 8. **Build + run the fiducial sections harness (Phase 3 method, §6):** cut sections/frames
+      from the recorded drives (villages + go2_hongkong_office), relocalize each against the
+      PGO-exported premap, score vs PGO-corrected pose (silver truth) AND marker agreement
+      (fiducials = independent anchoring) — #2137's `run.py`/60-frame pattern is the template
+      (fetch branch `sloptimization/ransac` to read it). **Harness code lives in THIS repo**
+      (`trial/harness/`), importing dimos as a library from the checkout — never in dimos itself
+      (the dimos branch is single-writer, window 1 — Aaryan's one-branch rule). Report:
+      success-rate table (1m/15° bar), per-section error vs PGO truth, marker-agreement numbers,
+      figures into `trial/results/figures/`, all of it into §7. Deterministic seeds, exact
+      commands logged.
 
 **Expected numbers (priors, each with its source — the runs verify or refute; results replace
 these):**
