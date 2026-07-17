@@ -92,6 +92,32 @@ def _git_rev(path: Path) -> str:
     ).stdout.strip()
 
 
+def reposed_lidar_obs(store: SqliteStore, lidar_stream: str, odom_stream: str) -> list:
+    """Some recordings carry placeholder poses on their lidar obs (e.g. the
+    purpose-built mid360 walk's go2 lane). Clouds are still world-frame; the
+    real pose lives in the odom stream's PAYLOAD (obs.pose_tuple there is an
+    identity placeholder too — read obs.data). Nearest-ts join, tolerance
+    0.15 s, obs.derive(pose=...)."""
+    from dimos.msgs.geometry_msgs.PoseStamped import PoseStamped
+
+    odom = [(o.ts, o.data) for o in store.stream(odom_stream, PoseStamped)]
+    ots = np.array([t for t, _ in odom])
+    out = []
+    for obs in store.stream(lidar_stream, PointCloud2):
+        i = int(np.searchsorted(ots, obs.ts))
+        best = min((j for j in (i - 1, i) if 0 <= j < len(odom)),
+                   key=lambda j: abs(ots[j] - obs.ts))
+        if abs(ots[best] - obs.ts) > 0.15:
+            continue
+        p = odom[best][1]
+        pose7 = (p.position.x, p.position.y, p.position.z,
+                 p.orientation.x, p.orientation.y, p.orientation.z, p.orientation.w)
+        if pose7[0] == 0 and pose7[1] == 0 and pose7[2] == 0:
+            continue
+        out.append(obs.derive(pose=pose7))
+    return out
+
+
 def build_graph(store: SqliteStore, lidar_stream: str) -> tuple[PoseGraph, float]:
     t0 = time.perf_counter()
     graph = store.stream(lidar_stream, PointCloud2).transform(PGO()).last().data

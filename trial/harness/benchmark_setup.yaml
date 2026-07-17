@@ -1,0 +1,58 @@
+# THE RELOCALIZATION BENCHMARK — canonical setup (v1, 2026-07-17, Aaryan + night session)
+#
+# Taxonomy (Aaryan, Jul 17):
+#   relocalization benchmark  = THIS: marker-truth, offline referee. Physical tags
+#                               as external truth; grades PGO and any relocalizer.
+#   relocalization confidence = separate, real-time track: pluggable priors -> one
+#                               judge -> one published score; decides between/fuses
+#                               priors on-robot. The benchmark calibrates it offline.
+#
+# Tag policy (the decorrelation rule):
+#   Each recording designates ONE referee tag — the "start/end tag" — used ONLY for
+#   benchmarking. It NEVER enters the marker map and NEVER produces fiducial fixes.
+#   All other tag ids are the live-fiducial set (marker map + FiducialPrior fixes).
+#   Selection rule: the id with the widest start-to-end sighting coverage across the
+#   run (strongest revisit anchor), validated single-instance by the spatial-cluster
+#   check (duplicate physical ids invalidate an id as referee — see hk_village2/4).
+#
+# Referee decisions (from detection sweeps over 3 candidate runs, 2026-07-17):
+
+recordings:
+  recording_go2_mid360_2026-05-29_4-45pm-PST:
+    role: primary multi-tag benchmark run (BOTH lidar lanes in one file)
+    referee_tag: 4          # seen 0.0% -> 98.7% of the 780 s run; span 769.6 s
+    fiducial_tags: [0, 1, 2, 6, 7]   # id 6 is weak (24.5 s span) but valid
+    lanes: {go2: {lidar: lidar, odom: odom, note: lidar obs poses are placeholders — re-pose from odom payload},
+            mid360_fastlio: {lidar: fastlio_lidar, odom: fastlio_odometry}}
+  markers_go2:
+    role: pure referee run (start/end-tag by construction)
+    referee_tag: 1          # only id; seen 0.7% -> 99.8% of the 102 s run
+    fiducial_tags: []
+    note: lidar obs carry no poses — camera/odom-payload path only
+  hk_village1: {role: referee-only, referee_tag: 10, fiducial_tags: []}
+  hk_village3: {role: referee-only, referee_tag: 10, fiducial_tags: []}
+  hk_village5: {role: referee-only, referee_tag: 10, fiducial_tags: []}
+  hk_village6: {role: referee-only, referee_tag: 10, fiducial_tags: []}
+  hk_village2: {role: EXCLUDED, reason: 3 physical tags share id 10 (cluster check)}
+  hk_village4: {role: EXCLUDED, reason: 2 physical tags share id 10 (cluster check)}
+  hk_building_all_around:
+    role: no-markers drift-profile instrument only (PGO self-consistency at 192 m scale)
+    referee_tag: null       # VERIFIED no tags: 0 detections in 663 sampled frames
+  china_office: {role: EXCLUDED, reason: Aaryan 2026-07-17 — do not use}
+
+protocol:
+  revisit_test: same-referee-tag pairwise distance, stratified by time gap
+                (0-10 / 10-30 / 30-60 / 60+ s); raw odometry vs corrected;
+                report per-visit composition, never aggregate alone
+  validity_gate: spatial-cluster check per id (single-linkage, 1.0 m) before
+                 trusting any id as referee or map entry
+  truth_policy: PGO poses are SILVER, qualified per recording by the revisit
+                test; referee-tag agreement is co-truth; decimeter floor on
+                long accumulation windows; ~6 cm PGO run-to-run wobble
+  determinism: per-frame seeds = frame_idx; OMP_NUM_THREADS=1 before open3d
+               import; full denominator (crashes/no-candidates = failures)
+  handoff: sections + fixes (fiducial tags only) feed the relocalization-
+           confidence harness (run_bench.py / analyze.py)
+
+publication_intent: push under a "relocalization benchmark" home on GitHub
+                    (Aaryan, Jul 17 — "maybe"; NOT pushed yet, no-remote rule)
