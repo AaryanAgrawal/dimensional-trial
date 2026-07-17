@@ -74,6 +74,7 @@ Next actions.
 | The module + all code changes | `dimos` fork, branch `feat/marker-localization-core` (sibling clone, §0) |
 | The PR | **#2808** — https://github.com/dimensionalOS/dimos/pull/2808 |
 | The public presentation page | https://aaryanagrawal.me/dimensional |
+| Trial page source | github.com/AaryanAgrawal/portfolio → `src/app/dimensional/` (deploys to aaryanagrawal.me/dimensional via `vercel --prod` from that repo's checkout) |
 | This repo | context/plan/benchmark-protocol/history only — never contains `dimos` as content |
 | Benchmark instruments (logger, bench runner, referee, overlay, survey dumper) | `trial/scripts/` in this repo |
 | Synthetic proof harness (real detector, rendered pixels, no hardware) | `demo/` in this repo — `cd demo && ./run.sh` |
