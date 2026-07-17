@@ -16,6 +16,8 @@ Faithful to the live stack (verified against source, WORKSPACE.md recon digest):
     every downstream number inherits that floor. This module records the floor.
 
 Run: cd dimos && uv run python ../trial/harness/prep.py hk_village3 --n-queries 24
+Recordings whose lidar obs carry placeholder poses (the mid360 walk): add
+--lidar-pose-from-odom <stream> to re-pose scans from that stream's payload first.
 """
 
 from __future__ import annotations
@@ -97,7 +99,7 @@ def reposed_lidar_obs(store: SqliteStore, lidar_stream: str, odom_stream: str) -
     purpose-built mid360 walk's go2 lane). Clouds are still world-frame; the
     real pose lives in the odom stream's PAYLOAD (obs.pose_tuple there is an
     identity placeholder too — read obs.data). Nearest-ts join, tolerance
-    0.15 s, obs.derive(pose=...)."""
+    0.15 s, obs.with_pose(...) — clouds stay lazy and world-frame."""
     from dimos.msgs.geometry_msgs.PoseStamped import PoseStamped
 
     odom = [(o.ts, o.data) for o in store.stream(odom_stream, PoseStamped)]
@@ -114,24 +116,33 @@ def reposed_lidar_obs(store: SqliteStore, lidar_stream: str, odom_stream: str) -
                  p.orientation.x, p.orientation.y, p.orientation.z, p.orientation.w)
         if pose7[0] == 0 and pose7[1] == 0 and pose7[2] == 0:
             continue
-        out.append(obs.derive(pose=pose7))
+        out.append(obs.with_pose(pose7))
     return out
 
 
-def build_graph(store: SqliteStore, lidar_stream: str) -> tuple[PoseGraph, float]:
+def build_graph(
+    store: SqliteStore, lidar_stream: str, obs_list: list | None = None
+) -> tuple[PoseGraph, float]:
     t0 = time.perf_counter()
-    graph = store.stream(lidar_stream, PointCloud2).transform(PGO()).last().data
+    if obs_list is None:
+        graph = store.stream(lidar_stream, PointCloud2).transform(PGO()).last().data
+    else:
+        # Same PGO transformer, fed the re-posed obs; final emit = full graph.
+        *_, final = PGO()(iter(obs_list))
+        graph = final.data
     return graph, time.perf_counter() - t0
 
 
 def build_premap(
-    store: SqliteStore, lidar_stream: str, graph: PoseGraph, device: str
+    store: SqliteStore, lidar_stream: str, graph: PoseGraph, device: str,
+    obs_list: list | None = None,
 ) -> np.ndarray:
     """PGO-corrected premap, mimicking `dimos map global --pgo` pass 2:
     spatially dedup frames (keep latest per 0.3 m cell of trajectory), apply
     the interpolated correction per frame, accumulate carve-OFF voxels."""
     kept: dict[tuple[int, int, int], object] = {}
-    for obs in store.stream(lidar_stream, PointCloud2):
+    src = obs_list if obs_list is not None else store.stream(lidar_stream, PointCloud2)
+    for obs in src:
         p = obs.pose_tuple
         if p is None or (p[0] == 0 and p[1] == 0 and p[2] == 0):
             continue  # placeholder/unposed frames, same skip as PGO + CLI
@@ -158,8 +169,10 @@ def build_sections(
     n_queries: int,
     device: str,
     max_window_scans: int = 200,
+    obs_list: list | None = None,
 ) -> tuple[list[Section], list[str]]:
-    obs_all = [o for o in store.stream(lidar_stream, PointCloud2)]
+    obs_all = (obs_list if obs_list is not None
+               else [o for o in store.stream(lidar_stream, PointCloud2)])
     notes: list[str] = []
     n_total = len(obs_all)
     # Query frames evenly spaced (like #2137's 60-center pick), but NO frame is
@@ -208,20 +221,35 @@ def build_sections(
     return sections, notes
 
 
-def prepare(recording: str, lidar_stream: str, n_queries: int, device: str) -> Path:
+def prepare(
+    recording: str, lidar_stream: str, n_queries: int, device: str,
+    lidar_pose_from_odom: str | None = None,
+) -> Path:
     dimos_root = Path(__file__).resolve().parents[2] / "dimos"
     trial_root = Path(__file__).resolve().parents[1]
     db = dimos_root / "data" / f"{recording}.db"
     store = SqliteStore(path=str(db), must_exist=True)
     with store:
-        graph, pgo_s = build_graph(store, lidar_stream)
+        obs_list = None
+        if lidar_pose_from_odom:
+            n_raw = store.stream(lidar_stream, PointCloud2).count()
+            obs_list = reposed_lidar_obs(store, lidar_stream, lidar_pose_from_odom)
+            print(f"re-posed {len(obs_list)}/{n_raw} lidar obs from "
+                  f"'{lidar_pose_from_odom}' payload poses (0.15 s nearest-ts join)")
+        graph, pgo_s = build_graph(store, lidar_stream, obs_list=obs_list)
         # Serialize NOW: the first correction_at() call caches an unpicklable
         # closure on the (frozen) instance. Learned live.
         graph_bytes = pickle.dumps(graph)
         print(f"PGO: {len(graph.keyframes)} keyframes, {len(graph.loops)} loops, {pgo_s:.1f}s")
-        premap = build_premap(store, lidar_stream, graph, device)
+        premap = build_premap(store, lidar_stream, graph, device, obs_list=obs_list)
         print(f"premap: {len(premap)} voxel pts")
-        sections, notes = build_sections(store, lidar_stream, graph, n_queries, device)
+        sections, notes = build_sections(store, lidar_stream, graph, n_queries, device,
+                                         obs_list=obs_list)
+        if lidar_pose_from_odom:
+            notes.insert(0, (
+                f"lidar poses re-derived from '{lidar_pose_from_odom}' payload "
+                f"({len(obs_list)}/{n_raw} scans matched); frame_idx indexes the "
+                f"re-posed obs list, not the raw stream"))
         print(f"sections: {len(sections)} (gate reached: {sum(s.reached_gate for s in sections)})")
         for n in notes:
             print(f"  note: {n}")
@@ -252,5 +280,8 @@ if __name__ == "__main__":
     ap.add_argument("--lidar-stream", default="lidar")
     ap.add_argument("--n-queries", type=int, default=24)
     ap.add_argument("--device", default="CUDA:0", help="VoxelGrid accumulation device only")
+    ap.add_argument("--lidar-pose-from-odom", default=None, metavar="STREAM",
+                    help="re-pose lidar obs from this stream's payload poses (recordings "
+                         "whose lidar obs carry placeholder poses, e.g. the mid360 walk)")
     a = ap.parse_args()
-    prepare(a.recording, a.lidar_stream, a.n_queries, a.device)
+    prepare(a.recording, a.lidar_stream, a.n_queries, a.device, a.lidar_pose_from_odom)
