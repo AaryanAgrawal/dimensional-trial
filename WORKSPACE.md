@@ -457,6 +457,66 @@ bad one, STOP it.
 - **Plan v3 written** (§4) — the 4-phase post-review direction, package-based fusion end state.
 - **Open items:** see §2 Next actions.
 
+## Team feedback (direction ledger)
+
+A dated record of direction, scope calls, and process feedback the Dimensional team has given
+Aaryan on this trial. Paraphrased and neutral — no verbatim quotes, first names only. This is the
+input side of the arc above — what the team said, and what changed in response.
+
+**Jul 8 — Stash (via email):**
+- Skip elevators for the trial — none conveniently accessible at the office.
+- Benchmark relocalization other ways instead; outdoor testing is fine.
+- 1-2 weeks is enough time for the trial.
+- Office hosting confirmed.
+
+Acted on: the field battery (§6, "7-card field battery") was built with no elevator-dependent
+card and an explicit outdoor-sightline test (card #3).
+
+**Jul 15 (day 1) — Ari:**
+- The day-one deliverable should be a scope doc plus a code skeleton, not a finished feature.
+
+Acted on: a spec doc and a prototyped module skeleton (`feat/marker-localization`) were the
+day-one output — see §9 History.
+
+**Jul 15 — Mustafa B.:**
+- Helped scope the trial project.
+- Pointed to Lesh as the owner to go to for navigation/relocalization detail.
+
+Acted on: the deeper technical direction below (Jul 16) came from that referral.
+
+**Jul 16 — Lesh (main direction, Discord):**
+- `RelocalizationModule`'s intended design is method-agnostic: pluggable relocalization
+  heuristics/priors of varying confidence, running in parallel and individually toggleable.
+- A fiducial marker prior is high-confidence global pose — the first prior he'd implement, calling
+  it "clean." It hands its pose to the relocalization ICP alignment step and largely overrides the
+  current RANSAC method when a marker is visible.
+- Compute economics: don't run RANSAC when markers are visible; don't run marker recognition when
+  no markers exist in the space.
+- A weaker future prior — semantic-similarity / vector search over the space (per his memory-plot
+  doc) — is an open question whether it nudges RANSAC or runs in parallel with it.
+- Vocabulary correction: "relocalization" refers specifically to the stolen-robot problem (finding
+  yourself on the map from an unknown pose). Odometry correction via pluggable methods is a
+  separate, lower-priority track for now.
+- Marker-pose storage: a stream for now; a K/V store under `dimos map global` later.
+- The benchmark he'd point to already exists offline: marker-ground-truth over recordings, via
+  `dimos map global hk_village4 --markers` (odometry test) vs. `--pgo --markers` (compare by
+  marker agreement). `go2_hongkong_office` is the large tuning/eval map; villages 1-5 all observe
+  markers. PR #2137 was an autoresearch task tuning relocalization from marker ground truth.
+- Homework: go through the relocalization doc end-to-end and try it in person; the existing
+  recordings support most of the development without needing the live robot.
+- Process: the plan should go on Linear (Dimensional's own tracker) for team review; decisions get
+  written down; map-related work should use the CUDA machine.
+- Overall: the direction was endorsed; the team has existing work (the RANSAC tuning harness, the
+  offline marker eval) that should speed this up.
+
+Acted on: plan of record rewritten as v3 around pluggable priors and a fusion end state (§4); the
+CUDA-machine task queue (§2) is built from his homework list; a Linear ticket was drafted (§5)
+ready to post to Dimensional's own tracker; the "relocalization" vs. "odometry correction"
+vocabulary distinction was corrected across the docs; PR #2137 vs. `loop_closure/eval.py` was
+disambiguated (§6, "don't conflate these two").
+
+*Updated whenever the team gives direction; feedback lands here same-day.*
+
 ## 10. Between machines — read-only clone variant
 
 The canonical sibling-clone setup lives in §0 Cold start. Use this variant instead when handing a
