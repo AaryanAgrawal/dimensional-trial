@@ -1,6 +1,8 @@
 import { Fragment, type ReactNode } from "react";
 import {
   baselines,
+  evidence,
+  openQuestions,
   metrics,
   oneRunFigure,
   phase1,
@@ -248,6 +250,35 @@ export default function DimensionalPage() {
         <pre className="mt-5 overflow-x-auto rounded-md bg-tile p-4 font-mono text-[12.5px] leading-relaxed text-ink">
           {phase4.tree}
         </pre>
+      </section>
+
+      {/* Evidence log */}
+      {evidence.map((sec) => (
+        <section key={sec.heading} className="mt-12 border-t border-line pt-6">
+          <PhaseHeading>{sec.heading}</PhaseHeading>
+          <p className="mt-3 text-sm text-soft">{sec.intro}</p>
+          {sec.figures.map((f) => (
+            <figure key={f.src} className="mt-6">
+              <img src={f.src} alt={f.title} className="w-full rounded-md bg-tile" />
+              <figcaption className="mt-2 text-xs text-soft">
+                <span className="font-medium text-ink">{f.title}.</span> {f.explanation}
+              </figcaption>
+            </figure>
+          ))}
+        </section>
+      ))}
+
+      {/* Open questions */}
+      <section className="mt-12 border-t border-line pt-6">
+        <PhaseHeading>Open questions</PhaseHeading>
+        <ul className="mt-3 space-y-2 text-sm">
+          {openQuestions.map((q) => (
+            <li key={q} className="flex gap-2">
+              <span className="text-faint" aria-hidden>?</span>
+              <span className="text-soft">{q}</span>
+            </li>
+          ))}
+        </ul>
       </section>
 
       {/* Footer */}

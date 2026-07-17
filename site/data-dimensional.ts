@@ -202,3 +202,15 @@ export const evidence: EvidenceSection[] = [
     ]
   }
 ];
+
+// Open questions — Aaryan's running list. ADD YOURS HERE: one string per
+// question, newest at the top. Public page: keep wording additive/neutral.
+export const openQuestions: string[] = [
+  "Confidence calibration per environment: ship a per-space calibration artifact from the survey walk, or model the shift with covariates (submap size, sensor lane) in one global model?",
+  "Premap freshness: when localization confidence is high, should well-localized scans write back into the map (content updates, frame frozen), and what confidence bar gates the pen?",
+  "Fiducial deployment policy: enforce unique tag ids per space at install time, or teach the prior multi-hypothesis handling for duplicate ids?",
+  "Online PGO: worth building now for the exploration lane, or after the mid360 fiducial-first runtime ships?",
+  "Decorrelation at scale: record a fresh purpose-built walk (unique ids, referee at start/end, PointLIO aboard) to grow the benchmark set beyond one multi-tag recording?",
+  "Marker map storage: stream-published for now vs a persistent K/V store under the map — when to switch?",
+  "Where should the relocalization benchmark live long-term (own repo, docs page, CI job on recordings)?",
+];
