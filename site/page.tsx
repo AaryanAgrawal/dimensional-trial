@@ -1,4 +1,5 @@
 import { Fragment, type ReactNode } from "react";
+import OpenQuestions from "./OpenQuestions";
 import {
   baselines,
   evidence,
@@ -268,17 +269,10 @@ export default function DimensionalPage() {
         </section>
       ))}
 
-      {/* Open questions */}
+      {/* Open questions — editable: add / edit / delete, saved in-browser */}
       <section className="mt-12 border-t border-line pt-6">
         <PhaseHeading>Open questions</PhaseHeading>
-        <ul className="mt-3 space-y-2 text-sm">
-          {openQuestions.map((q) => (
-            <li key={q} className="flex gap-2">
-              <span className="text-faint" aria-hidden>?</span>
-              <span className="text-soft">{q}</span>
-            </li>
-          ))}
-        </ul>
+        <OpenQuestions seeds={openQuestions} />
       </section>
 
       {/* Footer */}
