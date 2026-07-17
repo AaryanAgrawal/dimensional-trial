@@ -94,7 +94,8 @@ def _git_rev(path: Path) -> str:
     ).stdout.strip()
 
 
-def reposed_lidar_obs(store: SqliteStore, lidar_stream: str, odom_stream: str) -> list:
+def reposed_lidar_obs(store: SqliteStore, lidar_stream: str, odom_stream: str,
+                      pose_type: type | None = None) -> list:
     """Some recordings carry placeholder poses on their lidar obs (e.g. the
     purpose-built mid360 walk's go2 lane). Clouds are still world-frame; the
     real pose lives in the odom stream's PAYLOAD (obs.pose_tuple there is an
@@ -102,7 +103,10 @@ def reposed_lidar_obs(store: SqliteStore, lidar_stream: str, odom_stream: str) -
     0.15 s, obs.with_pose(...) — clouds stay lazy and world-frame."""
     from dimos.msgs.geometry_msgs.PoseStamped import PoseStamped
 
-    odom = [(o.ts, o.data) for o in store.stream(odom_stream, PoseStamped)]
+    if pose_type is None:
+        pose_type = PoseStamped
+    # Both PoseStamped and nav_msgs Odometry expose .position/.orientation.
+    odom = [(o.ts, o.data) for o in store.stream(odom_stream, pose_type)]
     ots = np.array([t for t, _ in odom])
     out = []
     for obs in store.stream(lidar_stream, PointCloud2):

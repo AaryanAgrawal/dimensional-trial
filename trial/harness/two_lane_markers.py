@@ -194,7 +194,13 @@ def main() -> int:
         lanes = lanes_all if lane_arg == "both" else {lane_arg: lanes_all[lane_arg]}
         for lane, (lidar_stream, pose_stream, pose_type, mount) in lanes.items():
             t0 = time.perf_counter()
-            graph = store.stream(lidar_stream, PointCloud2).transform(PGO()).last().data
+            # This recording stamps placeholder poses on BOTH lidar streams —
+            # re-pose scans from the lane's own odometry payload before PGO.
+            from prep import reposed_lidar_obs
+            obs_list = reposed_lidar_obs(store, lidar_stream, pose_stream, pose_type=pose_type)
+            print(f"[{lane}] re-posed {len(obs_list)} scans from {pose_stream}", flush=True)
+            *_, final = PGO()(iter(obs_list))
+            graph = final.data
             print(f"[{lane}] PGO: {len(graph.keyframes)} kf, {len(graph.loops)} loops, "
                   f"{time.perf_counter()-t0:.0f}s", flush=True)
             rows = lane_positions(store, dets, pose_stream, pose_type, mount, graph)
