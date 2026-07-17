@@ -1033,6 +1033,24 @@ evidence per Aaryan Jul 17 — awaiting the purpose-built mid360 walk instead). 
 kind only show against a physical marker anchor — which is
 presumably exactly why the team records marker-staring walks.
 
+**Jul 17 — CROSS-RECORDING CONFIDENCE (pooled, N=232, triple-verified, commit 35cff6c):**
+- **The design conclusion for the runtime track: fitness ranks correctness well WITHIN an
+  environment (AUROC v6 1.000, office 1.000, v5 0.94, v1 0.92, v3 0.84) but thresholds do NOT
+  transfer across environments** (bust ranges: villages 0.62–0.995 · office 0.53–0.75 ·
+  all_around 0.32–0.66). A gate zeroing office risk (>0.752) still admits 34 village failures;
+  zeroing village risk needs >0.995. **Per-environment calibration (or covariate-carrying
+  confidence) is a requirement, not an option.**
+- Pooled: 78.0% success; risk @0.45 = 22.0% (51/232); ≤2%-risk gate exists at 0.942 but costs
+  40% coverage and still passes v3's 0.995 bust. Gate-split: ≥50k pts 95.4% vs 62.9% below —
+  BUT office is gate-insensitive (81% vs 79%): submap size explains outdoor failures, not indoor
+  wrong-rooms. Two failure regimes, now separated.
+- CORRECTION (verifier-caught): v3 busts are 0.62–0.995 median 0.90 on the full-denominator
+  120-section results — the earlier "0.81–0.96" phrasing came from the first 24-section run.
+- all_around joined the suite measured: 83.3% (20/24), 0.028 m median, 24.6 s solves on the
+  1.4M-pt premap; failures 0.32–0.66 — first recording where the 0.45 gate mostly works.
+- Figure: `trial/results/figures/confidence_cross_recording.png` (5 per-recording risk–coverage
+  curves, one axes).
+
 **Jul 17 morning — lesh's named instruments, executed (villages + hk_building_all_around;
 china_office excluded per Aaryan):**
 - **Marker-revisit across ALL SIX villages** (672 sightings; spatial-cluster validity check run
