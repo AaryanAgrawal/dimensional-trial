@@ -495,8 +495,88 @@ dimos benchmark run --mode visual --route <name> --marker-map <path>
     split; FAST-LIO2 is the deliberate counter-example (odometry-only, no loop closure, by the
     authors' own description). Deferring live PGO while operating on premaps matches common
     practice.
-- *(CUDA-machine window: once §2 "Tasks — CUDA machine" has an assigned task, append the
-  resulting numbers here, plus anything that behaved differently than this doc predicted.)*
+### CUDA-machine window — 2026-07-16 (RTX 5070 Laptop, Ubuntu 24.04)
+
+**Task 0 done — CUDA map pipeline confirmed.** `dimos map global go2_short --export --no-gui
+--device CUDA:0`: 461 lidar frames → 154 keyframes (dedup 33.4% @ tol=0.3m), **2 loop closures**
+(score 0.0984 f67→1; 0.0653 f92→0), PGO pass 1 35.6× realtime / pass 2 41.9× realtime, ~2 min
+wall. Wrote `go2_short.pc2.lcm` + `.rrd`. Ran on `go2_short`, not a village — see next item.
+
+**BLOCKER, and it fails silently — the village recordings are not on this box.** §0's
+`GIT_LFS_SKIP_SMUDGE=1` means no LFS assets were pulled: `data/` holds only `china_office.db`,
+`go2_china_office.db`, `go2_short.db`. No `hk_village*`, no `go2_hongkong_office`. And
+`SqliteStoreConfig.must_exist` defaults `False` (`sqlite.py:43`), which `eval.py:73` never
+overrides — so a missing `.db` is **silently created empty and the eval prints zeros** instead of
+erroring. CUDA tasks 2-5 run today would produce clean-looking zeros. Fix first, then verify
+non-zero counts via `dimos mem summary <db>` before trusting any number:
+`git lfs pull --include="data/hk_village*.db" --include="data/go2_hongkong_office.db"`
+
+**Undocumented Linux setup, once per boot** — without it every `dimos run` dies with
+`CalledProcessError` before doing anything (dimos names the exact cmd in its own error):
+```bash
+sudo ip link set lo multicast on
+sudo ip route add 224.0.0.0/4 dev lo
+```
+
+**`china_office.db` is not what any section assumes** (9.32 GiB, 2026-06-12, ~20 min) — and it may
+carry the three-way comparison offline, no robot:
+- **`lidar` stream = 0 items.** Data lives under `livox_lidar` (11,525 @ 9.8Hz, 3.50 GiB),
+  `go2_lidar` (8,572 @ 7.3Hz), `pointlio_lidar` (11,944 @ 10Hz). `dimos map global china_office`
+  defaults `--lidar lidar` → would silently build nothing. Pass `--lidar livox_lidar`. **Which
+  lidar you pick is itself a benchmark axis.**
+- **`april_tags_raw`: 3,959 detections @ 3.5Hz** (+ `april_tags`: 39). Real marker data, real
+  office, alongside two lidars — the marker-vs-lidar comparison may already be latent here.
+- `gt_pointlio_lidar` / `gt_pointlio_odometry` (35,699 @ 29.9Hz) — **treat the `gt_` prefix as
+  unearned until verified.** Almost certainly PointLIO's own estimate, i.e. PointLIO judging
+  PointLIO: correlated errors, exactly the trap the held-out-tag referee exists to avoid. The
+  AprilTags are the only genuinely independent instrument in this file.
+- 6× `pointlio_odometry__surf0p1_map0p2`-style variants = someone's parameter sweep.
+  Also `tf` 58,964 @ 49.4Hz, `go2_odom` 21,957 @ 18.7Hz, `color_image` 16,740 @ 14.2Hz.
+- `go2_short` (2026-05-06, 59.8s): lidar 461 @ 7.7Hz · color 855 @ 14.3Hz · odom 1,122 @ 18.7Hz ·
+  plus `color_image_embedded` 108 (the CLIP/`visual_memory` layer).
+  `go2_china_office` (2026-04-28, 138.8s): lidar 982 @ 7.1Hz · color 1,951 · odom 2,602.
+
+**Branch docs are stale vs `main`.** `docs/capabilities/navigation/relocalization.md` differs by
+**148 insertions / 70 deletions**. `main` adds the "Quick validation" section (`dimos mem summary`
+/ `dimos map replay --duration 60`), a flags table (`--pgo-tol`, `--voxel`), a config reference
+(`fitness_threshold` **0.45**, `MIN_LOCAL_POINTS` 50_000, `RELOC_INTERVAL`/`PUBLISH_INTERVAL` 2.0s,
+last three not CLI-overridable), and a troubleshooting table. **Read `origin/main`'s copy.** Its own
+line — *"You can replay a different `.db` from the same physical space against the same premap to
+test generalization"* — is lesh's cross-run test, documented and unrun.
+
+**Eval-landscape audit** (55-agent sweep, every claim adversarially verified against source):
+- **Zero recorded benchmark runs exist anywhere.** No `benchmarks.csv`, no `benchmark_results/`,
+  no `trial/scripts/out/`, no `referee-budget.json`. `RESULTS.md` says "No runs yet."
+- **`calibrate-referee` was never ported** into `dimos/mapping/benchmark/` (zero hits for
+  `calibrate|noise_floor|bias_check`) — so **every return-error number the repo tool emits today
+  has unknown error bars**, and §6's "≥3× improvement" pass bar is unfalsifiable: a ratio between
+  two uncharacterized numbers. The code exists at `bench.py:369-428` with a hardware-free selftest
+  (`:993`); ~200 lines, mechanical port onto `tool_benchmark.py`'s existing `_median_pose`/
+  `_quat_angle_deg`. Highest-value build item, and it should land **before** the first scored run.
+- **Three metrics implemented but never once executed:** checkpoint error (no fixture yields >2 tag
+  clusters, so `checkpoint_error_rms_m` has never run), recovery time (`FixtureCase`
+  (`testdata.py:98-105`) has no `variant` field → the `:478` guard short-circuits, field is always
+  `None` in tests), bounded/unbounded classifier (no direct test). All three render as `RESULTS.md`
+  columns with nothing behind them.
+- **"Held-out" is not enforced.** Without `--marker-map`, `map_ids` stays empty → *any* stable tag
+  becomes a referee candidate (proven by the branch's own
+  `test_tag_adopter_any_stable_tag_adopts_with_no_marker_map`). For **lidar** mode exclusion is
+  vacuous entirely — a marker map can't describe a point-cloud premap. Yet `cli.py:645-647`
+  footnotes the guarantee into `RESULTS.md` anyway.
+- **`TOTAL_SPREAD` is gameable and un-normalized:** raw pairwise sum, and `_pairwise_sum` of a
+  1-element list returns `0.0` — so tightening `--marker-quality-window`/`--marker-max-speed`
+  drops detections and *lowers* (improves) the score. It also rewards a consistent-but-wrong map.
+  `eval.py` exposes **zero** PGO knobs (`PGO()` built with no args; `PGOConfig` has 17 fields, none
+  reachable), emits no machine-readable output/threshold, and exits 0 regardless of score.
+- **The production `relocalize.py` has no accuracy eval on `main` at all** — shipped via #2160,
+  tuned constants unverifiable in-tree; it still cites `program.md`, a file absent from `main`.
+- **PR #2137 errata:** it is **OPEN**, on branch **`sloptimization/ransac`**. Its harness needs a
+  ~3-line adapter to run against `main`'s `relocalize()` (main returns a 2-tuple; `run.py:107-113`
+  expects a bare (4,4) → `ValueError` on ragged input, *outside* the try/except → unhandled
+  traceback on the first completed frame). Known defects to fix during any port: it scores **55
+  frames, not 60** (`run.py:155` excludes `{0,72,1005,1507,2942}`), and its **soft timeout silently
+  shrinks the denominator** — unfinished frames are dropped and `succ = ok.mean()` averages only
+  completed ones, so a budget overrun reads as success rather than failure.
 
 ## 8. Runbook — day-of operational essentials
 
