@@ -53,11 +53,13 @@ function Flowchart() {
               >
                 {step.label}
               </div>
-              <img
-                src={step.image.src}
-                alt={step.image.alt}
-                className="h-14 w-14 rounded-md border border-line object-cover sm:h-16 sm:w-16"
-              />
+              {step.image ? (
+                <img
+                  src={step.image.src}
+                  alt={step.image.alt}
+                  className="h-14 w-14 rounded-md border border-line object-cover sm:h-16 sm:w-16"
+                />
+              ) : null}
             </div>
           </Fragment>
         ))}

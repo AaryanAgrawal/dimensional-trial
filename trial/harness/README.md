@@ -1,0 +1,76 @@
+# Offline relocalization confidence benchmark (the sections harness)
+
+Measures, on real recorded drives (replay, deterministic), whether the
+confidence a relocalization method publishes actually predicts correctness —
+and what each prior buys. Phase 3 of the trial plan; the successor to the cut
+real-life benchmark. Imports dimos as a library from the sibling checkout;
+never lives inside dimos.
+
+## One command each (from `dimos/`)
+
+```bash
+uv run python ../trial/harness/prep.py hk_village3 --n-queries 120   # sections + premap + PGO truth
+uv run python ../trial/harness/markers.py hk_village3               # scatter + marker map + fiducial fixes
+uv run python ../trial/harness/run_bench.py hk_village3 --config ransac
+uv run python ../trial/harness/run_bench.py hk_village3 --config ransac+fiducial \
+    --fiducial-fixes ../trial/harness/out/markers/hk_village3.fixes.json
+uv run python ../trial/harness/analyze.py hk_village3.ransac hk_village3.ransac_fiducial
+uv run python ../trial/harness/china_markers.py                     # PGO-accuracy evidence at scale
+uv run pytest ../trial/harness/tests/                               # confidence math unit tests
+```
+
+Figures land in `trial/results/figures/` (tracked); raw results in
+`trial/harness/out/` (untracked).
+
+## Design (each choice is load-bearing)
+
+- **#2137's determinism recipe, defects fixed**: `OMP_NUM_THREADS=1` before
+  open3d import, per-frame seeds = `frame_idx`, sorted order, fork workers —
+  but **no frame is ever excluded** and **the denominator is all sections**
+  (crashes / no-candidates count as failures). leshy's harness excluded 5
+  frames (3 of them "not disambiguable without a pose prior" — exactly the
+  frames a fiducial prior must be scored on) and silently shrank the
+  denominator on timeout.
+- **Sections mimic the live stack**: trailing-window `VoxelGrid` accumulation
+  (carve ON, 0.05 m — the live mapper), gate state recorded at the live
+  module's 50k-point threshold; premap rebuilt like `dimos map global --pgo`
+  (carve OFF, 0.3 m frame dedup). Sections are re-anchored to the query
+  frame's body frame — a kidnapped robot doesn't know the recording's world
+  frame.
+- **Truth is SILVER and says so**: `T_true = correction_at(ts) ∘
+  world_raw_T_body`, from a PoseGraph pickled at prep time and reused by
+  every downstream stage (PGO wobbles ~6 cm run-to-run; two runs = two
+  frames). The marker revisit test (below) qualifies the truth per recording.
+- **The confidence questions are first-class** (`confidence.py`, pure numpy,
+  unit-tested): risk–coverage (what does each accept threshold really buy),
+  AUROC (does fitness rank correctness), reliability/ECE (is 0.7 "70% sure").
+- **Marker revisit test = the PGO qualifier** (leshy's verification: observe
+  a marker, drive a loop, observe again — locations must match), stratified
+  by time gap because aggregate scatter is a composition trap: short-gap
+  pairs have no drift to correct and drown the loop-return pairs the test is
+  about. Measured consequences so far: village3 — PGO 3.3× better at 60 s+
+  loop returns, 3× WORSE at 30–60 s mid-segment (interpolated corrections
+  bend the trajectory between anchors); china_office — PointLIO is already
+  3–10 cm consistent over 5–18 min and the offline PGO on top degrades it
+  10–100×. "PGO = silver truth" is a per-recording claim, never a constant.
+- **Fiducial fixes are honest about circularity**: the marker map derives
+  from the same PoseGraph as the truth (exactly what a deployment survey
+  would produce, but truth-correlated); candidates are built from real
+  detections bridged over raw odometry with age recorded, and the judge
+  still ranks them on geometry alone. The cross-run test (premap from one
+  recording, queries from another) is the escape from this correlation —
+  future work, data permitting.
+
+## Results so far (hk_village3, 120 sections, replay, PGO-silver truth ±soft mid-segment)
+
+All numbers independently re-derived by an adversarial verifier (exact match).
+
+| config | success | risk @0.45 gate | risk @0.60 | risk ≤2% gate exists? | median dt |
+|---|---|---|---|---|---|
+| ransac (today) | 77.5% (93/120) | 22.5% (27/120 accepted wrong) | 22.7% | **no** (best 1/45 @0.959) | 9.7 s |
+| ransac+fiducial | 95.8% (115/120) | 4.2% (5/120) | 4.2% | yes: thr 0.911, coverage 0.875 (2/105) | 11.0 s |
+| fiducial+judge | 95.0% (114/120, 3 no-marker = failures) | 2.6% (3/117) | 2.6% | ~ (thr 0.82, coverage 0.88) | **0.4 s** |
+
+Fragility note: at N=120 the threshold conclusions swing on single samples —
+raw counts above matter more than the rates. Sharpest single fact: ransac's
+highest-fitness answer of the whole run (0.995) is wrong by 2.9 m / 157°.

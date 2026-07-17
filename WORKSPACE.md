@@ -702,6 +702,71 @@ must match — stratified by sighting time gap, marker 10, 156 sightings, villag
   honest via the 1 m/15° bar + marker co-truth; TOTAL_SPREAD (mixes all pairs) inherits the same
   composition trap — worth telling the team.
 
+### Jul 17 night session — goal executed end-to-end (window 2, autonomous; ALL COMMITS LOCAL-ONLY per Aaryan's no-remote rule — push checklist below)
+
+**The goal (confidence benchmark → priors-in-ICP → fiducial w/ confidence+age) is BUILT and RUN.
+Every headline number independently re-derived by an adversarial verifier (exact match, 47/47
+unit checks on the confidence math).** Full detail: `trial/harness/README.md`.
+
+**Results (hk_village3, 120 kidnap sections, replay, PGO-silver truth; raw counts quoted because
+at N=120 threshold conclusions swing on single samples):**
+| config | success | risk @0.45 gate | risk≤2% gate exists? | median dt |
+|---|---|---|---|---|
+| ransac (today) | 77.5% (93/120) | 22.5% (27/120 accepted-wrong) | NO (best 1/45 @0.959) | 9.7 s |
+| ransac+fiducial | 95.8% (115/120) | 4.2% (5/120) | yes (0.911, cov 105/120) | 11.0 s |
+| fiducial+judge | 95.0% (114/120; 3 no-marker = failures) | 2.6% (3/117) | ~ (0.82, cov 0.88) | **0.4 s** |
+- All 27 baseline failures are CONFIDENT busts (fitness 0.81–0.96, rotations 60–160° — the
+  yaw-flip class); the docs' 0.6 gate changes nothing (risk 22.7%); the run's HIGHEST-fitness
+  answer (0.995) is wrong by 2.9 m/157°. The 0.45-vs-0.6 debate is moot — measured.
+- Live-stack note: all failures are sub-50k-pt submaps — MIN_LOCAL_POINTS is what protects the
+  robot today, not fitness. fiducial+judge = lesh's "RANSAC stands down" case: ~24× cheaper.
+- china_office marker revisit (n=3,708, 9 ids): PointLIO already 3–10 cm consistent at 5–18 min
+  gaps; offline PGO on top DEGRADES it 10–100×. With village3's stratified result (§ above):
+  **"PGO = silver truth" is a per-recording claim — qualify it with the marker revisit test.**
+- Open caveat (verifier still running as of this write): fiducial improvement partially
+  truth-correlated (marker map from same PGO run — deployment-realistic but quantify before
+  claiming); cross-run test is the escape. Treat 95.8% as "with a surveyed-map-quality prior".
+
+**What landed where:**
+- `trial/harness/` (this repo, committed): prep.py / run_bench.py / markers.py / china_markers.py
+  / analyze.py / confidence.py + tests + README. Figures in `trial/results/figures/` (3).
+- dimos branch `feat/fiducial-relocalization`, 2 LOCAL commits on top of a6be7e42e (NOT pushed):
+  - `7647d63f2` FiducialPrior (age-decayed, toggleable `use_fiducial_prior`, `world_map_fix`
+    stream Out→In wiring) + **fisheye bug fix**: `visual_relocalization.py` never passed
+    `distortion_model` to PnP — Go2's equidistant coeffs misread as radtan (our own PR's code);
+    regression test projects fisheye corners, requires <2 cm. 76/76 tests, mypy clean.
+  - `fadb41e70` PR simplification per Aaryan: `dimos/mapping/benchmark/` devtool + CLI removed
+    (2,610 of 4,218 inserted lines — built for the CUT real-life benchmark; zero remaining
+    importers, verified). PR shrinks to its subject: 1,608 insertions / 10 files.
+- `site/` (canonical) + `~/portfolio` clone (deploy vehicle, LOCAL commit): /dimensional rewritten
+  to v5 + tonight's replay-verified numbers; `next build` + typecheck pass. NOT deployed.
+- Linear (done BEFORE the no-remote instruction, per explicit ask): DIM-920 description rewritten
+  (phases 1–3, fusion after), status comment posted, sub-issues DIM-1252/1253/1254 created (none
+  marked done — untested then). Nothing touched since.
+
+**Morning checklist (Aaryan):**
+1. Review + push trial repo `main` (all local commits).
+2. Review dimos branch commits `7647d63f2` + `fadb41e70` → push to fork → PR #3016 updates.
+3. Portfolio: review local commit → `vercel --prod` (from `~/portfolio` on this box, or laptop).
+4. Linear: paste bench results comment on DIM-920 (draft in §5-adjacent block below); mark
+   DIM-1252 (Phase 1) as its verification runs are now real; DIM-1253 stays open until fiducial
+   verified on-robot or cross-run.
+5. Rotate the Linear API key when convenient (it transited chat in plaintext).
+
+**Ready-to-paste DIM-920 comment (draft — post only after reading the circularity verdict in §7):**
+> Offline benchmark results (replay, hk_village3, 120 kidnap sections, deterministic seeds,
+> truth = PGO-corrected poses with the noise floor measured; full harness in the trial repo):
+> today's RANSAC→judge: 77.5% success (93/120); at the 0.45 gate 27/120 published answers are
+> >1 m/15° wrong, every one with fitness 0.81–0.96, and no threshold reaches 2% false-accept.
+> With the fiducial prior into the same judge: 95.8% (115/120), 4.2% risk at the same gate, and a
+> 2%-risk gate exists (0.911 / coverage 105/120). Markers-only + judge: 95.0% at 0.4 s median vs
+> 9.7 s (the "RANSAC stands down" case, ~24×). PGO-as-truth was qualified with the marker-revisit
+> test (observe→loop→observe): PGO helps exactly at loop-return gaps on village3 (0.93→0.28 m)
+> but distorts mid-segment (0.47→1.38 m), and on china_office (PointLIO input) it degrades an
+> already-3–10 cm-consistent trajectory 10–100× — worth knowing wherever PGO poses are treated
+> as ground truth. Caveat: the marker map derives from the same PGO run as truth
+> (deployment-realistic, truth-correlated); cross-run evaluation is next.
+
 ## 8. Runbook — day-of operational essentials
 
 **Self-survey installer flow** (no tape measure, condensed from the execute-verified flow):
