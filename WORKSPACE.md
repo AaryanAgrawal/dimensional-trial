@@ -86,11 +86,18 @@ Next actions.
 
 ## 2. Next actions
 
-- [~] doing — **Phase 1: universal confidence reading** (window 1, in progress on branch
-      `feat/reloc-priors`): pluggable priors (RANSAC today, a last-accepted-pose seed next) propose
-      candidates; ALL candidates are scored by the same shared judge (wall-only fine-fitness at
-      RERANK_DIST) — that score IS the one comparable confidence, published with the answer +
-      winning source — see §4 v5.
+- [~] doing — **Phase 1: universal confidence reading** (window 1): BUILT + adversarially
+      verified on LOCAL branch `feat/reloc-priors` (3 commits, HEAD `a6be7e42e`, base
+      `feat/marker-localization-core`; local only — not pushed, awaiting Aaryan's go).
+      What landed: `relocalize.py` split into `generate_ransac_candidates()` + `refine_candidates()`
+      (public `relocalize()` preserved — parity proven bit-identical against the actual pre-refactor
+      code, same seeded scene); new `priors.py` (`Candidate` = T + source + confidence tier;
+      `RelocPrior` protocol; `RansacPrior`; `LastPosePrior`; `relocalize_with_priors()` → (T,
+      fitness, winning_source)); `module.py` gains `use_last_pose_seed` config (default off = today's
+      behavior) + `source=` in the accept log. No source bypasses the judge — confidence never
+      overrides fitness (tested). Tests: 6/6 new suite green; fiducial suite 65/66 with the 1
+      failure proven pre-existing at the base commit (LCM-timing flake). Remaining for Phase 1
+      close: decide push/PR form with the team context — see §4 v5.
 - [ ] todo — **Phase 2: fiducial prior**: plug PR #2808's visual `world→map` estimate in as a
       high-confidence-tier prior into that same judge — same universal reading, no bypass — after
       Phase 1 lands.
