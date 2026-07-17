@@ -254,6 +254,31 @@ sections of the recorded PGO maps with markers (§6). Real-life benchmark cut.
   (Phase 3/4) + END-76; add the PR link once the PR is restored. Alternative (leaner): skip a
   new issue — comment the v5 plan on DIM-940 and claim it.
 
+## 4a. Plan v6 — mid360-first (Aaryan, Jul 17 evening; supersedes v5's ordering, keeps its phases)
+
+**Context shift**: company focus = mid360 + PointLIO (Go2 lane deprioritized; its PGO/reloc
+non-transferable per lesh). PointLIO believed excellent — but our only measurement was on the
+EXCLUDED recording; allowed-data verification is step 1. Online PGO added to plan (design note
+in §7) but sequenced BEHIND mid360 items, Go2 exploration lane only.
+
+**Priority queue:**
+1. **FAST-LIO revisit consistency, mid360 walk lane B** (referee machinery ready, ~1 hr) — the
+   number the whole mid360 strategy rests on; replaces excluded evidence.
+2. **Sections benchmark on the mid360 lane** (premap from fastlio_lidar) — re-measure success AND
+   confidence gates there (environment-dependence finding: village gates won't transfer; the
+   shipping lane needs its own calibration). Also answers relocalize() behavior on 15x-denser
+   clouds.
+3. **Fiducial-first runtime on mid360** — marker map + FiducialPrior + judge as PRIMARY
+   relocalizer (LIO carries pose between anchors; slow age decay; boot = one search or one tag);
+   confidence composite (fitness + submap size + source + age + marker innovation) with
+   benchmark-calibrated per-environment gates. THE production deliverable.
+4. **Online PGO, Go2 exploration lane** — after the variance-ratio prerequisite; replay-graded
+   prototype first (§7 design note).
+
+Rationale for fiducial-first on mid360: LIO is relative — it holds trajectories rigid but cannot
+provide world→map; markers give the absolute anchor at ~zero compute (measured 9-25x cheaper than
+global search), and cameras exist on every platform (the transferable layer).
+
 ## 4. Plan of record (v5)
 
 Direction as of Jul 16 (Aaryan, latest burst — supersedes the same-day v4 draft, which itself
