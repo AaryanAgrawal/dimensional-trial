@@ -679,6 +679,29 @@ test generalization"* — is lesh's cross-run test, documented and unrun.
 - **Truth labels on every number**: `replay` rung, truth = "PGO silver (±6 cm floor)" or "marker
   agreement (independent)". Nothing labeled plain "ground truth".
 
+**First results (village3, 24 sections, replay, truth = PGO silver) — the money finding:**
+success 79.2% (19/24); **all 5 failures are CONFIDENT busts** — fitness 0.81–0.93 on poses
+1.4–3.9 m / 70–160° wrong; every one passes the 0.45 gate AND the docs' 0.6 (a success exists at
+fitness 0.824 *below* a failure at 0.934 — the published confidence is nearly blind at the failure
+boundary here). All 5 failures are small-submap frames (7.6–35k pts, below the live 50k gate) —
+**MIN_LOCAL_POINTS, not fitness, is what protects the live robot today.** Failure mode = 70–160°
+rotations (the yaw-flip/wrong-room class #2137 documented — the class a fiducial prior kills).
+120-section runs + fiducial configs running.
+
+**PGO-truth verification (leshy's method: observe marker → drive loop → observe again, locations
+must match — stratified by sighting time gap, marker 10, 156 sightings, village3):**
+- **RETRACTION of tonight's earlier aggregate claim "PGO makes marker scatter worse (0.387→0.478 m
+  RMS)"** — true as computed but a composition artifact: short-gap pairs (no drift to correct)
+  dominate the mixture. Kept visibly per anchor-on-truth.
+- Stratified truth: 60s+ **loop-return pairs: raw 0.934 m → PGO 0.280 m (3.3× better — PGO does
+  its job; leshy's verification PASSES)**. But 30–60 s mid-trajectory pairs: raw 0.471 m → PGO
+  **1.375 m (3× WORSE)** — slerp/lerp-interpolated corrections between sparse loop-closure anchors
+  BEND the mid-trajectory. 0–10 s: 4–5 mm both.
+- Consequence for every vs-PGO number: **silver truth is anchor-accurate, mid-segment-soft** —
+  section truth error can reach ~1 m mid-segment on this recording. Sections benchmark stays
+  honest via the 1 m/15° bar + marker co-truth; TOTAL_SPREAD (mixes all pairs) inherits the same
+  composition trap — worth telling the team.
+
 ## 8. Runbook — day-of operational essentials
 
 **Self-survey installer flow** (no tape measure, condensed from the execute-verified flow):
