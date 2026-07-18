@@ -925,8 +925,13 @@ Figure: `live_fix_quality_village3.png` (takeaway title). Analysis: `live_fix_qu
 - **Honest ceiling, verified:** even perfect detection gating floors at ~1.4–1.6 m on this
   single-tag 31 m-lever geometry — a detection gate CANNOT make village3 fiducial fixes
   judge-winning. The deployment levers are **tag-near-map-origin placement, multi-tag
-  (min_tags≥2), orientation smoothing over a sighting window** (window numbers 2 s→2.22 m /
-  5 s→1.92 m are UNVERIFIED — no producing code on disk; treat as hypothesis).
+  (min_tags≥2), orientation smoothing over a sighting window** — the smoothing lever is now
+  MEASURED (`live_fix_quality.py --window-sweep`, trial ce4151a): causal Markley window
+  0→1→2→5→10 s gives fix-error medians 2.83→2.38→2.23→1.98→1.71 m vs ransac ref (floor 1.69 m;
+  PGO ref 2.45→1.73 m, floor 1.59 m). Causal = zero publish latency; cost is warm-up (only 29%
+  of fixes had a full 2 s window in these short bursts, yet partial windows still helped). The
+  earlier 2.22/1.92 report numbers were confirmed-in-substance (Δ ≤ 0.06 m, inside the
+  reference-disagreement budget).
 - **Village3 re-rehearsal pass1 (gated, complete):** 44 fixes (all amb≥5 — gate active,
   ~on-model vs 41 predicted), 21 accepts ALL source=ransac, 0 rejects, 0 tracebacks, scatter
   median 2.52 m. The judge keeps being right; fiducial still can't win HERE (see ceiling).
