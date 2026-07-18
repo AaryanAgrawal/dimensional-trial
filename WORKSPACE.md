@@ -1179,6 +1179,28 @@ DIM-944's embodiment complaint); age-decay constants noted as per-lane knobs (ne
 PointLIO ages marker fixes slowly — Phase-4 autoresearch tunes per embodiment). Realtime PGO:
 never proposed, nothing to unwind. DIM-920 draft comment updated with the lane note.
 
+**Jul 17 11:46 PM – Jul 18 12:19 AM — lesh (Discord; THE scope-settling conversation):**
+- Constants question answered: go2 PGO "written only for go2 over webrtc"; historical evals =
+  "average distance between aruco tag recognitions, datasets are there... not super documented"
+  (= the unmerged comparison report our sweep found). **"I do think these algos need evidential
+  backing, in fact they are impossible to develop otherwise"** — endorses the provenance rule.
+- Modularity confirmed: "another tuned RANSAC/ICP will plug in based on sensors used... separate
+  evals and tunes at least at the start" (= our per-embodiment calibration finding).
+- mid360: DOES need PGO eventually but "100x less sensitive than go2" — delayed; andrew
+  raycaster mid360 global maps usable as-is without PGO. PointLIO+mid360 anecdote: "~5cm mistake
+  after walking the whole neighbourhood" (corroborates our measured 2-3cm/13min LIO lane).
+- **Fiducials for MAP correction: not necessary per lesh** ("easier to add RTK if you want
+  ground truth") — tag-constrained PGO PARKED.
+- **THE DIRECTION: "do a nice self contained work with aruco priors — shows the right arch
+  calls + actual IRL validation with robots... do that first, then we can have a convo what
+  else."** = the fiducial prior chunk (built + benchmarked + decorrelated) PLUS the live-robot
+  (greenwald) validation — the one deferred item, now explicitly requested.
+- He asked "which pgo? how was this measured?" re 0.15-0.35m — paste-ready answer in chat/board.
+
+Acted on: tag-constrained PGO parked on the board; IRL validation promoted to the top of next
+actions; provenance work validated; PGO-on-mid360 evals noted as future "serious evals and work"
+lesh may hand over.
+
 *Updated whenever the team gives direction; feedback lands here same-day.*
 
 ## 10. Learning log — Aaryan's working vocabulary (ramped 2026-07-16)
