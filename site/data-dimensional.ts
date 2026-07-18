@@ -169,6 +169,11 @@ export const evidence: EvidenceSection[] = [
         "src": "/dimensional/benchmark_hk_village6.png"
       },
       {
+        "src": "/dimensional/pgo_marker_explainer_village6.png",
+        "title": "village6 spatially — what a 0.67 → 0.31 m improvement looks like",
+        "explanation": "PGO's best village, drawn: three visits merge into one cluster; the final pass still sits apart. Better, not solved."
+      },
+      {
         "title": "Why villages 2 and 4 are excluded — one id, several physical tags",
         "explanation": "One printed id, three physical tags — stats invalid, recordings excluded.",
         "src": "/dimensional/benchmark_excluded_duplicate_ids.png"
