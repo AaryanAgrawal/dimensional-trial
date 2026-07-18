@@ -85,6 +85,86 @@ steps and orchestration glue only. Findings from workflow agents get adversarial
 they land on the board (the night of Jul 17 is the template: every headline number independently
 re-derived, two claims reframed by the verifiers).
 
+## Writing code the dimos way (studied from lesh + Sam Bull, Jul 17)
+
+Counted at dimos upstream/main 29f3555: lesh corpus 133 files / 21.0k code lines, Sam 2,221
+blamed lines. File paths relative to the `dimos` package. Our-branch audit + TODOs at the end.
+
+**Comments are WHY — physics and races, never narration.** Volume is ordinary (lesh 13.2%
+comment/code vs repo 15.4%; Sam 6.1%); content is the differentiator: unit conversions and
+failure mechanisms sit on the number, e.g. Pose3 noise "rad² vs m²" (pgo_auto.py:738-745):
+
+    trans_var = max(0.005, float(pair.score))  # >= sigma_trans ~7 cm
+
+Algorithm code comments like lesh (physics paragraph per block; module docstring opens with a
+typed ASCII pipeline, pgo_auto.py:24-29). Infra comments like Sam (sparse, but 3-5-line
+race/ordering paragraphs, ipc_factory.py:361-370). Freeform reST prose — Google Args:/Returns:
+only in legacy files (15/133). Zero TODO/FIXME/HACK lands (0 in Sam's 2,221 lines).
+
+**Raise loudly, catch narrowly, recover via sentinel.** lesh 10.4 raise vs 6.0 try per kloc;
+zero bare `except:` in either corpus. `except Exception` only at CLI/module boundaries (17 of
+lesh's 82 handlers; Sam exactly 1, logged). Inside algorithms crash via ValueError/TypeError;
+at a boundary convert a *specific* exception to an in-band sentinel with a why-comment
+(RuntimeError → `(identity, inf)` in _icp, pgo_auto.py:829-847). Messages give got-vs-want or
+the caller's next step (memory2/stream.py:472-475):
+
+    raise TypeError(".to_list() on a live stream would block forever. "
+                    "Use .drain() or .save(target) instead.")
+
+Asserts: near-zero in-process (lesh 1.8/kloc — raise instead); assert WITH diagnostic message
+only for cross-process layout contracts (ipc_factory.py:371-374, Sam).
+
+**Typing total; every escape scoped.** lesh 80–83% annotated, Sam 100%; all ~75 `type: ignore`
+across both carry [error-codes] — zero bare, zero noqa. Tunables = pydantic config with
+per-field unit comments + platform notes (pgo.py:97-99); value types = frozen @dataclass
+(lesh; Sam pydantic-only). Verdict: pydantic for module configs, dataclass for geometry values.
+
+**Small functions, one deliberate monster.** lesh median 7 lines (n=1,752, p90 25); Sam median
+11. The sanctioned exception concentrates a tuning surface instead of abstracting it:
+_search_for_loops, 160 lines / 11 keyword knobs (pgo_auto.py:573-587).
+
+**Units in names, frames on poses.** Counted (lesh runtime): _ts 90, _trans 55, _bytes 49,
+_thresh 38, _rad 14, _deg 10; frame_id x103; Sam: ts_ns, _frame_nbytes, cap_ms. Constants
+UPPER_SNAKE with layout comment: `_HEADER_FIELDS = 3  # (seq, ts, length) per slot, all
+int64` (ipc_factory.py:332).
+
+**Logging sparse, structured, pre-rounded.** lesh 0.62 calls/kloc, Sam 6.3; zero f-string logs
+in either. structlog event + kwargs: `logger.info("loop fallback fired", cur_idx=cur_idx,
+drift=round(drift, 2), ...)` (pgo_auto.py:655-660). Warnings carry operator remediation
+("increase slots or poll faster", ipc_factory.py:485). CLIs print/rich, they don't log.
+
+**Tests are the docs** (32% of lesh's output, 601 tests). Geometry: seeded
+`np.random.default_rng` synthetic scenes with construction rationale (test_pgo.py:133-146),
+exact-literal asserts. Concurrency/IPC: Sam's invariant-per-test — the docstring names the
+property ("Every message published within one ring is delivered exactly once, in order",
+test_ipc_factory.py:70), try/finally cleanup, wait_until never sleep. Both meta-test their
+conventions so fixtures can't rot (test_pgo.py:50-60; test_all_blueprints.py:98-101).
+
+**Imports & commits.** Three ruff-enforced import blocks; heavy imports deferred with a
+justification + enforcing-test pointer ("stays fast. See test_cli_startup.py", map.py:27-29).
+Commits: terse imperative subjects, 86% body-less (Sam, mean 34.7 chars) — PR carries context.
+
+**Our branch audit** (feat/fiducial-relocalization: 926 runtime / 770 test code lines) —
+complies: typing 100%, 9 coded ignores; raise 10.8/kloc; boundary-only broad catch; seeded
+SIMULATED scenes; unit-suffixed names (marker_length_m, _gravity_tilt_deg). Drift TODOs:
+- [ ] 6/8 logger calls are f-strings (relocalization/module.py:129,139,184,208;
+      fiducial/visual_relocalization_module.py:100,107). setup_logger IS structlog with a kv
+      renderer (utils/logging_config.py:229) — switch to event + kwargs.
+- [ ] bare `assert self._premap is not None` (relocalization/module.py:160) — message or raise.
+- [ ] `MIN_WALL_POINTS = 100` (relocalization/relocalize.py:44) is naked while its neighbors
+      carry why/unit comments (:35-38).
+
+**Checklist before pushing dimos code:**
+1. Magic numbers: unit or physical translation on the same line.
+2. Quantities carry units in the identifier; every pose names its frame.
+3. No bare `except:`; `except Exception` only at a boundary, and logged.
+4. Error messages: got-vs-want (`"got {n}"`, memory2/transform.py:115) or the caller's next step.
+5. Every def annotated; every `type: ignore` carries an [error-code].
+6. Logs: event string + kwargs, values pre-rounded, no f-strings; CLIs print instead.
+7. Function > ~25 lines (lesh p90) and not the designated knob-concentrator → split it.
+8. Tests: seeded rng, docstring states the invariant, wait_until not sleep, try/finally cleanup.
+9. Comments answer WHY; no TODO/FIXME reaches main — fix it now or file it.
+
 ## When stuck
 
 State the assumption, name the simpler path, ask only if it's a real fork in the road — otherwise
