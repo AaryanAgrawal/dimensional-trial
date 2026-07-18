@@ -139,6 +139,11 @@ export const evidence: EvidenceSection[] = [
         "explanation": "The same evidence in 3D: dots are data, globes are conclusions."
       },
       {
+        "src": "/dimensional/revisit_medians.png",
+        "title": "The revisit test, all recordings — disagreement by time gap",
+        "explanation": "Short gaps: both systems agree to millimeters (the floor). Long gaps: odometry drifts up to 8.8 m and PGO closes the loop — except village3's mid-drive bucket, where the correction overshoots."
+      },
+      {
         "title": "One referee tag, three systems — the cross-village benchmark chart",
         "explanation": "Same tag, three systems — the spread is the error.",
         "src": "/dimensional/benchmark_odom_pgo_module.png"
