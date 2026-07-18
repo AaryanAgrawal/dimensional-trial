@@ -297,9 +297,14 @@ def main() -> int:
     for ax, a, (_, label, *_rest) in zip(axes, results, RECS):
         draw_panel(ax, a, label)
     axes[0].set_ylabel("same-tag pair distance [m]", fontsize=9)
+    # Title IS the takeaway (Aaryan's figure rule, Jul 18) — the two biggest
+    # caveats ride in the sentence, not a footnote.
+    pgo_bars = [a["bar_pgo_m"] for a in results]
+    raw_bars = [a["bar_raw_m"] for a in results]
     fig.suptitle(
-        "Relocalization benchmark — long-gap revisit, hardened: one physical referee tag per "
-        "recording; distance between its repeated placements across the long gap · replay",
+        f"PGO cuts long-gap revisit disagreement to {min(pgo_bars):.2f}-{max(pgo_bars):.2f} m "
+        f"(raw odometry: {min(raw_bars):.2f}-{max(raw_bars):.1f} m) — in-sample for its tune; "
+        "consistency, not absolute accuracy · one referee tag per recording, replay",
         fontsize=10.5, y=0.995)
     fig.legend(handles=[plt.Rectangle((0, 0), 1, 1, color=C_RAW),
                         plt.Rectangle((0, 0), 1, 1, color=C_PGO)],
@@ -322,15 +327,20 @@ def main() -> int:
                 f"fresh graphs) · bootstrap keeps {min(n_rep)}–{max(n_rep)}/{B} "
                 "replicates (degenerate visit resamples dropped) · bucket edges are arbitrary "
                 "constants")
+    honesty3 = ("in-sample: shipped PGO defaults were tuned by minimizing marker spread on these "
+                "same hk_village recordings (loop_closure/eval.py) · recordings are short drives "
+                "with deliberately rough handling (author's own description) · truth = aruco via "
+                "the go2 camera, which its author distrusts; referee tag never aids any system")
     repro = (f"cmd: cd dimos && uv run python ../trial/harness/fig3_hardened.py · "
              f"dimos {rev_dimos} · trial {rev_trial} · "
              f"bootstrap seeds [{SEED_BASE}, rec_idx, run] · "
              f"{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%MZ')}")
-    fig.text(0.005, 0.076, method, fontsize=6.2, color=INK, alpha=0.9)
-    fig.text(0.005, 0.052, honesty, fontsize=6.2, color=INK, alpha=0.9)
-    fig.text(0.005, 0.028, honesty2, fontsize=6.2, color=INK, alpha=0.9)
+    fig.text(0.005, 0.100, method, fontsize=6.2, color=INK, alpha=0.9)
+    fig.text(0.005, 0.076, honesty, fontsize=6.2, color=INK, alpha=0.9)
+    fig.text(0.005, 0.052, honesty2, fontsize=6.2, color=INK, alpha=0.9)
+    fig.text(0.005, 0.028, honesty3, fontsize=6.2, color=INK, alpha=0.9)
     fig.text(0.005, 0.004, repro, fontsize=6.2, color=INK, alpha=0.9)
-    fig.subplots_adjust(left=0.045, right=0.99, top=0.83, bottom=0.175, wspace=0.30)
+    fig.subplots_adjust(left=0.045, right=0.99, top=0.83, bottom=0.21, wspace=0.30)
 
     FIGURES.mkdir(parents=True, exist_ok=True)
     out_png = FIGURES / "revisit_medians_hardened.png"
@@ -338,14 +348,23 @@ def main() -> int:
     plt.close(fig)
 
     if args.replot:
-        print(f"\nwrote {out_png} (replot from {OUT_JSON.name}; JSON untouched)")
+        # Sync the meta TEXT back into the JSON so PNG and JSON never diverge
+        # (the numbers are untouched — text-only edit path).
+        with open(OUT_JSON) as f:
+            data = json.load(f)
+        data["meta"]["honesty"] = " · ".join([honesty, honesty2, honesty3])
+        data["meta"]["method"] = method
+        with open(OUT_JSON, "w") as f:
+            json.dump(data, f, indent=1)
+        print(f"\nwrote {out_png} (replot from {OUT_JSON.name}; JSON meta text synced)")
         return 0
     OUT_JSON.parent.mkdir(parents=True, exist_ok=True)
     with open(OUT_JSON, "w") as f:
         json.dump({"meta": {"n_runs": N_RUNS, "B": B, "visit_gap_s": VISIT_GAP_S,
                             "floor_bucket_s": [0, FLOOR_HI_S], "seed_base": SEED_BASE,
                             "git_rev_dimos": rev_dimos, "git_rev_trial": rev_trial,
-                            "honesty": honesty + " · " + honesty2, "method": method},
+                            "honesty": " · ".join([honesty, honesty2, honesty3]),
+                            "method": method},
                    "recordings": [{k: v for k, v in a.items() if not k.startswith("_")}
                                   for a in results]}, f, indent=1)
     print(f"\nwrote {out_png}\nwrote {OUT_JSON}\ntotal {time.perf_counter()-t_all:.0f}s")
