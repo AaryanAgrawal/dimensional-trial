@@ -34,7 +34,7 @@ named hole in the naive figure closed:
                         independent y per panel, values annotated.
 
 Raw pair distances are graph-independent (detection is deterministic), so the
-three runs move only the PGO series — asserted at runtime, not assumed.
+runs move only the PGO series — asserted at runtime, not assumed.
 
 Run: cd dimos && uv run python ../trial/harness/fig3_hardened.py
 Output: trial/results/figures/revisit_medians_hardened.png
