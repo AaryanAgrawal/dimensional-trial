@@ -626,8 +626,10 @@ def make_figure(path: Path, amb_ratio: np.ndarray, err_ransac: np.ndarray,
         for s in ax.spines.values():
             s.set_color("#d8d7d2")
         ax.tick_params(colors=muted)
-    fig.suptitle("village3 rehearsal: live fiducial world->map fix error — 112 fixes, "
-                 f"SEED={SEED}, deterministic", fontsize=10, color=ink)
+    # Title = the takeaway (house figure rule); method detail stays in the panels.
+    fig.suptitle("1 deg of tag-orientation error moves the fix 0.55 m at this 31 m lever — "
+                 "geometry, not detection quality, explains the 2.8 m live scatter "
+                 f"(village3 replay, 112 fixes, SEED={SEED})", fontsize=10, color=ink)
     fig.tight_layout()
     path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(path, dpi=150, bbox_inches="tight", facecolor=fig.get_facecolor())
