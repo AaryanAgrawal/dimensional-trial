@@ -141,7 +141,7 @@ export const evidence: EvidenceSection[] = [
       {
         "src": "/dimensional/revisit_medians.png",
         "title": "The revisit test, all recordings — disagreement by time gap",
-        "explanation": "Short gaps: both systems agree to millimeters (the floor). Long gaps: odometry drifts up to 8.8 m and PGO closes the loop — except village3's mid-drive bucket, where the correction overshoots."
+        "explanation": "Short gaps: both systems agree to millimeters (the floor). Long gaps: odometry drifts up to 8.8 m and PGO closes the loop — except village3's mid-drive bucket, where the correction overshoots. IN-SAMPLE: the shipped PGO tune was fit on these same recordings (eval.py minimizes marker spread on hk_village1..6), so these numbers don't claim generalization."
       },
       {
         "title": "One referee tag, three systems — the cross-village benchmark chart",
@@ -359,6 +359,7 @@ export const provenance: Knob[] = [
   { knob: "odom_rot_var", value: "1e-6 rad^2", status: "partial", note: "comment says 'tuned for a Go2-class ground robot' — the word 'tuned' has no run behind it; rotation variance never swept anywhere" },
   { knob: "marker_length_m (Go2 deployment + eval marker_size default)", value: "0.1 m", status: "partial", note: "physical print kit is 100 mm (runbook + verified on recording); pinned by test; no committed caliper measurement of the printed tags" },
   { knob: "eval DEFAULT_DATASETS", value: "hk_village1..6 (range(1,7))", status: "partial", note: "trial found v2/v4 each contain MULTIPLE physical tags sharing id 10 — TOTAL_SPREAD aggregates two poisoned datasets, incl. the v2 win" },
+  { knob: "PGOConfig shipped defaults (as a set)", value: "loop/odom variances, radii, thresholds", status: "partial", note: "eval.py's docstring: the tuning eval minimizes TOTAL_SPREAD on hk_village1..6 — the same recordings Fig 3 measures, so its 0.15–0.35 m is in-sample for the tune; lesh (Jul 18): a still-more-aggressive hk-specific tune existed, judged unnecessary" },
   { knob: "max_reprojection_error_px (per-tag PnP accept gate)", value: "3.0 px", status: "partial", note: "introduced with no rationale; system validated AT 3.0 (SIMULATED ATE 1.75→0.33 m) — the value itself never swept against alternatives" },
   { knob: "SCALE_PLAN", value: "[(0.2, 8), (0.3, 8), (0.8, 1)] (voxel_size m, RANSAC runs)", status: "tested", note: "fully bracketed in results.tsv: adding 0.2 m gained a frame, dropping 0.3/0.8 or shifting them lost frames; restart counts swept per scale" },
   { knob: "RANSAC_ITERS", value: "500_000", status: "tested", note: "bracketed both directions: 250k/400k lost frames, 2M blew the time budget; per-scale and combo variants all discarded" },

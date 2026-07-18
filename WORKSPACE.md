@@ -899,6 +899,19 @@ day. dimos branch commits `086371238` (blueprint + 3 tests) + `c468c55a8` (docs)
 > drift is unrepresentable. Wherever PGO poses are treated as ground truth, this per-recording
 > check is worth running; the odom/loop variance ratio looks like the lever.
 
+**"Which PGO / how was this measured?" — draft answer (updated Jul 18 with the in-sample fact):**
+> Which: the shipped offline PGO (`dimos map global --pgo` → `mapping/loop_closure/pgo.py`,
+> gtsam iSAM2 + o3d ICP closures) at stock `PGOConfig` defaults — no custom tune.
+> How: your observe→loop→observe protocol, made stratified — same-physical-tag placement
+> disagreement by time gap, raw odom vs PGO-corrected, per recording; referee tag never helps
+> the system; medians per gap bucket. 0.15–0.35 m = the median loop-return disagreement range
+> across the 4 valid villages (v2/v4 excluded — each has TWO physical tags sharing id 10, which
+> also likely explains the v4 "recognition away from the group" you mentioned).
+> Caveats we attach ourselves: in-sample for the tune (eval.py minimizes TOTAL_SPREAD on these
+> same recordings); aruco truth has a measured decimeter floor (and you distrust the camera);
+> recordings are short adversarial clips; PGO is not bit-deterministic (~6 cm run-to-run, up to
+> 2× swing in sparse buckets).
+
 ## 8. Runbook — day-of operational essentials
 
 **Self-survey installer flow** (no tape measure, condensed from the execute-verified flow):
