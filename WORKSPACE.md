@@ -125,6 +125,20 @@ Next actions.
   (fix within 5 s near tag) → kidnap prior-on/off → start/end referee → with/without mid360 →
   record everything.
 
+**RESEARCH METHOD (aligned with Aaryan, Jul 18 ~1 AM — every claim goes through this loop):**
+1. Falsifiable number FIRST — state the claim as a measurable quantity before running anything.
+2. Truth external to the system under test — the referee tag never helps what it grades.
+3. Deterministic + reproducible — seeds, exact command, git revs printed ON the artifact.
+4. Stratify by the mechanism's variable — aggregates hide composition.
+5. Adversarial verification before anything lands — an independent agent re-derives every number
+   and tries to refute it. (Proof it works: Fig 3's original FAILED its rerun acceptance test
+   tonight and was rebuilt with 5 runs + envelope bands.)
+6. Caveats travel in the same sentence as the number (in-sample, truth floor, draw instability).
+7. Negative results are results (0 live fiducial wins; 0/184 wall-fallback fires).
+8. Provenance label on every constant: tested / partial / arbitrary.
+9. Figures simple; the title IS the takeaway.
+10. Ladder: replay integration tests → IRL; every IRL run is recorded so it joins the suite.
+
 **NAMING (Aaryan, Jul 17 morning — use these terms everywhere from now on):**
 - **"Relocalization benchmark"** = the MARKER instrument: physical tags as external truth —
   the revisit test (observe → walk → observe again), marker scatter, marker-truth scoring,
@@ -901,12 +915,16 @@ day. dimos branch commits `086371238` (blueprint + 3 tests) + `c468c55a8` (docs)
    DIM-1252 (Phase 1) as its verification runs are now real; DIM-1253 stays open until fiducial
    verified on-robot or cross-run.
 5. Rotate the Linear API key when convenient (it transited chat in plaintext).
-6. **HOLD on sending Fig 3 / the 0.15–0.35 m claim to anyone** until BOTH: (a) the hardened
-   figure (bootstrap bands, 3 runs/recording) lands, and (b) its honesty block carries the
-   Jul 18 lesh-context caveats — in-sample-for-the-tune (eval.py minimizes TOTAL_SPREAD on these
-   very recordings), truth distrusted by its author (aruco via "really awful" camera), datasets
-   are adversarial shorts ("throwing robot around"), and lesh's own criterion is straight
-   corners on hundreds-of-meter maps, not aruco agreement. See the Jul 18 ledger entry.
+6. **Fig-3 HOLD RESOLVED (Jul 18 ~1:30 AM): send `revisit_medians_hardened.png`, never the old
+   figure.** The original FAILED its independent-rerun acceptance test (v3's PGO median is
+   draw-unstable, 0.22–0.47 m across fresh graphs; the 3-run band didn't contain the verifier's
+   draw). Hardened version: 5 PGO runs/recording, envelope bands, run-median dots, and ALL
+   caveats printed on the figure (in-sample-for-the-tune via eval.py, author-distrusted truth,
+   rough-handling recordings, consistency-not-accuracy, ≤0.13 m walk timing jitter). **The
+   claim of record is now 0.17–0.42 m PGO / 0.37–8.8 m raw** (bar = median of 5 run medians) —
+   retire "0.15–0.35 m" everywhere. Known attack surface an expert may raise: p90_pgo > p90_raw
+   on v1/v3 (the misplaced-revisit-pass mechanism — have the ablation answer ready); walk's
+   effective revisit n=2.
 
 **Ready-to-paste DIM-920 comment (final draft — adversarially verified wording, post in morning):**
 > Offline benchmark results (replay, hk_village3, 120 sections, deterministic seeds, truth =
@@ -931,7 +949,8 @@ day. dimos branch commits `086371238` (blueprint + 3 tests) + `c468c55a8` (docs)
 > (temporal-split map, different-recording map) are next.
 >
 > **PGO-as-truth qualifier (leshy's observe→loop→observe test, stratified):** village3: PGO
-> reconciles loop-return drift (0.93→0.28 m) but misplaces one revisit pass ~1.4 m even at
+> reconciles loop-return drift (0.93→0.25 m median; 0.22–0.47 m across fresh PGO runs — quote
+> the range, PGO is draw-unstable here) but misplaces one revisit pass ~1.4 m even at
 > loop-anchor keyframes — ablation-verified mechanism: stiff odom variance (1e-4 m²/edge vs
 > ≥0.015 m² loops) spreads the end-of-drive correction where drift didn't occur; non-monotonic
 > drift is unrepresentable. Wherever PGO poses are treated as ground truth, this per-recording
@@ -942,9 +961,11 @@ day. dimos branch commits `086371238` (blueprint + 3 tests) + `c468c55a8` (docs)
 > gtsam iSAM2 + o3d ICP closures) at stock `PGOConfig` defaults — no custom tune.
 > How: your observe→loop→observe protocol, made stratified — same-physical-tag placement
 > disagreement by time gap, raw odom vs PGO-corrected, per recording; referee tag never helps
-> the system; medians per gap bucket. 0.15–0.35 m = the median loop-return disagreement range
-> across the 4 valid villages (v2/v4 excluded — each has TWO physical tags sharing id 10, which
-> also likely explains the v4 "recognition away from the group" you mentioned).
+> the system; medians per gap bucket. Hardened numbers (5 fresh PGO runs per recording, bar =
+> median of run medians): PGO 0.17–0.42 m vs raw 0.37–8.8 m across the 5 valid recordings
+> (v2/v4 excluded — each has TWO physical tags sharing id 10, which also likely explains the
+> v4 "recognition away from the group" you mentioned). v3's PGO median alone swings 0.22–0.47 m
+> across fresh graphs — PGO is draw-unstable there, so we quote the range, not one draw.
 > Caveats we attach ourselves: in-sample for the tune (eval.py minimizes TOTAL_SPREAD on these
 > same recordings); aruco truth has a measured decimeter floor (and you distrust the camera);
 > recordings are short adversarial clips; PGO is not bit-deterministic (~6 cm run-to-run, up to
