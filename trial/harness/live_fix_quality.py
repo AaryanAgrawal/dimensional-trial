@@ -43,6 +43,11 @@ Deterministic: no RNG (ArUco, solvePnP, eigendecompositions, least squares);
 SEED printed per house rule. Detection pass cached to .npz keyed on db
 path+mtime+size and gate params; --no-cache forces recompute.
 
+--window-sweep: causal tag-orientation smoothing sweep (Markley mean over
+[t-w, t]) instead of the gate analysis tail; prints per-window fix error vs
+both references and exits BEFORE the json/figure writes, leaving the
+committed outputs untouched.
+
 Run: cd /home/dimos/dimensional-trial/dimos && \
      uv run python ../trial/harness/live_fix_quality.py
 """
@@ -309,6 +314,71 @@ def markley_mean(rots: Rotation) -> Rotation:
     return Rotation.from_quat(np.linalg.eigh(m)[1][:, -1])
 
 
+# ------------------------------------------ causal orientation-smoothing sweep
+
+WINDOW_SWEEP_S = (0.0, 1.0, 2.0, 5.0, 10.0)  # 0 s = unsmoothed baseline
+
+
+def orientation_window_sweep(det: dict[str, np.ndarray], passing: np.ndarray,
+                             ji: np.ndarray, R_w_tag: Rotation, T_w_tag: np.ndarray,
+                             M_inv: np.ndarray, cons_R: Rotation,
+                             t_ref_ransac: np.ndarray, t_ref_pgo: np.ndarray,
+                             floor_ransac_m: float, floor_pgo_m: float) -> None:
+    """Can CAUSAL smoothing of the world-frame tag orientation kill the lever?
+
+    For each published fix, its detection's tag ORIENTATION is replaced by the
+    Markley mean over every PASSING detection in [t - w_s, t] — never a future
+    frame, so a live module could compute exactly this (odom and the gate
+    verdict are both available at detection time). Translation stays per-
+    detection (measured second-order above). The tag is static in world, so
+    the window costs no publish delay — only warm-up: the first fix of an
+    approach averages a near-empty window. w_s = 0 keeps each detection's own
+    rotation and must reproduce the as-published counterfactual exactly.
+    """
+    pass_idx = np.flatnonzero(passing)
+    pass_ts = det["ts"][pass_idx]
+    print("\nCAUSAL ORIENTATION-SMOOTHING SWEEP (Markley mean of world tag "
+          "rotation over passing detections in [t-w, t]; translation unsmoothed):")
+    rows: list[tuple[float, float, float, float, float]] = []
+    for w_s in WINDOW_SWEEP_S:
+        fix_sm_t = np.empty((len(ji), 3))
+        dev_sm_deg = np.empty(len(ji))
+        n_win = np.empty(len(ji), dtype=int)
+        span_s = np.empty(len(ji))
+        for k, j in enumerate(ji):
+            t = det["ts"][j]
+            members = pass_idx[(pass_ts >= t - w_s) & (pass_ts <= t)]
+            R_sm = markley_mean(R_w_tag[members])
+            T = T_w_tag[j].copy()
+            T[:3, :3] = R_sm.as_matrix()
+            fix_sm_t[k] = (T @ M_inv)[:3, 3]
+            dev_sm_deg[k] = float(np.degrees((cons_R.inv() * R_sm).magnitude()))
+            n_win[k] = len(members)
+            span_s[k] = t - det["ts"][members[0]]
+        er = np.linalg.norm(fix_sm_t - t_ref_ransac, axis=1)
+        ep = np.linalg.norm(fix_sm_t - t_ref_pgo, axis=1)
+        rows.append((w_s, float(np.median(er)), float(np.percentile(er, 90)),
+                     float(np.median(ep)), float(np.percentile(ep, 90))))
+        # warm = window actually spans >= 90% of w (first fixes of a burst don't)
+        warm_pct = 100.0 * float((span_s >= 0.9 * w_s).mean()) if w_s > 0 else 100.0
+        print(f"  w={w_s:4.1f} s: ransac median {np.median(er):.2f} "
+              f"p90 {np.percentile(er, 90):.2f} | PGO median {np.median(ep):.2f} "
+              f"p90 {np.percentile(ep, 90):.2f} m | smoothed dev "
+              f"median {np.median(dev_sm_deg):.1f} deg | n_in_win median "
+              f"{int(np.median(n_win))} min {n_win.min()} | full-window {warm_pct:.0f}%")
+    print(f"  floor (per-burst consensus rotation, non-causal): ransac median "
+          f"{floor_ransac_m:.2f} | PGO median {floor_pgo_m:.2f} m")
+    best = min(rows[1:], key=lambda r: r[1])  # best smoothed window vs primary ref
+    base = rows[0]
+    print(f"  -> best causal window w={best[0]:g} s: ransac median {base[1]:.2f} -> "
+          f"{best[1]:.2f} m ({100 * (1 - best[1] / base[1]):.0f}% of the way from "
+          f"baseline to zero; floor gap {best[1] - floor_ransac_m:+.2f} m)")
+    print("  latency: causal window = zero added publish delay; the cost is warm-up "
+          "(w s of continuous tag sighting before the quoted error holds — see "
+          "full-window %). A 2 s window warms within one 2 s reloc cycle; 5-10 s "
+          "windows need 2.5-5 cycles of sighting.")
+
+
 # ------------------------------------------------------------------ analysis
 
 
@@ -338,6 +408,9 @@ def main() -> int:
     ap.add_argument("--fig", type=Path,
                     default=HARNESS.parent / "results" / "figures" / "live_fix_quality_village3.png")
     ap.add_argument("--no-cache", action="store_true")
+    ap.add_argument("--window-sweep", action="store_true",
+                    help="causal orientation-smoothing sweep, then exit — skips the "
+                         "json/figure writes so committed outputs stay untouched")
     a = ap.parse_args()
 
     dimos_root = HARNESS.resolve().parents[1] / "dimos"
@@ -475,6 +548,15 @@ def main() -> int:
               f"PGO median {np.median(ep):.2f} p90 {np.percentile(ep, 90):.2f} m")
     print("  -> rotation carries ~all gateable error; the ~1.4-1.5 m consensus floor is "
           "survey-orientation + reference budget, unreachable by any per-detection gate")
+
+    if a.window_sweep:
+        cf_rot_t = np.array(cf["consensus rotation"])
+        orientation_window_sweep(
+            det, passing, ji, R_w_tag, T_w_tag, M_inv, cons_R,
+            reloc["t"][ri], t_wm_pgo,
+            floor_ransac_m=float(np.median(np.linalg.norm(cf_rot_t - reloc["t"][ri], axis=1))),
+            floor_pgo_m=float(np.median(np.linalg.norm(cf_rot_t - t_wm_pgo, axis=1))))
+        return 0
 
     # ---- which live-observable separates
     joined_full = {"range_m": det["range_m"][ji], "side_px": det["side_px"][ji],
