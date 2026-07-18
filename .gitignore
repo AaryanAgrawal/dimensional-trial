@@ -15,7 +15,6 @@ dimos/
 !/WORKSPACE.md
 !/README.md
 !/trial
-!/demo
 !/print
 !/office_markers.yaml
 !/site
@@ -34,20 +33,6 @@ dimos/
 /trial/harness/tests/*
 !/trial/harness/tests/*.py
 /trial/harness/out/
-
-# demo/ — the synthetic proof harness: source + the one-command runner + its config
-/demo/*
-!/demo/marker_loc_demo
-!/demo/run.sh
-!/demo/run_sweep.sh
-!/demo/requirements.txt
-!/demo/marker_map.yaml
-
-/demo/marker_loc_demo/*
-!/demo/marker_loc_demo/*.py
-
-/demo/.venv/
-/demo/out*/
 
 # print/ — the printable tag PDFs only
 /print/*
