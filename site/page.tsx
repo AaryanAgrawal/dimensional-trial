@@ -3,6 +3,7 @@ import OpenQuestions from "./OpenQuestions";
 import {
   baselines,
   evidence,
+  glossary,
   stackMap,
   openQuestions,
   metrics,
@@ -284,6 +285,19 @@ export default function DimensionalPage() {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* Read this first */}
+      <section className="mt-12 border-t border-line pt-6">
+        <PhaseHeading>Read this first</PhaseHeading>
+        <dl className="mt-3 grid gap-x-6 gap-y-2 sm:grid-cols-2">
+          {glossary.map((g) => (
+            <div key={g.term} className="text-sm">
+              <dt className="font-medium text-ink">{g.term}</dt>
+              <dd className="text-xs text-soft">{g.def}</dd>
+            </div>
+          ))}
+        </dl>
       </section>
 
       {/* Evidence log */}
