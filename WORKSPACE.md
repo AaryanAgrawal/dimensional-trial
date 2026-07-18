@@ -905,11 +905,50 @@ day. dimos branch commits `086371238` (blueprint + 3 tests) + `c468c55a8` (docs)
   blueprint comment — sibling blueprint has the same landmine, flagged not touched); LCM rmem
   sysctl warning needs sudo.
 
+### Jul 18 overnight — live-gap workflow: MECHANISM FOUND, gate landed, replays re-run
+
+**The instrument-vs-product (missing QualityWindow/SpeedLimit) hypothesis was REFUTED by
+measurement — the real mechanism is geometry:** village3's tag sits **31.26 m from the map
+origin**, so every degree of world-frame tag-orientation error moves the world→map fix
+**0.546 m**. Orientation deviation (median 4.8°) × lever = 2.60 m predicted ≈ 2.83 m observed
+scatter; **rho(orientation deviation, fix deviation) = +0.97** (reference-free scatter;
+vs-reference error rho 0.54). Sharpness/speed/gyro/range all fail to discriminate (|rho| ≤ 0.25
+or inverted; 315/316 detections already < 1.5 m — the ambiguity gate self-limits range).
+Figure: `live_fix_quality_village3.png` (takeaway title). Analysis: `live_fix_quality.py`
+(72c66f2, byte-identical rerun verified) + `rehearsal_report.py` scorecard (db4bf8b).
+
+- **Gate landed (dimos `d4e126f51`)**: the ONE live signal tracking the mechanism is the
+  existing IPPE ambiguity ratio (rho −0.57 vs orientation dev) → default 2.0 → 5.0, zero new
+  knobs; `reject_counts` observability (throttled warn prints WHICH gate fired). 85 tests green,
+  ruff+mypy clean. (Amended from c469b16dd for a message-only rho mislabel the verifier caught —
+  tree hash identical; also his: kept-p90 is 4.77 m not 4.48.)
+- **Honest ceiling, verified:** even perfect detection gating floors at ~1.4–1.6 m on this
+  single-tag 31 m-lever geometry — a detection gate CANNOT make village3 fiducial fixes
+  judge-winning. The deployment levers are **tag-near-map-origin placement, multi-tag
+  (min_tags≥2), orientation smoothing over a sighting window** (window numbers 2 s→2.22 m /
+  5 s→1.92 m are UNVERIFIED — no producing code on disk; treat as hypothesis).
+- **Village3 re-rehearsal pass1 (gated, complete):** 44 fixes (all amb≥5 — gate active,
+  ~on-model vs 41 predicted), 21 accepts ALL source=ransac, 0 rejects, 0 tracebacks, scatter
+  median 2.52 m. The judge keeps being right; fiducial still can't win HERE (see ceiling).
+- **mid360 arm prep: FEASIBLE** (trial c528454): premap exported from the benchmark's prepared
+  pkl (`dimos map global` can't — this recording's lidar storage poses are ALL placeholders;
+  payload replay is unaffected), 2,782,834 pts verified; marker map {0,1,2,6,7} with referee 4
+  hard-refused by the tool; health flag: tag2 has mirror-ambiguous raw sightings (Markley max
+  dev 115°) — the 5.0 ambiguity gate is the defense. Its replay + village3 pass2 were both
+  TRUNCATED by pattern-matched kills hitting healthy processes while a teardown-hung one ignored
+  TERM — **ops rule: kill replays by exact PID only** — and are re-running serially now
+  (`$CLAUDE_JOB_DIR/tmp/replay_runner.sh`, logs `replay_run2.log` / `replay_run_pass2.log`).
+
+**ROBOT-DAY DESIGN RULE (falls straight out of the lever mechanism):** survey tags NEAR the map
+origin (or start mapping next to a tag), and prefer ≥2 tags in view for fixes — world→map error
+scales as (tag distance from map origin) × (orientation error). A tag 30 m out needs ~0.2°
+orientation truth to give a 10 cm fix; a tag 2 m out tolerates 3°.
+
 **Morning checklist (Aaryan):**
 1. Review + push trial repo `main` (all local commits).
-2. Review dimos branch (history REWRITTEN by the rebase/necessity surgery — head `c468c55a8`,
-   24 commits over upstream/main, backup ref `surgery-backup`) → push to fork with
-   **`git push --force-with-lease`** → PR #3016 updates.
+2. Review dimos branch (history REWRITTEN by the rebase/necessity surgery; backup ref
+   `surgery-backup`; head now `d4e126f51` = blueprint + docs + measured ambiguity gate) → push
+   to fork with **`git push --force-with-lease`** → PR #3016 updates.
 3. Portfolio: review local commit → `vercel --prod` (from `~/portfolio` on this box, or laptop).
 4. Linear: paste bench results comment on DIM-920 (draft in §5-adjacent block below); mark
    DIM-1252 (Phase 1) as its verification runs are now real; DIM-1253 stays open until fiducial
@@ -982,6 +1021,9 @@ day. dimos branch commits `086371238` (blueprint + 3 tests) + `c468c55a8` (docs)
    each tag from a couple of angles, read `marker_<id>` transforms off the TF tree (rerun viewer,
    on by default) into `office_markers.yaml`. Orientation matters more than position — a 2°
    orientation error displaces the computed camera pose ~3.5cm per meter of range.
+   **Lever rule (measured, village3 Jul 18): world→map fix error = tag-distance-from-map-origin
+   × tag-orientation error (0.546 m/deg at 31 m). Survey tags NEAR the map origin or start
+   mapping next to a tag, and prefer ≥2 tags in view (`min_tags=2`) for fixes.**
 3. Compose + run: `pytest dimos/robot/test_all_blueprints_generation.py` (regenerates the
    registry, fails "please commit" by design — expected), then
    `dimos run unitree-go2-visual-relocalization`.

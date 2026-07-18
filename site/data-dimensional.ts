@@ -214,6 +214,11 @@ export const evidence: EvidenceSection[] = [
         "title": "One fitness gate, five environments — does the threshold transfer?",
         "explanation": "No single threshold transfers between environments.",
         "src": "/dimensional/confidence_cross_recording.png"
+      },
+      {
+        "title": "Live rehearsal finding: 1° of tag-orientation error moves the fix 0.55 m at a 31 m lever",
+        "explanation": "The full live chain ran in replay (camera → tag → fix → judge) and the judge correctly rejected every scattered single-tag fix — geometry, not detection quality, was the cause (ρ +0.97). Deployment rule that falls out: survey tags near the map origin, prefer two tags in view.",
+        "src": "/dimensional/live_fix_quality_village3.png"
       }
     ]
   }
