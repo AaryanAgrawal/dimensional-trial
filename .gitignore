@@ -1,9 +1,13 @@
 # Allowlist model — this repo tracks only the trial's lean working set:
-# CLAUDE.md, WORKSPACE.md, the benchmark instruments (trial/scripts/), the
-# synthetic proof harness (demo/), the physical marker kit (print/, office_markers.yaml).
-# Everything else (spec docs, research notes, day-by-day roadmap, PR drafts, page
-# copy, personal logistics, credentials) stays on disk, untracked — folded into
-# WORKSPACE.md where still load-bearing. See WORKSPACE.md §1 "Where everything lives".
+# CLAUDE.md, WORKSPACE.md, the offline benchmark (trial/harness/) + its tracked
+# comparison figures (trial/results/figures/), the /dimensional page source (site/),
+# and office_markers.yaml (kept: dimos' go2 blueprint resolves that bare name — see
+# its header comment). The cut real-life benchmark's instruments (trial/scripts/),
+# the synthetic demo harness (demo/), and the tag PDFs (print/) were removed in the
+# Jul 17 cleanup — all in git history ≤ 90c494a. Everything else (spec docs, research
+# notes, day-by-day roadmap, PR drafts, page copy, personal logistics, credentials)
+# stays on disk, untracked — folded into WORKSPACE.md where still load-bearing.
+# See WORKSPACE.md §1 "Where everything lives".
 
 # dimos is its own git repo (cloned separately) — never track as content here
 dimos/

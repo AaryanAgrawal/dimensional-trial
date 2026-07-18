@@ -7,9 +7,10 @@ benchmark instruments for the marker-localization project.
 dimensional-trial/         (this repo, root)
 ├── CLAUDE.md               how to work in this repo
 ├── WORKSPACE.md            state, plan, history — the living doc
-├── trial/scripts/          benchmark instruments (logger, bench runner, referee, overlay)
-├── demo/                   synthetic proof harness (real detector, rendered pixels)
-├── print/                  printable marker tags + surveyed map
+├── trial/harness/          the offline relocalization benchmark (sections + marker referee)
+├── trial/results/figures/  tracked comparison figures (everything else in results/ is generated)
+├── site/                   /dimensional trial-page source (canonical copy; deploys via portfolio)
+├── office_markers.yaml     placeholder marker map — dimos' go2 blueprint resolves this bare name
 └── dimos/                  ← cloned inside here, gitignored, its own git repo
 ```
 
