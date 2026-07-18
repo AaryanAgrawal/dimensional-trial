@@ -87,6 +87,44 @@ Next actions.
 
 ## 2. Next actions
 
+**PROJECT OF RECORD (aligned with Aaryan, Jul 18 ~1 AM — the one-pager):**
+
+- **Name: Fiducial Relocalization** (Linear DIM-920, branch `feat/fiducial-relocalization`,
+  PR #3016). lesh's scope sentence, verbatim, is the bar: *"do a nice self contained work with
+  aruco priors — this shows us a lot — that you can make the right arch calls, that you can do
+  actual irl validation with robots etc. this is great in itself."*
+- **One-line description** (Aaryan's wording, one correction applied): "fiducial relocalization —
+  an ArUco prior composed into the existing real-time judge; benchmarked on recordings,
+  validated IRL on go2 with and without mid360." (The judge predates us — `refine_candidates`;
+  what's new is the prior, the composition, and the validation. Don't claim the judge.)
+- **Architecture = three composable layers, all on the branch:**
+  1. *Proposers* (`dimos/mapping/relocalization/priors.py`): `RansacPrior` / `LastPosePrior` /
+     `FiducialPrior` — each only proposes `Candidate`s; self-reported confidence is
+     informational, never trusted. Any future prior (RTK, semantic, wifi) = one new class with
+     `propose()`; zero judge changes.
+  2. *The judge* (`relocalize.py::refine_candidates` — ICP LIVES HERE): per-source gravity gate →
+     wall-only fine-fitness rerank → Tukey-ICP polish of top-10 → final full-cloud ICP; publishes
+     the wall-ICP fitness + winning source. One decision point, source-blind, no bypass ever.
+  3. *Wiring* (`module.py` `use_fiducial_prior` + `world_map_fix: In` ←autoconnect→
+     `visual_relocalization_module.py` `world_map_fix: Out`; blueprint
+     `unitree-go2-fiducial-relocalization`): camera module and lidar module compose by
+     name+type stream, toggleable per-deployment, off by default.
+- **Vocabulary:** *benchmark* = offline development instrument (replayed recordings + a referee
+  tag that never helps the system, grades every design change; `trial/harness/`). *Confidence* =
+  the runtime signal published with each fix (judge fitness + winning source; measured: ranks
+  well within an environment, thresholds do NOT transfer, saturates on sparse submaps → submap
+  size belongs in it). Benchmark is for development; confidence is runtime.
+- **Real-world benchmark: YES** — robot day runs the same referee-tag grading live, and every
+  IRL run is RECORDED, so it immediately becomes a replayable suite member. One instrument, two
+  modes; the suite grows from reality.
+- **Integration-test ladder (recordings → IRL):** (a) committed replay integration test — run
+  the composed blueprint on a recording via `--replay`, assert end-to-end observables (fix
+  published, reloc accepts, source split, zero tracebacks) — the Jul 18 rehearsal formalized as
+  pytest; (b) referee-tag grading on top (excluded tag scores the run); (c) determinism
+  discipline — seeds, exact commands, per-run artifact dirs; (d) IRL: survey walk → acceptance
+  (fix within 5 s near tag) → kidnap prior-on/off → start/end referee → with/without mid360 →
+  record everything.
+
 **NAMING (Aaryan, Jul 17 morning — use these terms everywhere from now on):**
 - **"Relocalization benchmark"** = the MARKER instrument: physical tags as external truth —
   the revisit test (observe → walk → observe again), marker scatter, marker-truth scoring,
