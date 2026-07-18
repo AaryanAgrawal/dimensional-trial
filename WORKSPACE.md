@@ -821,14 +821,54 @@ at N=120 threshold conclusions swing on single samples):**
   (phases 1–3, fusion after), status comment posted, sub-issues DIM-1252/1253/1254 created (none
   marked done — untested then). Nothing touched since.
 
+### Jul 18 early AM — live fiducial path REHEARSED end-to-end in replay (workflow-verified)
+
+**The combined blueprint exists and the whole live chain ran in replay — camera frames → tag
+detection → world→map fix published → RelocalizationModule receives + inverts it into
+FiducialPrior → judge ranks it against RANSAC every cycle.** This is the pre-IRL gate for robot
+day. dimos branch commits `086371238` (blueprint + 3 tests) + `c468c55a8` (docs), LOCAL ONLY.
+
+- **Blueprint** `unitree_go2_fiducial_relocalization` (`robot/unitree/go2/blueprints/smart/
+  unitree_go2.py`): flat `autoconnect(unitree_go2, RelocalizationModule.blueprint(
+  use_fiducial_prior=True), VisualRelocalizationModule.blueprint(...))`, matching siblings
+  (upstream #2725 namespaces are opt-in; no sibling uses them). Registry regenerated, 39 tests
+  green. Wiring PROVEN, not assumed: ModuleCoordinator groups streams by (name, type) → the key
+  `("world_map_fix", Transform)` holds exactly the visual module's Out + reloc's In; an
+  in-process shared-LCM round-trip test asserts `reloc._fiducial_prior._fix_T ==
+  inv(published fix)` at 1e-9.
+- **Replay rehearsal** (hk_village3; artifacts in `trial/harness/out/rehearsal/`): PGO premap
+  exported (4.3 MB `.pc2.lcm`); marker map YAML built from tag-10's 152 reproj-gated sightings
+  (position delta vs referee.json consensus 0.0000 m; new `make_rehearsal_marker_map.py`).
+  150 s live run of the blueprint: both modules up on the same `/world_map_fix` topic, 20
+  relocalize accepts tracking ~1.1 m drift, 112 world→map fixes published (LCM spy), 0
+  tracebacks.
+- **Honest finding — `source=fiducial` won 0 times in this window, and that's the judge working
+  correctly:** live single-tag fixes scattered ~3 m mean |t| (100 mm tag PnP inversion at range,
+  and the LIVE path has NO QualityWindow/SpeedLimit gating — the offline harness's detect_all
+  had both). The judge kept RANSAC every time. Wiring proven; fiducial WINS not yet demonstrated
+  live. **Gap to consider before robot day: quality/speed gating in
+  VisualRelocalizationModule's live path** (offline instrument has it, live module doesn't).
+- **Robot-day expectations:** fiducial wins near tags / multi-tag / where lidar reloc is weak;
+  repeat `marker_length_m` in every `-o` set (config validation landmine, documented in the
+  blueprint comment — sibling blueprint has the same landmine, flagged not touched); LCM rmem
+  sysctl warning needs sudo.
+
 **Morning checklist (Aaryan):**
 1. Review + push trial repo `main` (all local commits).
-2. Review dimos branch commits `7647d63f2` + `fadb41e70` → push to fork → PR #3016 updates.
+2. Review dimos branch (history REWRITTEN by the rebase/necessity surgery — head `c468c55a8`,
+   24 commits over upstream/main, backup ref `surgery-backup`) → push to fork with
+   **`git push --force-with-lease`** → PR #3016 updates.
 3. Portfolio: review local commit → `vercel --prod` (from `~/portfolio` on this box, or laptop).
 4. Linear: paste bench results comment on DIM-920 (draft in §5-adjacent block below); mark
    DIM-1252 (Phase 1) as its verification runs are now real; DIM-1253 stays open until fiducial
    verified on-robot or cross-run.
 5. Rotate the Linear API key when convenient (it transited chat in plaintext).
+6. **HOLD on sending Fig 3 / the 0.15–0.35 m claim to anyone** until BOTH: (a) the hardened
+   figure (bootstrap bands, 3 runs/recording) lands, and (b) its honesty block carries the
+   Jul 18 lesh-context caveats — in-sample-for-the-tune (eval.py minimizes TOTAL_SPREAD on these
+   very recordings), truth distrusted by its author (aruco via "really awful" camera), datasets
+   are adversarial shorts ("throwing robot around"), and lesh's own criterion is straight
+   corners on hundreds-of-meter maps, not aruco agreement. See the Jul 18 ledger entry.
 
 **Ready-to-paste DIM-920 comment (final draft — adversarially verified wording, post in morning):**
 > Offline benchmark results (replay, hk_village3, 120 sections, deterministic seeds, truth =
@@ -1200,6 +1240,37 @@ never proposed, nothing to unwind. DIM-920 draft comment updated with the lane n
 Acted on: tag-constrained PGO parked on the board; IRL validation promoted to the top of next
 actions; provenance work validated; PGO-on-mid360 evals noted as future "serious evals and work"
 lesh may hand over.
+
+**Jul 18 ~12:30 AM — lesh (Discord, reacting to the pgo_marker_explainer figure; Aaryan: "don't
+reopen with him, just log it"):**
+- **PGO tuning is sensitive**: improving one test case can degrade 3 others or cost +400%
+  compute. "What you are testing and how you are interpreting is important — 0.3 m mistake
+  doesn't mean much in itself. Which dataset, observe the recording, was it supposed to loop
+  close?"
+- **Truth is distrusted by its own author**: "we don't entirely trust ground truth (would need to
+  compare aruco to VR trackers first, since this camera is really awful)" — corroborates our
+  independently-measured decimeter truth floor.
+- **The hk_village recordings are adversarial shorts**: "very short clips of me literally
+  throwing robot around"; some (his v4 example) end without a loop-close opportunity (observe
+  marker → shut off robot). NOT representative operation.
+- **His v4 note — likely OUR duplicate-tag finding**: he sees "one marker recognition away from
+  the group" in village4 and reads it as a recognition outlier. We measured v4's id-10 as TWO
+  physical tags sharing one id (which is why v4 is excluded from the suite). Our finding explains
+  his observation; log-only per Aaryan, surface if it comes up.
+- **The real historical validation was NOT aruco**: tags "met together overall," then days of
+  tuning until "all large maps got correct straight corners (hundreds of meters)" — straight
+  corners on large maps is his serious criterion (camera quality + timestamp alignment make
+  aruco the weaker instrument in his eyes).
+- **An hk-specific aggressive tune existed**: "super aggressive closures, made specifically to
+  pass these tests" — later judged unnecessary + compute-heavy given other datasets. Go2 PGO
+  deliberately deprioritized company-wide; he'd be "way more strict on pgo with serious lidars."
+- **Our follow-up check (code, Jul 18): the 0.15–0.35 m numbers are IN-SAMPLE for the tune.**
+  `dimos/mapping/loop_closure/eval.py`'s own docstring: the tuning eval minimizes TOTAL_SPREAD
+  (same-marker pairwise distance, PGO-corrected) **across hk_village1..6** — the same recordings
+  and essentially the same metric family as Fig 3. `pgo.py:98` confirms defaults are "tuned for a
+  Go2-class ground robot." Whether or not the *aggressive* variant shipped, the shipped defaults
+  were fit against this data. Fig 3's honesty block MUST say: in-distribution numbers for the
+  tune; no out-of-sample generalization claim.
 
 *Updated whenever the team gives direction; feedback lands here same-day.*
 
