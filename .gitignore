@@ -20,9 +20,8 @@ dimos/
 !/office_markers.yaml
 !/site
 
-# trial/ — only the benchmark instruments (code + yaml fixtures), nothing else
+# trial/ — only the offline benchmark (trial/harness) + tracked figures, nothing else
 /trial/*
-!/trial/scripts
 !/trial/harness
 
 # trial/harness — the offline confidence benchmark (sections harness); out/ stays untracked
@@ -35,16 +34,6 @@ dimos/
 /trial/harness/tests/*
 !/trial/harness/tests/*.py
 /trial/harness/out/
-
-/trial/scripts/*
-!/trial/scripts/*.py
-!/trial/scripts/*.yaml
-!/trial/scripts/tests
-/trial/scripts/out/
-
-/trial/scripts/tests/*
-!/trial/scripts/tests/*.py
-/trial/scripts/tests/out/
 
 # demo/ — the synthetic proof harness: source + the one-command runner + its config
 /demo/*

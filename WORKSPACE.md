@@ -78,10 +78,10 @@ Next actions.
 | The public presentation page | https://aaryanagrawal.me/dimensional |
 | Trial page source | **`site/` in THIS repo (canonical copy — window 2 owns the website lane, Aaryan Jul 17)**: `page.tsx` (route), `data-dimensional.ts` (content data, lives at `src/data/dimensional.ts` in the portfolio repo), `assets/` (`public/dimensional/` there). Deploy home stays github.com/AaryanAgrawal/portfolio — to ship: copy the three pieces into the portfolio checkout, `npx tsc --noEmit && next build`, `vercel --prod` (scope servicerobotco, project aaryan-portfolio). Edit here first, sync on deploy — keep both in step. |
 | This repo | context/plan/benchmark-protocol/history only — `dimos` sits inside this folder on disk but is its own git repo, gitignored, never tracked as content here |
-| Benchmark instruments (logger, bench runner, referee, overlay, survey dumper) | `trial/scripts/` in this repo |
+| Instruments of the cut real-life benchmark (logger, bench runner, referee, overlay, survey dumper) | REMOVED from the tree, Jul 17 cleanup (Aaryan-authorized) — lived in `trial/scripts/`; code + full usage in git history ≤ 90c494a, one-line ledger in §8 |
 | Synthetic proof harness (real detector, rendered pixels, no hardware) | `demo/` in this repo — `cd demo && ./run.sh` |
 | Physical marker kit (printable tags, surveyed map) | `print/*.pdf`, `office_markers.yaml`, this repo |
-| Real benchmark run output | `trial/results/` and `trial/scripts/out/` — generated, untracked; EXCEPT `trial/results/figures/*.png` (comparison graphs — tracked, shared between machines) |
+| Real benchmark run output | `trial/results/` — generated, untracked; EXCEPT `trial/results/figures/*.png` (comparison graphs — tracked, shared between machines) |
 | Everything else from the trial (spec docs, research notes, day-by-day roadmap, PR drafts, page copy) | local disk only, untracked — folded into this doc's sections below where still load-bearing |
 
 ## 2. Next actions
@@ -338,8 +338,9 @@ guesses.
 
 **Superseded 2026-07-16 (Aaryan):** the v4 draft (same day) and the custom real-life benchmark —
 start/end-tag referee, routes, kidnap runs, fairness rules, pass bars, field battery, benchmark
-CLI plan — cut by Aaryan Jul 16; full text in git history ≤ e54ea3c; instruments remain in
-`trial/scripts` + the branch, unplanned.
+CLI plan — cut by Aaryan Jul 16; full text in git history ≤ e54ea3c; its instruments lived in
+`trial/scripts` until the Jul 17 cleanup (removed, git history ≤ 90c494a) — the dimos-branch
+benchmark port is untouched.
 
 ## 5. Linear ticket (draft, ready to post)
 
@@ -383,9 +384,9 @@ CLI plan — cut by Aaryan Jul 16; full text in git history ≤ e54ea3c; instrum
 honest metrics set, the start/end-tag referee (`--holdout-tag`), Fairness rules, Pass bars, and
 the 7-card field battery — is cut; full text in git history ≤ e54ea3c. The instruments it
 produced (`trial/scripts/bench.py`, `holdout_overlay.py`, `metrics_logger.py`, `report.py`)
-remain in `trial/scripts/` and on the branch, unplanned — not deleted, just not the testing method
-going forward. Testing is now the sections harness below, offline, against PGO silver truth +
-markers.
+outlived it unplanned until the Jul 17 cleanup — now REMOVED from the tree (git history ≤
+90c494a, one-line ledger in §8); the dimos-branch benchmark port is untouched. Testing is the
+sections harness below, offline, against PGO silver truth + markers.
 
 ### The sections harness (Phase 3 method)
 
@@ -875,50 +876,14 @@ at N=120 threshold conclusions swing on single samples):**
    after the fork — Zenoh's I/O driver doesn't survive it). **Always run foreground** in its own
    terminal/pane; `--daemon` leaves orphaned workers `dimos status`/`stop` can't see.
 
-**Metrics logger + report** (attach to any running stack, pure observer, never publishes):
-```bash
-cd dimos
-uv run dimos --replay --replay-db=go2_bigoffice run unitree-go2-visual-relocalization  # or real hw
-# second terminal, once `dimos status` shows it running:
-uv run python ../trial/scripts/metrics_logger.py \
-    --out ../trial/scripts/out/run1.jsonl \
-    --dimos-log "<Log path>/main.jsonl" --duration 480
-# after:
-uv run python ../trial/scripts/report.py \
-    --log ../trial/scripts/out/run1.jsonl --out-dir ../trial/scripts/out/report1
-# accuracy vs silver truth (lidar reference):
-uv run python ../trial/scripts/report.py \
-    --log ../trial/scripts/out/camera_run.jsonl \
-    --reference-log ../trial/scripts/out/lidar_run.jsonl --out-dir ../trial/scripts/out/accuracy_report
-```
-
-**`bench.py`** — wraps the logger with `start`/`stop`/`report`, scores each run, appends to
-`results/benchmarks.csv`, regenerates `results/RESULTS.md`:
-```bash
-cd dimos
-uv run python ../trial/scripts/bench.py start --mode marker --route drift-recovery --notes "loop A"
-uv run python ../trial/scripts/bench.py start --mode marker --route kidnapped-robot --notes "moved 3m"
-uv run python ../trial/scripts/bench.py start --mode lidar  --route head-to-head --notes "pass 1: reloc"
-uv run python ../trial/scripts/bench.py start --mode marker --route head-to-head --notes "pass 2: marker"
-uv run python ../trial/scripts/bench.py start --mode fused  --route head-to-head --notes "pass 3: fused"
-uv run python ../trial/scripts/bench.py report   # regenerate RESULTS.md + table
-# add the start/end referee to any of the above:
-uv run python ../trial/scripts/bench.py start --mode marker --route drift-recovery \
-    --notes "loop A" --holdout-tag 42
-```
-
-**`holdout_overlay.py`** — one-window run controller: live camera view, frozen start/end tag
-outline, START/STOP buttons, wraps `bench.py start`/`stop`. Auto-adopts the most prominent
-unmapped tag in view as the start/end reference (`--holdout-tag` pins it instead). Box recolors by
-distance-to-start (green <2cm / yellow 2-5cm / red >5cm); STOP pulses green once back within 2cm
-for ~1s.
-```bash
-cd dimos
-uv run python ../trial/scripts/holdout_overlay.py --mode marker --route drift-recovery --notes "loop A"
-```
-Run recipe: park facing any unmapped tag → START (outline freezes) → drive the loop → return until
-green/pulsing → STOP (run scored, row appended). Imperfect runs still get recorded — never abort a
-bad one, STOP it.
+**Removed instruments** (Jul 17 cleanup, Aaryan-authorized — the cut real-life benchmark's kit,
+superseded by `trial/harness/`; code + full usage docs in git history ≤ 90c494a, e.g.
+`git show 90c494a:trial/scripts/bench.py`):
+- `metrics_logger.py` — pure-observer TF/log recorder, attached to any running stack — REMOVED.
+- `report.py` — post-run report + silver-truth accuracy comparison from the logger's JSONL — REMOVED.
+- `bench.py` — `start`/`stop`/`report` run scorer (modes/routes, `results/benchmarks.csv`, `RESULTS.md`, `calibrate-referee`) — REMOVED.
+- `holdout_overlay.py` — one-window run controller around the start/end tag (live view, START/STOP, distance-recolored box) — REMOVED.
+- `survey_dump.py` — TF-stream marker surveyor that wrote `office_markers.yaml` + sidecar — REMOVED.
 
 ## 9. History — the arc so far
 
