@@ -80,7 +80,7 @@ Next actions.
 | This repo | context/plan/benchmark-protocol/history only — `dimos` sits inside this folder on disk but is its own git repo, gitignored, never tracked as content here |
 | Instruments of the cut real-life benchmark (logger, bench runner, referee, overlay, survey dumper) | REMOVED from the tree, Jul 17 cleanup (Aaryan-authorized) — lived in `trial/scripts/`; code + full usage in git history ≤ 90c494a, one-line ledger in §8 |
 | Synthetic proof harness (real detector, rendered pixels, no hardware) | REMOVED from the tree, Jul 17 cleanup — lived in `demo/`; code in git history ≤ 90c494a. Its recorded numbers survive in §7 (SIMULATED ATE 1.75 → 0.26 m) and `trial/harness/PROVENANCE.md`, whose demo file:line citations resolve against that history |
-| Physical marker kit (printable tags, surveyed map) | `print/*.pdf`, `office_markers.yaml`, this repo |
+| Physical marker kit | `print/*.pdf` REMOVED from the tree, Jul 17 cleanup (tags long deployed in the office recordings; nothing prescribes those sheets — §8 regenerates any sheet via `dimos apriltag`); PDFs in git history ≤ 90c494a. `office_markers.yaml` KEPT at repo root: dimos' go2 visual-reloc blueprint defaults `marker_map_file` to that bare name and `resolve_named_path` checks the cwd first — see the file's header comment |
 | Real benchmark run output | `trial/results/` — generated, untracked; EXCEPT `trial/results/figures/*.png` (comparison graphs — tracked, shared between machines) |
 | Everything else from the trial (spec docs, research notes, day-by-day roadmap, PR drafts, page copy) | local disk only, untracked — folded into this doc's sections below where still load-bearing |
 

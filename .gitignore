@@ -15,7 +15,6 @@ dimos/
 !/WORKSPACE.md
 !/README.md
 !/trial
-!/print
 !/office_markers.yaml
 !/site
 
@@ -33,10 +32,6 @@ dimos/
 /trial/harness/tests/*
 !/trial/harness/tests/*.py
 /trial/harness/out/
-
-# print/ — the printable tag PDFs only
-/print/*
-!/print/*.pdf
 
 # python
 **/__pycache__/
