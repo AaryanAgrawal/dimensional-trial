@@ -359,3 +359,6 @@ export const provenance: Knob[] = [
   { knob: "ambiguity_ratio_min (IPPE mirror-pose gate)", value: "2.0 (ratio; 1.0 disables)", status: "tested", note: "smallest tested value keeping ≥95% of accepted poses correct; kills 100% of flips at 110° HFOV, ATE 0.33→0.26 m — ALL SIMULATED" },
   { knob: "FULL LEDGER", value: "trial/harness/PROVENANCE.md", status: "partial", note: "complete audit: arbitrary 49 · partial 30 · tested 29 — 108 unique constants" },
 ];
+
+// Notes — Aaryan's running scratch notes, editable on the page.
+export const notes: string[] = [];

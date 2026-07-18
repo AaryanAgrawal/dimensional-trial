@@ -2,9 +2,20 @@
 
 import { useEffect, useState } from "react";
 
-const STORE_KEY = "dimensional-open-questions";
-
-export default function OpenQuestions({ seeds }: { seeds: string[] }) {
+export default function OpenQuestions({
+  seeds,
+  storeKey = "dimensional-open-questions",
+  exportName = "openQuestions",
+  bullet = "?",
+  placeholder = "type your question…",
+}: {
+  seeds: string[];
+  storeKey?: string;
+  exportName?: string;
+  bullet?: string;
+  placeholder?: string;
+}) {
+  const STORE_KEY = storeKey;
   const [questions, setQuestions] = useState<string[]>(seeds);
   const [loaded, setLoaded] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -31,7 +42,7 @@ export default function OpenQuestions({ seeds }: { seeds: string[] }) {
   const copyAsCode = async () => {
     const kept = questions.filter((q) => q.trim().length > 0);
     const code =
-      "export const openQuestions: string[] = [\n" +
+      `export const ${exportName}: string[] = [\n` +
       kept.map((q) => `  ${JSON.stringify(q.trim())},`).join("\n") +
       "\n];";
     await navigator.clipboard.writeText(code);
@@ -48,7 +59,7 @@ export default function OpenQuestions({ seeds }: { seeds: string[] }) {
           onClick={() => save(["", ...questions])}
           className="rounded-full border border-line px-2.5 py-1 text-soft hover:text-ink"
         >
-          + add question
+          + add
         </button>
         <button
           onClick={copyAsCode}
@@ -70,11 +81,11 @@ export default function OpenQuestions({ seeds }: { seeds: string[] }) {
         {questions.map((q, i) => (
           <li key={i} className="flex items-start gap-2">
             <span className="mt-2 text-faint" aria-hidden>
-              ?
+              {bullet}
             </span>
             <textarea
               value={q}
-              placeholder="type your question…"
+              placeholder={placeholder}
               rows={Math.max(1, Math.ceil(q.length / 90))}
               onChange={(e) => {
                 const next = [...questions];

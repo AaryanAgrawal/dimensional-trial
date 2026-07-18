@@ -4,6 +4,7 @@ import {
   baselines,
   evidence,
   glossary,
+  notes,
   provenance,
   stackMap,
   openQuestions,
@@ -341,6 +342,12 @@ export default function DimensionalPage() {
       <section className="mt-12 border-t border-line pt-6">
         <PhaseHeading>Open questions</PhaseHeading>
         <OpenQuestions seeds={openQuestions} />
+      </section>
+
+      {/* Notes */}
+      <section className="mt-12 border-t border-line pt-6">
+        <PhaseHeading>Notes</PhaseHeading>
+        <OpenQuestions seeds={notes} storeKey="dimensional-notes" exportName="notes" bullet="·" placeholder="type a note…" />
       </section>
 
       {/* Footer */}
