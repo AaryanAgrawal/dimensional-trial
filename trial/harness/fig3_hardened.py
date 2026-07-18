@@ -5,24 +5,31 @@ Same question as the revisit sweep (one physical referee tag per recording:
 observe -> walk -> observe again; the two placements must match), with every
 named hole in the naive figure closed:
 
-  1. PGO wobble       — THREE independent PGO runs per recording (fresh graph
+  1. PGO wobble       — N_RUNS independent PGO runs per recording (fresh graph
                         each; detections recomputed against each graph). Dots =
-                        per-run long-gap medians; bar = median of the three.
+                        per-run long-gap medians; bar = median across runs.
+                        3 runs proved too few: a verification draw on village3
+                        landed at 0.223 m, below the 3-run band envelope
+                        (known v3 draws span 0.22-0.47 m) — hence 5.
   2. Uncertainty      — bootstrap over VISITS, not pairs (pairs within a visit
                         are massively correlated): cluster sightings into
                         visits by >5 s gaps, resample visits with replacement
                         (B=1000), recompute the long-gap median over pairs
-                        spanning distinct sampled visits. 5-95% band, pooled
-                        across the three runs as an envelope. Effective n
-                        (visits) stated on each panel.
+                        spanning distinct sampled visits. 5-95% band per run,
+                        enveloped across runs. It quantifies visit sampling,
+                        NOT the PGO re-run distribution — the dots carry that,
+                        and the footer says so. Effective n (visits) stated on
+                        each panel.
   3. Tail             — p90 tick above each bar from the real pair
-                        distribution (pooled across the three runs).
+                        distribution (pooled across the runs).
   4. Floor            — dashed line at the 0-10 s-gap bucket median (raw):
                         what the detector+platform report for the SAME tag
                         with essentially no drift accrued. Improvements below
                         this line are unresolvable.
   5. Honesty block    — figure footer names the exclusions, the metric's
-                        blindness, provenance, join jitter, arbitrary edges.
+                        blindness, provenance, camera timing jitter (0.13 m
+                        measured, e45773a), dropped bootstrap replicates,
+                        arbitrary edges.
   6. One bucket       — LONG gap only (>=60 s villages, >=300 s walk), linear
                         independent y per panel, values annotated.
 
@@ -54,7 +61,7 @@ from dimos.memory2.store.sqlite import SqliteStore  # noqa: E402
 FIGURES = HARNESS.parent / "results" / "figures"
 OUT_JSON = HARNESS / "out" / "markers" / "fig3_hardened.json"
 
-N_RUNS = 3
+N_RUNS = 5  # 3 under-sampled PGO wobble: a 4th v3 graph fell below the 3-run envelope
 B = 1000
 VISIT_GAP_S = 5.0  # >5 s between consecutive sightings starts a new visit
 FLOOR_HI_S = 10.0  # floor bucket = gaps in [0, 10) s
@@ -196,10 +203,10 @@ def run_recording(name: str, referee: int, long_lo: float,
         "n_long_pairs_within_visit": runs[0]["n_long_pairs_within_visit"],
         "bar_raw_m": float(np.median(raw_meds)),
         "bar_pgo_m": float(np.median([r["median_pgo_m"] for r in runs])),
-        # p90 from the real pair distribution, pooled across the three runs
+        # p90 from the real pair distribution, pooled across the runs
         "p90_raw_m": float(np.percentile(np.concatenate([r["_d_raw_long"] for r in runs]), 90)),
         "p90_pgo_m": float(np.percentile(np.concatenate([r["_d_pgo_long"] for r in runs]), 90)),
-        # 5-95% visit-bootstrap band, envelope across the three runs
+        # 5-95% visit-bootstrap band, envelope across the runs
         "band_raw_m": [min(r["boot_raw"]["p5"] for r in runs),
                        max(r["boot_raw"]["p95"] for r in runs)],
         "band_pgo_m": [min(r["boot_pgo"]["p5"] for r in runs),
@@ -227,12 +234,14 @@ def draw_panel(ax, a: dict, label: str) -> None:
         lo, hi = band
         ax.vlines(x, lo, hi, color=INK, lw=1.3, zorder=4)
         ax.hlines([lo, hi], x - 0.07, x + 0.07, color=INK, lw=1.1, zorder=4)
-        ax.scatter([x - 0.14, x, x + 0.14], meds, s=15, facecolors="white",
-                   edgecolors=INK, linewidths=0.9, zorder=6)
+        ax.scatter(np.linspace(x - 0.2, x + 0.2, len(meds)), meds, s=15,
+                   facecolors="white", edgecolors=INK, linewidths=0.9, zorder=6)
         ax.hlines(p90, x - 0.21, x + 0.21, color=INK, lw=1.6, zorder=5)
         ax.text(x - 0.36, bar, f"{bar:.3f}", ha="right", va="center",
                 fontsize=7.2, color=INK)
-        ax.text(x, p90 + 0.015 * ymax, f"p90 {p90:.2f}", ha="center", va="bottom",
+        # beside the tick, not centered on it — the band vline runs through
+        # centered text on v1/v5 (seen at 150 dpi)
+        ax.text(x + 0.25, p90, f"p90 {p90:.2f}", ha="left", va="center",
                 fontsize=6.0, color=INK, alpha=0.85)
     ax.axhline(a["floor_raw_m"], ls=(0, (4, 3)), color=INK, lw=0.9, zorder=1)
     ax.text(0.03, 0.985,
@@ -298,23 +307,30 @@ def main() -> int:
                loc="upper right", fontsize=8, frameon=False,
                bbox_to_anchor=(0.995, 0.985))
 
-    method = ("3 independent PGO runs/recording (fresh graph, detections recomputed) · bar = "
-              "median of 3 run medians · dots = run medians · band = 5–95% bootstrap over visits "
+    method = (f"{N_RUNS} independent PGO runs/recording (fresh graph, detections recomputed) · bar = "
+              f"median of {N_RUNS} run medians · dots = run medians · band = 5–95% bootstrap over visits "
               f"(>{VISIT_GAP_S:.0f} s clusters, B={B}, pairs spanning distinct sampled visits; "
-              "envelope of runs) · p90 = pooled pairs · dashed line = detection floor "
+              "per run, enveloped) · p90 = pooled pairs · dashed line = detection floor "
               "(0–10 s-gap median, raw): sub-floor differences are unresolvable")
-    honesty = ("n=4 of 6 villages (2 excluded: duplicate physical ids); consistency not absolute "
-               "accuracy (blind to common-mode shifts); camera-pose provenance verified on "
-               "village3, inherited for 1/5/6; walk bars include <=0.1 m timestamp-join jitter; "
-               "bucket edges are arbitrary constants")
+    n_rep = [b["n_valid_replicates"] for a in results for r in a["runs"]
+             for b in (r["boot_raw"], r["boot_pgo"])]
+    honesty = ("n=4 of 6 villages (2 excluded: duplicate physical ids) · consistency, not absolute "
+               "accuracy (blind to common-mode shifts) · camera-pose provenance verified on "
+               "village3 + walk, inherited for villages 1/5/6")
+    honesty2 = ("walk bars carry <=0.13 m measured camera-pose timing jitter · band is visit "
+                "sampling, NOT a PGO re-run interval (v3 medians 0.22–0.47 m across repeated "
+                f"fresh graphs) · bootstrap keeps {min(n_rep)}–{max(n_rep)}/{B} "
+                "replicates (degenerate visit resamples dropped) · bucket edges are arbitrary "
+                "constants")
     repro = (f"cmd: cd dimos && uv run python ../trial/harness/fig3_hardened.py · "
              f"dimos {rev_dimos} · trial {rev_trial} · "
              f"bootstrap seeds [{SEED_BASE}, rec_idx, run] · "
              f"{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%MZ')}")
-    fig.text(0.005, 0.052, method, fontsize=6.2, color=INK, alpha=0.9)
-    fig.text(0.005, 0.028, honesty, fontsize=6.2, color=INK, alpha=0.9)
+    fig.text(0.005, 0.076, method, fontsize=6.2, color=INK, alpha=0.9)
+    fig.text(0.005, 0.052, honesty, fontsize=6.2, color=INK, alpha=0.9)
+    fig.text(0.005, 0.028, honesty2, fontsize=6.2, color=INK, alpha=0.9)
     fig.text(0.005, 0.004, repro, fontsize=6.2, color=INK, alpha=0.9)
-    fig.subplots_adjust(left=0.045, right=0.99, top=0.83, bottom=0.155, wspace=0.30)
+    fig.subplots_adjust(left=0.045, right=0.99, top=0.83, bottom=0.175, wspace=0.30)
 
     FIGURES.mkdir(parents=True, exist_ok=True)
     out_png = FIGURES / "revisit_medians_hardened.png"
@@ -329,7 +345,7 @@ def main() -> int:
         json.dump({"meta": {"n_runs": N_RUNS, "B": B, "visit_gap_s": VISIT_GAP_S,
                             "floor_bucket_s": [0, FLOOR_HI_S], "seed_base": SEED_BASE,
                             "git_rev_dimos": rev_dimos, "git_rev_trial": rev_trial,
-                            "honesty": honesty, "method": method},
+                            "honesty": honesty + " · " + honesty2, "method": method},
                    "recordings": [{k: v for k, v in a.items() if not k.startswith("_")}
                                   for a in results]}, f, indent=1)
     print(f"\nwrote {out_png}\nwrote {OUT_JSON}\ntotal {time.perf_counter()-t_all:.0f}s")
