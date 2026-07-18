@@ -94,6 +94,14 @@ function InCode({ children }: { children: ReactNode }) {
   return <p className="mt-4 text-xs text-faint">In code: {children}</p>;
 }
 
+const evidenceNumbered = (() => {
+  let n = 0;
+  return evidence.map((sec) => ({
+    ...sec,
+    figures: sec.figures.map((f) => ({ ...f, n: ++n })),
+  }));
+})();
+
 export default function DimensionalPage() {
   return (
     <article className="mx-auto max-w-2xl">
@@ -303,7 +311,7 @@ export default function DimensionalPage() {
       </section>
 
       {/* Evidence log */}
-      {evidence.map((sec) => (
+      {evidenceNumbered.map((sec) => (
         <section key={sec.heading} className="mt-12 border-t border-line pt-6">
           <PhaseHeading>{sec.heading}</PhaseHeading>
           <p className="mt-3 text-sm text-soft">{sec.intro}</p>
@@ -311,7 +319,7 @@ export default function DimensionalPage() {
             <figure key={f.src} className="mt-6">
               <img src={f.src} alt={f.title} className="w-full rounded-md bg-tile" />
               <figcaption className="mt-2 text-xs text-soft">
-                <span className="font-medium text-ink">{f.title}.</span> {f.explanation}
+                <span className="font-medium text-ink">Fig {f.n} · {f.title}.</span> {f.explanation}
               </figcaption>
             </figure>
           ))}
