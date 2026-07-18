@@ -327,21 +327,35 @@ export const glossary: { term: string; def: string }[] = [
   }
 ];
 
-// Provenance ledger — every knob, and whether its value has backing.
+// Provenance ledger — the 25 most instructive knobs from the full 108-constant
+// audit (complete ledger: trial/harness/PROVENANCE.md in the trial repo).
 // tested = swept/validated against data · partial = reasoned or validated in hindsight · arbitrary = no recorded basis
 export type Knob = { knob: string; value: string; status: "tested" | "partial" | "arbitrary"; note: string };
 export const provenance: Knob[] = [
-  { knob: "RANSAC scales/iters/rerank (SCALE_PLAN, 500k, 0.15 m)", value: "several", status: "tested", note: "tuned by the autoresearch ledger, 25% → 92% success — one recording though" },
-  { knob: "ambiguity gate", value: "ratio ≥ 2.0", status: "tested", note: "built from measured mirror-flip failures (39 mm frontal vs 3–7 mm oblique)" },
-  { knob: "accept gate (fitness)", value: "0.45", status: "arbitrary", note: "no recorded basis; docs say 0.6; measured: filters ~nothing in 4 of 5 environments" },
-  { knob: "submap size gate", value: "50k pts", status: "partial", note: "arbitrary origin; validated in hindsight (95% above vs 63% below) — untuned, environment-dependent" },
-  { knob: "success bar", value: "1 m / 15°", status: "partial", note: "inherited; defensible as a right-basin detector, never swept" },
-  { knob: "solve cadence", value: "every 2 s", status: "arbitrary", note: "industry uses motion-gating; full search on a timer is measured waste" },
-  { knob: "gravity gate", value: "≤ 10° tilt", status: "arbitrary", note: "threshold untested; its pool-global fallback caused the walkover bug (structure now fixed)" },
-  { knob: "marker fix age decay", value: "τ=30 s, cut 120 s", status: "arbitrary", note: "our own placeholders, explicitly unverified — the autoresearch loop's first target" },
-  { knob: "prior confidence tiers", value: "0.9 / 0.5 / 0.3", status: "arbitrary", note: "informational labels; the judge never reads them" },
-  { knob: "PGO odometry stiffness", value: "1e-4 m²/edge", status: "arbitrary", note: "worse than arbitrary: measured harmful — spreads corrections where drift never happened" },
-  { knob: "PGO keyframe / loop params", value: "0.5 m/10° · 2 m · 0.3", status: "arbitrary", note: "no recorded basis found" },
-  { knob: "marker reprojection gate", value: "≤ 3 px", status: "partial", note: "reasoned from PnP noise; not swept" },
-  { knob: "voxel size", value: "0.05 m", status: "arbitrary", note: "convention; sets the map's resolution floor" },
+  { knob: "final full-cloud ICP max_iteration (stage 3)", value: "50", status: "arbitrary", note: "autoresearch removed this stage ('remove final tight ICP refine; median 0.029→0.028'); HEAD re-adds it in a squash-merge, no rationale" },
+  { knob: "FiducialPrior age_tau_s (+ trial mirror AGE_TAU_S)", value: "30.0 s", status: "arbitrary", note: "self-admitted 'engineering guesses, not tuned values' at both definition sites; the n=120 benchmark ran with them but never varied them" },
+  { knob: "FiducialPrior conf_max (+ trial mirror CONF_MAX)", value: "0.9", status: "arbitrary", note: "ordinal rationale only (fiducial > ransac 0.5 > last-pose 0.3); judge-inert — proven by test_fiducial_prior_never_bypasses_judge" },
+  { knob: "RELOC_INTERVAL", value: "2.0 s", status: "arbitrary", note: "born in the poc as an inter-attempt sleep; live solves take 3–8 s so 2.0 rarely binds — an observation recorded nowhere as the reason" },
+  { knob: "loop_submap_half_range (classic)", value: "10", status: "arbitrary", note: "recorded evidence favors larger: 10→20 'better ICP context', 20→40 'restoring best'; classic retains 10 with no recorded reason" },
+  { knob: "min_loop_detect_duration (classic)", value: "5.0 s", status: "arbitrary", note: "autoresearch measured 3.0 s better on the eval (33.66→31.26 m); classic keeps 5.0 with no recorded reason" },
+  { knob: "ISAM2 relinearizeThreshold / relinearizeSkip", value: "0.01 / 1", status: "arbitrary", note: "departs from GTSAM defaults (0.1/10) with no recorded reason; the only ISAM2 setting ever tested is the Dogleg switch" },
+  { knob: "eval marker_max_speed gate", value: "0.5 m/s", status: "arbitrary", note: "set in 'detector tuned' — verified EMPTY commit body; held fixed by autoresearch mandate; trial harness re-uses it verbatim" },
+  { knob: "eval marker_smoothing", value: "7.5 s", status: "arbitrary", note: "same empty-body 'detector tuned' origin; the trial referee deliberately runs 0.0 'so every sighting counts' — divergence, not validation" },
+  { knob: "min_tags (tag-corroboration gate default)", value: "1", status: "arbitrary", note: "exposure driven by a review comment, but 1 = no corroboration required before publishing a world→map fix — simply the permissive minimum" },
+  { knob: "ArUco detector parameters", value: "cv2.aruco.DetectorParameters() — all OpenCV library defaults", status: "arbitrary", note: "no in-repo tuning of any detector parameter, ever; PR #2107's 4 m real-life detection is usage evidence, not parameter selection" },
+  { knob: "GRAVITY_TILT_MAX_DEG", value: "10.0 deg", status: "partial", note: "downgraded from tested on re-read: the single probe tied success and median (5-micron delta), decided on a third-order tiebreak" },
+  { knob: "MIN_LOCAL_POINTS", value: "50_000", status: "partial", note: "value trajectory unexplained; trial stratification: all 27 accepted-failures sub-50k — MIN_LOCAL_POINTS, not fitness, protects the robot" },
+  { knob: "Config.fitness_threshold", value: "0.45", status: "partial", note: "born 0.6 → 0.45 via empty-body 'tune default parameters'; docs still say 0.6; measured: risk@0.45 = 22.5% accepted-wrong on hk_village3" },
+  { knob: "odom_rot_var", value: "1e-6 rad^2", status: "partial", note: "comment says 'tuned for a Go2-class ground robot' — the word 'tuned' has no run behind it; rotation variance never swept anywhere" },
+  { knob: "marker_length_m (Go2 deployment + eval marker_size default)", value: "0.1 m", status: "partial", note: "physical print kit is 100 mm (runbook + verified on recording); pinned by test; no committed caliper measurement of the printed tags" },
+  { knob: "eval DEFAULT_DATASETS", value: "hk_village1..6 (range(1,7))", status: "partial", note: "trial found v2/v4 each contain MULTIPLE physical tags sharing id 10 — TOTAL_SPREAD aggregates two poisoned datasets, incl. the v2 win" },
+  { knob: "max_reprojection_error_px (per-tag PnP accept gate)", value: "3.0 px", status: "partial", note: "introduced with no rationale; system validated AT 3.0 (SIMULATED ATE 1.75→0.33 m) — the value itself never swept against alternatives" },
+  { knob: "SCALE_PLAN", value: "[(0.2, 8), (0.3, 8), (0.8, 1)] (voxel_size m, RANSAC runs)", status: "tested", note: "fully bracketed in results.tsv: adding 0.2 m gained a frame, dropping 0.3/0.8 or shifting them lost frames; restart counts swept per scale" },
+  { knob: "RANSAC_ITERS", value: "500_000", status: "tested", note: "bracketed both directions: 250k/400k lost frames, 2M blew the time budget; per-scale and combo variants all discarded" },
+  { knob: "rerank top-K", value: "10", status: "tested", note: "fully bracketed: 5→10 rescued frame 7 (1.31 m → 0.36 m); 15 identical but +64 s; back to 7 or 5 lost frames" },
+  { knob: "min_loop_detect_duration (auto)", value: "3.0 s", status: "tested", note: "commit '5 → 3 (more loops in disturbed areas)'; conclusions.md win table verified: 33.66 → 31.26 m" },
+  { knob: "chain-loosening drift gate", value: "1.3 m", status: "tested", note: "nine alternatives tried (1.0–3.0 + multi-tier) — '1.3 m is sharply optimal'; pairs with the tested 8e-4 drifted-chain variance" },
+  { knob: "rescan time_thresh_override", value: "13.0 s", status: "tested", note: "commit chain 20→10→15→12→13; conclusions.md verified: '13s (not 12 or 14)', final spread 22.29" },
+  { knob: "ambiguity_ratio_min (IPPE mirror-pose gate)", value: "2.0 (ratio; 1.0 disables)", status: "tested", note: "smallest tested value keeping ≥95% of accepted poses correct; kills 100% of flips at 110° HFOV, ATE 0.33→0.26 m — ALL SIMULATED" },
+  { knob: "FULL LEDGER", value: "trial/harness/PROVENANCE.md", status: "partial", note: "complete audit: arbitrary 49 · partial 30 · tested 29 — 108 unique constants" },
 ];
