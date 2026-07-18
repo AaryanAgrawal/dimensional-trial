@@ -326,3 +326,22 @@ export const glossary: { term: string; def: string }[] = [
     "def": "for a given gate: the share of answers accepted / the share of accepted answers that were actually wrong."
   }
 ];
+
+// Provenance ledger — every knob, and whether its value has backing.
+// tested = swept/validated against data · partial = reasoned or validated in hindsight · arbitrary = no recorded basis
+export type Knob = { knob: string; value: string; status: "tested" | "partial" | "arbitrary"; note: string };
+export const provenance: Knob[] = [
+  { knob: "RANSAC scales/iters/rerank (SCALE_PLAN, 500k, 0.15 m)", value: "several", status: "tested", note: "tuned by the autoresearch ledger, 25% → 92% success — one recording though" },
+  { knob: "ambiguity gate", value: "ratio ≥ 2.0", status: "tested", note: "built from measured mirror-flip failures (39 mm frontal vs 3–7 mm oblique)" },
+  { knob: "accept gate (fitness)", value: "0.45", status: "arbitrary", note: "no recorded basis; docs say 0.6; measured: filters ~nothing in 4 of 5 environments" },
+  { knob: "submap size gate", value: "50k pts", status: "partial", note: "arbitrary origin; validated in hindsight (95% above vs 63% below) — untuned, environment-dependent" },
+  { knob: "success bar", value: "1 m / 15°", status: "partial", note: "inherited; defensible as a right-basin detector, never swept" },
+  { knob: "solve cadence", value: "every 2 s", status: "arbitrary", note: "industry uses motion-gating; full search on a timer is measured waste" },
+  { knob: "gravity gate", value: "≤ 10° tilt", status: "arbitrary", note: "threshold untested; its pool-global fallback caused the walkover bug (structure now fixed)" },
+  { knob: "marker fix age decay", value: "τ=30 s, cut 120 s", status: "arbitrary", note: "our own placeholders, explicitly unverified — the autoresearch loop's first target" },
+  { knob: "prior confidence tiers", value: "0.9 / 0.5 / 0.3", status: "arbitrary", note: "informational labels; the judge never reads them" },
+  { knob: "PGO odometry stiffness", value: "1e-4 m²/edge", status: "arbitrary", note: "worse than arbitrary: measured harmful — spreads corrections where drift never happened" },
+  { knob: "PGO keyframe / loop params", value: "0.5 m/10° · 2 m · 0.3", status: "arbitrary", note: "no recorded basis found" },
+  { knob: "marker reprojection gate", value: "≤ 3 px", status: "partial", note: "reasoned from PnP noise; not swept" },
+  { knob: "voxel size", value: "0.05 m", status: "arbitrary", note: "convention; sets the map's resolution floor" },
+];

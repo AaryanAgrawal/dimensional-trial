@@ -4,6 +4,7 @@ import {
   baselines,
   evidence,
   glossary,
+  provenance,
   stackMap,
   openQuestions,
   metrics,
@@ -315,6 +316,26 @@ export default function DimensionalPage() {
           ))}
         </section>
       ))}
+
+      {/* Provenance ledger */}
+      <section className="mt-12 border-t border-line pt-6">
+        <PhaseHeading>Tested vs arbitrary — the provenance ledger</PhaseHeading>
+        <p className="mt-2 text-xs text-faint">every constant in the stack, and whether its value has backing</p>
+        <div className="mt-3 space-y-1.5">
+          {provenance.map((k) => (
+            <div key={k.knob} className="flex items-start gap-2 text-xs">
+              <span className={
+                k.status === "tested" ? "mt-0.5 shrink-0 rounded-full border border-emerald-700/40 bg-emerald-600/10 px-1.5 text-[10px] text-soft"
+                : k.status === "partial" ? "mt-0.5 shrink-0 rounded-full border border-line px-1.5 text-[10px] text-soft"
+                : "mt-0.5 shrink-0 rounded-full border border-dashed border-amber-600/50 px-1.5 text-[10px] text-faint"
+              }>{k.status}</span>
+              <span className="font-medium text-ink">{k.knob}</span>
+              <span className="font-mono text-soft">{k.value}</span>
+              <span className="text-faint">— {k.note}</span>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* Open questions — editable: add / edit / delete, saved in-browser */}
       <section className="mt-12 border-t border-line pt-6">
