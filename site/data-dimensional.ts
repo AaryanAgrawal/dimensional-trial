@@ -219,3 +219,65 @@ export const openQuestions: string[] = [
   "Marker map storage: stream-published for now vs a persistent K/V store under the map — when to switch?",
   "Where should the relocalization benchmark live long-term (own repo, docs page, CI job on recordings)?",
 ];
+
+// The stack map — what existed, what this trial adds, what's open.
+// Pill states: existed | added (this trial) | gap (designed, not built)
+export type Pill = { t: string; s: "existed" | "added" | "gap" };
+export type StackCol = { job: string; ask: string; live: Pill[]; dev: Pill[] };
+export const stackMap: StackCol[] = [
+  {
+    job: "Odometry", ask: "where am I since boot?",
+    live: [
+      { t: "Go2 onboard odom", s: "existed" },
+      { t: "FAST-LIO · mid360", s: "existed" },
+      { t: "Point-LIO · mid360", s: "existed" },
+    ],
+    dev: [{ t: "lane accuracy measured: 8.8 m vs 2 cm / 13 min", s: "added" }],
+  },
+  {
+    job: "Mapping", ask: "keep the map truthful",
+    live: [
+      { t: "VoxelGrid accumulate (drifts, forgets)", s: "existed" },
+      { t: "LIO private map", s: "existed" },
+      { t: "carve-merge view", s: "existed" },
+      { t: "online loop closure", s: "gap" },
+      { t: "gated map write-back", s: "gap" },
+    ],
+    dev: [
+      { t: "PGO offline (gtsam + ICP)", s: "existed" },
+      { t: "map global → premap export", s: "existed" },
+      { t: "tag-constrained PGO (unmerged)", s: "existed" },
+      { t: "marker-map export (bundle)", s: "added" },
+      { t: "versioned map bundle + CI gate", s: "gap" },
+    ],
+  },
+  {
+    job: "Relocalization", ask: "find me on a known map",
+    live: [
+      { t: "RANSAC → ICP judge", s: "existed" },
+      { t: "RelocalizationModule (2 s loop, 50k gate)", s: "existed" },
+      { t: "VisualReloc (tags)", s: "existed" },
+      { t: "pluggable priors · one judge, no bypass", s: "added" },
+      { t: "FiducialPrior (age-aware)", s: "added" },
+      { t: "per-source gravity fix", s: "added" },
+    ],
+    dev: [
+      { t: "#2137 autoresearch tuning", s: "existed" },
+      { t: "sections harness (kidnap replay)", s: "added" },
+    ],
+  },
+  {
+    job: "Confidence", ask: "how much to trust it?",
+    live: [
+      { t: "fitness ≥ 0.45 folklore", s: "existed" },
+      { t: "universal confidence reading", s: "added" },
+      { t: "per-environment calibration", s: "added" },
+      { t: "health monitor (innovation, age)", s: "gap" },
+    ],
+    dev: [
+      { t: "external-truth evidence: none before", s: "existed" },
+      { t: "THE relocalization benchmark (marker referee)", s: "added" },
+      { t: "risk–coverage → data-grounded gates", s: "added" },
+    ],
+  },
+];

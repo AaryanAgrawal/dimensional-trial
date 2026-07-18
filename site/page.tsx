@@ -3,6 +3,7 @@ import OpenQuestions from "./OpenQuestions";
 import {
   baselines,
   evidence,
+  stackMap,
   openQuestions,
   metrics,
   oneRunFigure,
@@ -251,6 +252,38 @@ export default function DimensionalPage() {
         <pre className="mt-5 overflow-x-auto rounded-md bg-tile p-4 font-mono text-[12.5px] leading-relaxed text-ink">
           {phase4.tree}
         </pre>
+      </section>
+
+      {/* The stack map */}
+      <section className="mt-12 border-t border-line pt-6">
+        <PhaseHeading>The stack — existed · added · open</PhaseHeading>
+        <div className="mt-2 flex gap-3 text-[11px] text-faint">
+          <span><span className="mr-1 inline-block h-2 w-2 rounded-full border border-line bg-tile" />existed</span>
+          <span><span className="mr-1 inline-block h-2 w-2 rounded-full bg-emerald-500" />this trial</span>
+          <span><span className="mr-1 inline-block h-2 w-2 rounded-full border border-dashed border-amber-500" />gap (designed)</span>
+        </div>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          {stackMap.map((col) => (
+            <div key={col.job} className="rounded-lg border border-line bg-tile p-3">
+              <p className="text-sm font-semibold text-ink">{col.job}</p>
+              <p className="text-[11px] text-faint">{col.ask}</p>
+              {[["live", col.live], ["dev-time", col.dev]].map(([label, pills]) => (
+                <div key={label as string} className="mt-2">
+                  <p className="text-[10px] uppercase tracking-[0.08em] text-faint">{label as string}</p>
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    {(pills as { t: string; s: string }[]).map((p) => (
+                      <span key={p.t} className={
+                        p.s === "added" ? "rounded-full border border-emerald-700/40 bg-emerald-600/10 px-2 py-0.5 text-[11px] text-soft"
+                        : p.s === "gap" ? "rounded-full border border-dashed border-amber-600/50 px-2 py-0.5 text-[11px] text-faint"
+                        : "rounded-full border border-line px-2 py-0.5 text-[11px] text-soft"
+                      }>{p.t}</span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
       </section>
 
       {/* Evidence log */}
