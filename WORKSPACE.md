@@ -365,11 +365,16 @@ it today breaks. Trial discipline: build this **additively** (new files only —
 propose, don't restructure.
 
 **Fusion-phase additions (Aaryan, Jul 18 morning — from the startup-relocalization convo):**
-- **Conditional MIN_LOCAL_POINTS**: with a fresh fiducial fix in hand, attempt relocalization
-  BELOW the 50k gate (smaller floor so the judge still has walls to score). Today the gate sits
-  upstream of the judge, so a tag seen at boot waits for 50,000 lidar points anyway; benchmark
-  measured 61.4%→92.9% success on sub-gate sections with a marker seed. This is the change that
-  turns "tag in view at power-on" into "localized in seconds."
+- **PER-SOURCE gate (Aaryan's formulation, Jul 19: "ransac doesn't run below the threshold,
+  but judging and fiducial should"):** MIN_LOCAL_POINTS moves into the PROPOSAL stage — it
+  gates who may propose, never whether the judge convenes. Below 50k: ransac sits out (its
+  sub-50k answers are the measured poison — all 27 v3 busts), fiducial + last-pose propose,
+  judge scores on available walls (absolute bottom = the existing <100-wall-point loud raise),
+  published answer carries source + n_pts so consumers know the regime. Above 50k: unchanged.
+  Benchmark-measured basis: fiducial+judge 92.9% on sub-gate sections. Open parameter, derivable
+  from EXISTING bench data (no robot): the fiducial-judging floor — fitness-reliability vs
+  submap size curve (same sweep as the 50k open question). This turns "tag in view at power-on"
+  into "localized in seconds."
 - **Publish the confidence tuple** (fitness, submap n_pts, winning source, seconds-since-
   fiducial-fix) as a typed output, not log lines — deferred out of the current PR per the
   no-caller-yet rule; first commit of the fusion ticket.
