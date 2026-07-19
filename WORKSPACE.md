@@ -1091,12 +1091,13 @@ recording is registered in `trial/harness/benchmark_setup.yaml`).
    If anything else is running you get, ~3 s after the modules deploy: `RuntimeError: another
    Coordinator service is already running on the lcm bus. Run 'dimos stop' first.` (reproduced
    Jul 18: a stale 02:24 replay killed the operator's first live attempt at 18:35, then killed
-   the preflight smoke at 18:47). Worse than the crash: the Jul 18 live run's data flow FROZE
-   at 18:47:13 — the exact seconds that smoke's 13 modules touched the shared bus/viewer
-   (correlation, not proven causation; WebRTC accept_track + rerun h2 errors in the same
-   window) — so treat any second stack as able to silently kill a live recording, not just
-   itself. `uv run dimos status` both lists live runs AND auto-cleans dead registry entries;
-   kill stray processes by exact PID before any start.
+   the preflight smoke at 18:47). Same evening, the live run's data flow froze at 18:46:49
+   (246.0 s into the recording, per the rescued db itself) — 20 s BEFORE that smoke started,
+   so the smoke is exonerated; the frozen console's last words are a WebRTC accept_track
+   error, pointing at the robot/wifi side. Keep the rule anyway: a second stack provably
+   crashes itself, and a live stack that LOOKS up can have silently stopped recording —
+   watch the db size, not the process. `uv run dimos status` both lists live runs AND
+   auto-cleans dead registry entries; kill stray processes by exact PID before any start.
 
 ### On-site preflight (FINAL ordered list — robot-only checks, preflight-verified Jul 18 evening)
 0. **Quiet box.** `uv run dimos status` (auto-cleans dead registry entries) + `ps aux | grep -E
@@ -1126,7 +1127,8 @@ recording is registered in `trial/harness/benchmark_setup.yaml`).
    inode (rescued via /proc fd copy; see out/robot_day/README_RUN1_DB_WAS_DELETED_READ_ME.txt).
    Check open handles before deleting anything: `ls -l /proc/<worker-pid>/fd | grep .db`.
 4. WebRTC + sensors: rerun shows camera + lidar + odom moving. Then `dimos mem summary <smoke
-   db>` — reference Hz (measured, go2_short): color_image ~14, lidar ~8, odom ~19, tf present.
+   db>` — reference Hz (live go2, measured Jul 18 run1): color_image ~8, lidar ~7, odom ~19,
+   tf ~58 (go2_short replay reference: 14.3/7.7/18.7).
 5. Tag detection range: show one printed 100 mm tag at 2–4 m, oblique — `marker_<id>` TF in
    rerun (markers bp) or the visual gate line (fiducial bp). Unverified before first contact:
    fisheye detection range/rate for 100 mm print.
@@ -1294,8 +1296,9 @@ smoke + `-o go2memory.db_path` (13 modules, recorder self-disable line, no file 
 `mem summary` bare-name, `map global --help` (--export implies --pgo), prep/markers/run_bench/
 referee_verdict argparse, marker-map builder end-to-end 5-tag drill + both refusal drills,
 /dev/tcp port probe against the live robot. Verified BY the live session itself: WebRTC
-connect (10.0.0.79), recorder writes during a live run (879 MB in ~12 min — into a deleted
-inode, see preflight item 3), office subnet 10.0.0.0/24. STILL unverified: 100 mm tag
+connect (10.0.0.79), recorder writes during a live run (246.0 s / 836 MiB before the flow
+froze — into a deleted inode; rescued snapshot validates clean under `mem summary`, see
+preflight item 3), office subnet 10.0.0.0/24. STILL unverified: 100 mm tag
 detection range/rate on the go2 fisheye (preflight item 5), color_image pose semantics of a
 fresh recording (item 6), mid360 rig presence/IP (item 7), battery cadence (item 8), and the
 `-o relocalizationmodule.use_fiducial_prior=false` OFF arm in an actual replay — parse-proven
