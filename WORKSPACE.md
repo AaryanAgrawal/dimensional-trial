@@ -1819,3 +1819,63 @@ scope: this repo only, 30-day expiry.
    ```bash
    git clone https://<PAT>@github.com/AaryanAgrawal/dimensional-trial.git
    ```
+
+---
+
+## 12. Jul 19 — red-team verdict
+
+Adversarial re-derivation of tonight's proof package (SF office n=48 bench · livox/fastlio lane ·
+live ON/OFF), on-disk artifacts only — no `--replay`, no GPU. An independent agent re-derived every
+headline and tried to refute it; verdicts re-checked on this box. **Two headline claims broke; the
+mechanism-level find (tilted gravity gate) held.** Who/when tag: **[tonight]** = code one-liner /
+relabel / board edit / cheap CPU re-slice · **[quiet-box]** = uncontended machine, no robot ·
+**[robot-day]** = greenwald / physical measure / new capture · **[Aaryan]** = judgment call.
+
+**Rev anchors re-checked tonight:** trial `dimos` HEAD `c6415c9b9` (`refine_candidates` HAS
+`sources=`, relocalize.py:194); stale `~/dimos` HEAD `a6be7e42e` (no `sources=`, fn at :178) — TWO
+checkouts, the duality already caused a wrong analysis (#2/#11). On-disk `go2_hongkong_office.ransac.json`
+= **70% (28/40), rev `fadb41e70`** — page/yaml say 80%. run_bench.py:121 = `refine_candidates(gm,lm,pool)`
+(builds `sources` :120 for attribution only, never passes it).
+
+**BLOCKERS**
+1. [REAL] fastlio `ransac_fiducial`≡`ransac` is a HARNESS artifact, not "fiducial fails on the production lane": :121 never passes `sources`; the same tilted candidates alone = fiducial+judge 15/15 @0.016 m. FIX: `refine_candidates(gm,lm,pool,sources=sources)`; re-slice SF **[tonight, serial niced]**, fastlio ~1166 s/sec **[quiet-box]**.
+2. [REFUTED — guard rail] "per-source gravity fix lost in history surgery" is FALSE — it's committed at relocalize.py:194-246 (HEAD c6415c9b9); R3 read the stale `~/dimos`. DO NOT cherry-pick or delete the page pill — that remedy deletes a correct claim + re-adds existing code. **[Aaryan: block the edit]**.
+3. [REAL] Live ON/OFF is LOAD-CONFOUNDED: OFF ran fully inside the 16-worker fastlio bench; OFF solve 30.4 s vs ON 17.4 s same inputs; OFF `rc=137`(OOM) mislabeled "expected timeout"; OFF ran `use_fiducial_prior=false` → its "0 fiducial wins" is vacuous. FIX: rerun OFF quiet **[quiet-box]**; label tonight's OFF "contended, cadence-invalid" **[tonight]**.
+
+**MAJORS**
+4. [REAL] SF "+10.4 pp" = ONE truth-correlated corridor episode, not 5 independent wins: McNemar b=5/c=0 p=0.0625; 5 flips are consecutive sections 2916-3381; strata <0.25 m 7/17→7/17 (no change), 0.25-1 m 2/19→7/19 (all flips), ≥1 m 4/12→4/12; referee decorrelation coverage 0. FIX: report b=5/c=0 + one-episode + "referee coverage 0" labels; save strata dump **[tonight]**.
+5. [REAL] Marker-map orientation is poor (survey builder has NO mirror/ambiguity gate) — leading mechanism for live zero fiducial wins: tag 6 consensus 43.8° off the shipped pick; lever arms 4.9-13.3 m → 5.16 m mean live-fix error. FIX: builder runs candidate-PnP + the runtime 5.0 ratio gate before averaging, exits nonzero on Markley-dev breach **[tonight code; re-survey from existing sightings tonight, new capture robot-day]**.
+6. [REAL] Live zero fiducial wins + 11-18 m ransac→ransac flip-flop is CONFIDENCE-BLINDNESS (both arms), not fiducial-specific: 50 accepts all ransac, steps 11.7-18.2 m at fitness 0.68-0.87; module.py has no jump guard. FIX: state the live negative plainly **[tonight]**; add max-jump acceptance guard + start-near-mapped-tag before any demo **[robot-day]**.
+7. [REAL] Every SF summary hardcodes "~6 cm truth floor" while measured PGO wobble reaches 2.284 m (21/48 ≥0.5 m, 12/48 ≥1.0 m); `T_true` 3.37 m from consensus at a section graded SUCCESS. FIX: per-recording truth string (measured wobble median/max) at run_bench.py:228; flag wobble ≥0.5 m truth-indeterminate **[tonight]**.
+8. [REAL] Judge hardcodes z-up (gravity gate relocalize.py:132-135 + wall mask :147) with NO map-alignment check; on the ~47°-tilted fastlio map floors classify as walls → ransac 0/40, median 67.6 m, no warning. FIX: at map load estimate the dominant floor normal, warn + disable/rotate-compensate if not z-up — the mid360 priority-rig bug to surface to lesh **[Aaryan/design]**.
+9. [REAL] 79% of the SF offline denominator is a point-starved regime the live module refuses (38/48 below the 50 k live gate); the 27.1% headline is NOT composition-adjusted — live-comparable is 3/10. FIX: quote gate-reached (3/10) wherever 27.1% appears + state the 200-scan cap **[tonight]**.
+10. [PARTIAL] Live vs bench marker map disagree up to 1.933 m (tag 6) and the write-time cross-check silently no-oped (standing files absent at yaml build → `standing={}`). CONFIRMED QA hole; the "~2 m LIVE frame error" reading is OVERREACH (logs show byte-identical early closures). FIX: make the cross-check a hard precondition (refuse when standing absent) **[tonight]**; rebuild yaml+premap from one graph **[quiet-box, GPU]**.
+11. [REAL] TWO dimos checkouts at different commits (`c6415c9b9` vs `a6be7e42e`); the duality already produced a wrong analysis tonight (#2). FIX: mark the canonical checkout on the board + fix §3's stale "symlink" claim **[tonight]**.
+12. [REAL] Offline and live fiducial are DIFFERENT products under one name: offline = reproj≤3 px + 3 hindsight candidates, no ambiguity gate; live = ratio 5.0 (village3-tuned) + single-slot last-fix. If offline 8/23 held live, P(0/42)≈2e-8 → they measure different quantities. FIX: re-slice offline with the 5.0 gate + single-slot semantics, report both **[tonight, SF]**.
+13. [REAL] SF referee is a degenerate 2-visit instrument (~3.6 m floor) that FAILS the yaml's own ≥3-revisit gate: 12/13 sightings in one burst + 1 lone revisit landing 3.640 m PGO away (PGO worse than raw); yaml:74 "≥3 revisit waves" contradicted. FIX: mark survey1 "tier-B provisional — referee 2-visit, floor ~3.6 m"; enforce acceptance before benching **[tonight label; robot-day recapture]**.
+14. [REAL] Page/yaml claim go2_hongkong_office 80% (32/40); on-disk = 70% (28/40, rev fadb41e70); all_around 79.2% on disk vs 83.3% stated; village3 headline pair is a cross-rev chimera (ransac e3f67fae7, ransac_fiducial a6be7e42e) — none at PR head c6415c9b9 while the page says "every number replay-verified." FIX: one serial niced re-slice at c6415c9b9, restate page+yaml once from it **[quiet-box re-slice; Aaryan restates page]**.
+
+**MINORS**
+15. [REAL] Losing path emits no health signal — module.py logs only the winner; per-candidate polished fitness computed then discarded. FIX: one structured line/cycle with best wall-fitness per source **[tonight, PR]**.
+16. [REAL] FiducialPrior negative-age footgun (priors.py:178-181): a `time.time()` ts under monotonic default → age≈−1.78e9, never gated, confidence 0.9 forever; unreached today, a refactor walks in. FIX: raise/clamp+warn on age<0, declare one timebase **[tonight, PR]**.
+17. [REAL] Section 4313 corrupt timestamp (rel_ts −2.89 s) inside the full denominator, all 3 configs. FIX: prep.py assert monotonic ts, exclude-and-report (13/47) **[tonight]**.
+18. [REAL] Per-source gravity fallback is a no-op for single-candidate sources (relocalize.py:242-246) — a lone tilted fiducial always survives; latent mirror-flip hazard. FIX: fallback only for groups >1, or drop tilted single-candidate priors with a log line **[tonight, PR]**.
+19. [REAL] Shadow-mode frame aliasing: `_on_fiducial_fix` (module.py:152-157) ingests without checking `child_frame_id`; OFF arm shows the path runs (60 fixes). FIX: drop fixes whose frames aren't (world,map), warn once **[tonight, PR]**.
+20. [REAL] Public page line 514 names a team member + internal judgment ("lesh (Jul 18)…") on a page whose header forbids internal refs. FIX: neutralize **[Aaryan, page]**.
+21. [REAL] Referee tag 19 physical size unrecorded (yaml:73) while markers.py:67 applies a uniform 0.1 m → biases the referee's own consensus. FIX: caliper + per-id `marker_length_m` **[robot-day]**.
+22. [REAL] Reporting/registration nits: `fiducial_judge` "median dt 0.00 s" is over 25 no-candidate rows (report dt over attempted); `.fastlio` recording unregistered in benchmark_setup.yaml; page still counts all_around + go2_hongkong_office as benchmark recordings after their Jul-19 reclassification to CONFIDENCE-EVAL-ONLY; test:216 comment "2.0" vs the 5.0 default. FIX: small edits each **[tonight]**.
+23. [REAL, ops] Sole-copy exposure: main is 102 commits ahead of origin, all tonight's artifacts under gitignored `out/`, the 2.38 GB db opened read-write. FIX: push + LFS-upload once the embargo lifts **[Aaryan]**.
+
+**"How do you know this is right?" — three sentences (Aaryan, if lesh asks):**
+1. Every headline was re-derived from the on-disk artifacts tonight by a separate agent trying to break it — and two broke, so we're not claiming them: the fastlio "fiducial fails" result is a harness bug (run_bench drops `sources=`), and the live ON/OFF is load-confounded (the OFF arm ran entirely inside a 16-worker bench).
+2. Where the truth itself is weak I say so in the same breath as the number — SF PGO truth wobbles up to 2.28 m and the referee got only two clean revisits (~3.6 m floor), so the SF fiducial gain is one truth-correlated corridor episode (McNemar b=5/c=0, p=0.06), labeled that way, not five independent wins.
+3. The one mechanism-level find I stand on is the tilted-sensor gravity gate: on the mid360/fast-lio lane plain RANSAC is 0/40 because the judge assumes an upright gravity-aligned map, and the same tilted fiducial candidates alone succeed 15/15 at ~1.6 cm — a real dimos bug on the priority rig, established by elimination (the airtight per-frame probe is still owed).
+
+**Residual risk — could NOT test tonight (disallowed heavy ops):**
+- Frame-561 per-frame probe (global vs per-source refine) produced NO output (`/tmp/probe561.log` 0 bytes, no live process) — #1's airtight per-frame corroboration did not land; the verdict rests on elimination (fiducial+judge 15/15 + all 43 candidates tilted 36-55° + global gate orphaning). Re-run owed **[quiet-box]**.
+- fastlio `ransac_fiducial` re-slice WITH the `sources=` fix — not run (≈13 h at 1166 s/section); "fastlio rf → ~15/40" is a PREDICTION, not a measurement **[quiet-box]**.
+- Live-arm frame-error MAGNITUDE (#10 overreach) — needs a premap/marker-map rebuild (GPU, disallowed tonight); logs argue against a large offset but it's unproven.
+- Kidnap timestamp t≈702 s (R4#4) + the 22-frame −1.92 s lidar-db cluster (R4#8) — need the odom/tf/lidar db probe (heavy), not re-derived; the bench-level section-4313 instance IS confirmed.
+- Process/ops, not results-affecting, not independently re-derived: AES key handling (R4#7), LCM sysctl (R4#11), naming (R4#12), missing run1 README / rescued-db (R4#10 — filesystem not swept).
+
+**Held clean under attack:** referee/tag-4 decorrelation discipline; full denominator (crashes + no-candidates counted); per-frame seeds + revs + commands on every summary; SF determinism (0 ransac-source divergences ransac vs ransac_fiducial); mid360 go2-lane numbers reproduce from disk. Recurring failure mode = NOT fabrication but a real measurement (2.28 m wobble; the present-but-unused `sources=` fix; the stale `~/dimos` checkout) failing to propagate into the labels and headlines it should govern.
