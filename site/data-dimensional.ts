@@ -91,9 +91,9 @@ export const phase2 = {
   status: "done" as Status,
   title: "Phase 2: Fiducial prior",
   objective:
-    "Objective: a marker sighting proposes a high-confidence pose candidate into the same judge — toggleable, age-decayed, and it still has to win on geometry like every other candidate.",
+    "Objective: a marker sighting proposes a high-confidence pose candidate into the same judge — toggleable, age-gated (stale fixes cut off), and it still has to win on geometry like every other candidate.",
   plan: [
-    "FiducialPrior: age-gated (τ=30 s, hard stop 120 s), toggleable per deployment, judged on geometry (done)",
+    "FiducialPrior: age-gated (hard 120 s cutoff; the smooth decay curve is wired for the Phase-4 arbiter, inert under today's source-blind judge), toggleable per deployment, judged on geometry (done)",
     "Camera module → world_map_fix stream → prior: composed by name+type autoconnect; wiring proven by a round-trip test at 1e-9 (done)",
     "Combined blueprint unitree-go2-fiducial-relocalization; full live chain rehearsed in replay on two recordings (done)",
     "Live fix quality measured → ambiguity gate 2.0→5.0 + the lever rule: survey tags near the map origin, prefer two in view (done)",
@@ -260,6 +260,12 @@ export const evidence: EvidenceSection[] = [
         explanation:
           "No single threshold transfers between environments — calibration must be per space.",
         src: "/dimensional/confidence_cross_recording.png",
+      },
+      {
+        title: "When is each source good? The regime map — pooled across two recordings, decorrelated",
+        explanation:
+          "Below the 50k gate (where the robot won't even try today) a marker prior lifts pooled success 31%→69% at sub-30k submaps; above the gate the search roughly doubles but tops out ~50% because self-similar spaces alias — confident-wrong is not only a sparse-submap failure. Markers cover exactly the search's blind spots (n=88, full denominator, referee excluded).",
+        src: "/dimensional/regime_map.png",
       },
     ],
   },
