@@ -4,19 +4,24 @@
 // Discord/roadmap references, no unverified % claims. This is what Aaryan is
 // building, framed positively and generous to the existing system.
 // Every number on this page is replay-verified (real recorded drives, offline)
-// and labeled with its truth source. Nothing here is simulated unless it says so.
+// or an explicitly-labeled live behavior reading, and labeled with its truth
+// source. Nothing here is simulated unless it says so.
+// Structure (Jul 18): the page reads as one argument — eight big takeaway
+// titles in logical order, then a reference tier. Nothing was deleted in the
+// restructure; content not on the story's spine moved down into the reference
+// tier.
 
 export const trial = {
   kicker: "Dimensional FDE Trial · Aaryan Agrawal · July 15 – July 24",
   title: "Fiducial Relocalization",
   objective:
-    "An ArUco prior composed into the existing real-time judge — benchmarked on recordings, validated IRL on go2 with and without mid360",
+    "An ArUco prior composed into the existing real-time judge — benchmarked on recordings, validated IRL on go2 (first SF-office operational recording, Jul 18); the mid360 lane measured in replay of a recorded walk",
   // Short plan index — the full per-phase plan lives inside each phase section.
   deliverables: [
     "Phase 1 — universal confidence reading (built + verified)",
-    "Phase 2 — fiducial prior, live wiring, replay rehearsals (built) · IRL validation on go2 ± mid360 next",
-    "Phase 3 — offline benchmark, referee-tag truth (built; 6-recording suite)",
-    "Phase 4 — fusion of relocalization priors (after this ticket)",
+    "Phase 2 — fiducial prior (built; rehearsed in replay; first IRL recording graded Jul 18 — live wins still zero, judged honestly)",
+    "Phase 3 — offline benchmark, referee-tag truth (active; tier A: 7 recordings + first tier-B operational recording landed)",
+    "Phase 4 — fusion of relocalization priors (pending — after this ticket)",
   ],
   pr: {
     href: "https://github.com/dimensionalOS/dimos/pull/3016",
@@ -92,7 +97,7 @@ export const phase2 = {
     "Camera module → world_map_fix stream → prior: composed by name+type autoconnect; wiring proven by a round-trip test at 1e-9 (done)",
     "Combined blueprint unitree-go2-fiducial-relocalization; full live chain rehearsed in replay on two recordings (done)",
     "Live fix quality measured → ambiguity gate 2.0→5.0 + the lever rule: survey tags near the map origin, prefer two in view (done)",
-    "IRL validation on go2, with and without livox mid360 — referee-graded, every run recorded into the suite (next: robot day)",
+    "IRL validation on go2 — referee-graded, the run recorded into the suite (done Jul 18 — see the robot-day section); the mid360 lane measured in replay of a recorded walk, not IRL yet",
   ],
   lines: [
     "FiducialPrior — age-gated marker fixes into the shared judge (PR #3016)",
@@ -108,20 +113,6 @@ export const phase2 = {
   },
   codeLead: "dimos/mapping/relocalization + dimos/perception/fiducial",
   codeClass: "FiducialPrior · VisualRelocalizationModule",
-};
-
-// Phase 3 — the offline confidence benchmark.
-export const phase3 = {
-  status: "active" as Status,
-  title: "Phase 3: Offline confidence benchmark",
-  objective:
-    "Objective: measure, on recorded drives with deterministic seeds, whether the published confidence predicts correctness — and pick accept thresholds from risk–coverage curves instead of folklore. Truth honesty built in: PGO's own noise floor is measured (marker revisit test) and every number carries its truth label.",
-  plan: [
-    "Referee / fiducial tag split: one physical tag per space only grades, never helps; v2/v4 excluded for duplicate ids (done)",
-    "120-section recovery benchmark + decorrelated retest; every headline number adversarially re-derived (done)",
-    "PGO-as-truth qualifier: the revisit test, hardened to 5 fresh PGO runs with caveats printed on the figure (done)",
-    "Every IRL run is recorded and re-graded here — the suite grows from reality (standing)",
-  ],
 };
 
 // Phase 4 — fusion of relocalization priors (after this ticket).
@@ -145,113 +136,241 @@ export const phase4 = {
   fusion.py  # next: the arbiter (after this ticket)`,
 };
 
-// Evidence log — figures with explanations, appended as results land.
-// Populated Jul 17; every number replay-verified, truth source labeled.
+// ---------------------------------------------------------------------------
+// The story — eight sections, each heading a takeaway, in logical order.
+// Evidence sections carry the figures; the two build phases and phase 4 render
+// between them (see page.tsx for the interleave). Figure explanations are
+// one-line takeaways; every number carries its truth label in-sentence.
+// ---------------------------------------------------------------------------
+
 export type EvidenceFigure = { src: string; title: string; explanation: string };
-export type EvidenceSection = { heading: string; intro: string; figures: EvidenceFigure[] };
+export type EvidenceSection = {
+  heading: string;
+  intro: string;
+  // Optional plan card rendered between intro and figures (used by the
+  // benchmark section, which absorbed the Phase 3 card's plan lines).
+  plan?: { label: string; items: string[] };
+  // Optional boxed live exhibit rendered after the figures (§1).
+  callout?: { label: string; text: string };
+  // Optional closing paragraph rendered after the figures (§6).
+  close?: string;
+  figures: EvidenceFigure[];
+};
+
+// §2 of the story — wraps the Phase 1 + Phase 2 cards (rendered in page.tsx).
+export const architectureSection = {
+  heading:
+    "The fix is architectural: every source proposes, one judge scores them all, and nothing ever bypasses the judge",
+  intro:
+    "If the score is the problem, the answer is not a better single source — it is one place where every source's candidate is judged on the same geometry and published with its score and its origin. Priors are pluggable — today's search, a last-accepted-pose seed, the marker prior — and a marker candidate must win on measured fit like any other. The two build phases below shipped exactly that.",
+};
+
+// §8 of the story — wraps the Phase 4 card + open questions (page.tsx).
+export const nextSection = {
+  heading:
+    "Next: one arbiter that owns the correction — and a benchmark suite that grows from operational reality",
+  intro:
+    "The measured gaps point at one owner of the world→map correction: confidence- and age-weighted arbitration over toggleable sources, a conditional 50k gate that attempts a solve below the point floor when a fresh tag fix exists (measured 61%→93% on sub-gate sections, replay), and a per-space calibration artifact produced by the survey walk. On the benchmark side, tier B grows by acceptance criteria — operational runs ≥10 min with ≥3 referee revisits, unique tag ids per space, both rigs where hardware allows — with the SF office's mid360 capture and catalog upload still open.",
+};
+
+// §9 — the reference tier that parks everything not on the story's spine.
+export const referenceSection = {
+  heading: "Reference — the working appendix (kept in full; parked below the story)",
+  lead: "Everything below is load-bearing but not on the story's spine: look-ups, audits, and scratch.",
+};
+
 export const evidence: EvidenceSection[] = [
   {
-    "heading": "The relocalization benchmark (development-time, marker-truth)",
-    "intro": "The recordings Dimensional already collects include printed AprilTags on walls — and a tag bolted to the world cannot move. So when a localization system places the same physical tag in different spots across repeated sightings, the scatter is that system's own error. That is the whole instrument: external truth, independent of the lidar pipeline it grades, usable offline at development time. The standing setup (v1): each recording designates one referee tag used only for scoring — it never enters a marker map and never produces a fiducial fix — while every other tag id stays available to the runtime fiducial track, and a spatial-cluster validity check must pass before any id is trusted as a referee (it disqualified two recordings — see the exclusion figure). The current suite is seven recordings: four villages and a purpose-built 13-minute multi-tag walk carry marker referees, and two recordings verified tag-free (checked frame by frame) serve as drift-profile runs graded on PGO's own consistency. Every number below is replay of a real recorded drive — real sensor data played back through the real stack, deterministic seeds, full denominators, never simulation — and the truth source is the physical tag itself (each system scored on the self-consistency of its own placements), except where a figure is explicitly labeled PGO self-consistency. This benchmark is the development-time referee that calibrates the runtime confidence track in the next section.",
-    "figures": [
+    heading:
+      "The robot already relocalizes — what it can't do is tell you when it's wrong",
+    intro:
+      "Today's stack already solves \"where am I on the map\": a global geometric search proposes poses and every answer is published with a fitness score — the published confidence, 0–1 — that everything downstream trusts. Measured on replayed real drives, the score does not gate safely: wrong answers (wrong = more than 1 m or 15° from truth, a teleport) routinely outscore right ones. On the 120-section village3 replay, all 27 wrong answers pass both accept thresholds in circulation, including the 0.45 gate (the accept threshold in the code); in a second environment, the office replay, all 8 failures pass the same gate at fitness 0.53–0.75. And it shows up live — see the flip-flop exhibit below, from the first SF-office operational recording.",
+    figures: [
       {
-        "title": "Why a physical tag is a referee: one tag, 156 sightings, raw vs PGO",
-        "explanation": "PGO fixes the loop ends — and quietly bends the middle by 1.4 m.",
-        "src": "/dimensional/pgo_marker_explainer.png"
+        title: "Published fitness vs true error — where accepted-but-wrong lives",
+        explanation:
+          "Wrong answers score up to 0.995 — the gate cannot see them (replay, 120 sections, PGO-silver truth).",
+        src: "/dimensional/confidence_fitness_vs_error.png",
       },
       {
-        "src": "/dimensional/rerun_pgo_marker_explainer_screenshot.png",
-        "title": "The same evidence, live in the team's 3D viewer (rerun)",
-        "explanation": "The same evidence in 3D: dots are data, globes are conclusions."
+        title: "Is fitness a probability? — reliability of the published score",
+        explanation: "Fitness is not a probability.",
+        src: "/dimensional/confidence_reliability.png",
       },
-      {
-        "src": "/dimensional/revisit_medians_hardened.png",
-        "title": "PGO cuts long-gap revisit disagreement to 0.17–0.42 m (raw odometry: 0.37–8.8 m)",
-        "explanation": "Hardened for expert review: 5 fresh PGO runs per recording (dots), bootstrap bands over visits, detection floors, caveats printed on the figure — in-sample for the tune, consistency not absolute accuracy. Replaces the 3-run version, which failed an independent-rerun acceptance test (village3's PGO median swings 0.22–0.47 m across fresh runs)."
-      },
-      {
-        "title": "One referee tag, three systems — the cross-village benchmark chart",
-        "explanation": "Same tag, three systems — the spread is the error.",
-        "src": "/dimensional/benchmark_odom_pgo_module.png"
-      },
-      {
-        "title": "hk_village1 — each system's own placements of the referee tag",
-        "explanation": "Sub-gate solves scatter to 1.8 m — attempts the live robot would refuse.",
-        "src": "/dimensional/benchmark_hk_village1.png"
-      },
-      {
-        "title": "hk_village3 — the reference recording, per-system tag placements",
-        "explanation": "At loop returns PGO wins: 0.93 → 0.28 m.",
-        "src": "/dimensional/benchmark_hk_village3.png"
-      },
-      {
-        "title": "hk_village5 — the neutral case for PGO at loop returns",
-        "explanation": "A tie: little drift to fix, nothing made worse.",
-        "src": "/dimensional/benchmark_hk_village5.png"
-      },
-      {
-        "title": "hk_village6 — PGO's clearest win on the referee tag",
-        "explanation": "PGO's best village: 4.5× tighter at loop returns.",
-        "src": "/dimensional/benchmark_hk_village6.png"
-      },
-      {
-        "src": "/dimensional/pgo_marker_explainer_village6.png",
-        "title": "village6 spatially — what a 0.67 → 0.31 m improvement looks like",
-        "explanation": "PGO's best village, drawn: three visits merge into one cluster; the final pass still sits apart. Better, not solved."
-      },
-      {
-        "title": "Why villages 2 and 4 are excluded — one id, several physical tags",
-        "explanation": "One printed id, three physical tags — stats invalid, recordings excluded.",
-        "src": "/dimensional/benchmark_excluded_duplicate_ids.png"
-      },
-      {
-        "title": "192 m outdoor walk, no tags — PGO's own correction profile",
-        "explanation": "1.45 m of drift over a 192 m walk, visible to the eye.",
-        "src": "/dimensional/hk_building_all_around_pgo_profile.png"
-      },
-      {
-        "title": "go2_hongkong_office — drift profile of the indoor eval map",
-        "explanation": "Indoors too: meter-scale drift corrected over 186 m.",
-        "src": "/dimensional/go2_hongkong_office_pgo_profile.png"
-      }
-    ]
+    ],
+    callout: {
+      label: "Live exhibit — the flip-flop the score can't see (first SF-office recording)",
+      text:
+        "In tonight's live-stack replay of the SF-office recording, consecutive accepted corrections jumped 11.7–18.2 m apart at 12–13 s spacing, each published at fitness 0.68–0.87 with zero gate rejects — at one point returning to within 3 cm of a spot abandoned 24 s earlier. Answers that far apart cannot all be right, and the score flags none of them. The same pattern shows with the new prior off (8.8–19.6 m steps), so this is today's behavior, not the new prior — behavior-only evidence, one live run per arm, no live truth. Full live run in the robot-day section below.",
+    },
   },
   {
-    "heading": "Relocalization confidence (runtime)",
-    "intro": "The runtime track. Every relocalization answer carries one comparable confidence score: pluggable priors propose pose candidates — today's RANSAC global search, a last-accepted-pose seed, and the fiducial (marker) prior — and one shared judge scores every candidate on geometry alone, publishing the winning pose with its score and its source. Nothing bypasses the judge; a marker candidate must win on measured fit like any other. This track runs in real time on the robot; the marker benchmark above is its offline referee. The question measured here: does the published confidence actually predict correctness? On hk_village3 (replay, 120 sections each solved with no initial pose, truth = PGO-corrected poses labeled silver with their ~6 cm rebuild wobble counted): today's configuration succeeds 77.5% (93/120), and all 27 wrong answers pass both accept thresholds in circulation. Adding the fiducial prior lifts it to 95.8% (115/120) — with the entire gain on sections below the live 50k-point submap gate (43/70 → 65/70, 61.4% → 92.9%; gate-reached sections were already 50/50 without markers) — so the honest headline is coverage extension into the power-on / tracking-recovery regime, plus roughly 25× less compute when tags are visible (median solve drops from ~10 s to 0.4 s), not an accuracy fix of behavior the live gate already protects. Fresh second environment — go2_hongkong_office (replay, 850k-point premap, PGO-silver truth from the profile above): RANSAC succeeds 80% (32/40, full denominator), median error across its 40 answers 0.033 m — centimeter agreement with the silver truth on the 32 correct ones, 7.8–21.7 m off on the 8 wrong ones — at a 41 s median solve at this map scale (offline workstation, not an onboard number). All 8 failures pass the 0.45 accept gate at fitness 0.53–0.75, and 3 of them sit above the 50k-point size gate — wrong-room matches the gate would have published — so the village3 pattern where submap size catches every failure is environment-dependent: one more measured reason the confidence reading needs more signals than fitness alone. One honesty note on the fiducial arm: its marker map is surveyed from the same recording that supplies the truth (deployment-realistic, but truth-correlated), so fiducial numbers read as coverage evidence; decorrelating the marker map from the truth recording is the named next step.",
-    "figures": [
+    heading:
+      "How we grade honestly: a printed tag bolted to the world is a referee no pipeline can fool",
+    intro:
+      "The recordings Dimensional already collects include printed AprilTags on walls — and a tag bolted to the world cannot move, so when a localization system places the same physical tag in different spots across repeated sightings, the scatter is that system's own error: external truth, no mocap rig, independent of the lidar pipeline it grades, usable offline at development time. The decorrelation rule (standing setup v1): each space designates one referee tag used only for grading — never in any marker map, never a fix — while every other tag id stays available to the runtime fiducial track, and a spatial-cluster validity check must pass before any id is trusted as a referee (it disqualified two recordings — see the exclusion figure). Suite tiers, stated plainly: tier A is seven short adversarial recordings — four villages and a purpose-built 13-minute multi-tag walk carry marker referees, and two recordings verified tag-free (checked frame by frame) serve as drift-profile runs — good for mechanisms, thin for grading, and in-sample for the tune of PGO, the team's offline map optimizer, whose defaults were tuned on these same villages; tier B is operational recordings ≥10 min with ≥3 referee revisits, and the first landed Jul 18. Every number on this page is replay of a real recorded drive — real sensor data played back through the real stack, deterministic seeds, full denominators, never simulation — and in this section the truth source is the physical tag itself (each system scored on the self-consistency of its own placements), except where a figure is explicitly labeled PGO self-consistency. This benchmark is the development-time referee that calibrates the runtime confidence track.",
+    plan: {
+      label: "Phase 3 — offline confidence benchmark (active) · plan",
+      items: [
+        "Referee / fiducial tag split: one physical tag per space only grades, never helps; v2/v4 excluded for duplicate ids (done)",
+        "120-section recovery benchmark + decorrelated retest; every headline number adversarially re-derived (done)",
+        "PGO-as-truth qualifier: the revisit test, hardened to 5 fresh PGO runs with caveats printed on the figure (done)",
+        "Every IRL run is recorded and re-graded here — the suite grows from reality (standing)",
+      ],
+    },
+    figures: [
       {
-        "title": "Published fitness vs true error — where accepted-but-wrong lives",
-        "explanation": "Wrong answers score up to 0.995 — the gate cannot see them.",
-        "src": "/dimensional/confidence_fitness_vs_error.png"
+        title: "Why a physical tag is a referee: one tag, 156 sightings, raw vs PGO",
+        explanation: "PGO fixes the loop ends — and quietly bends the middle by 1.4 m.",
+        src: "/dimensional/pgo_marker_explainer.png",
       },
       {
-        "title": "Risk vs coverage — what each accept threshold actually buys",
-        "explanation": "0.45 filters nothing; safety costs 40 % of the correct answers.",
-        "src": "/dimensional/confidence_risk_coverage.png"
+        src: "/dimensional/rerun_pgo_marker_explainer_screenshot.png",
+        title: "The same evidence, live in the team's 3D viewer (rerun)",
+        explanation:
+          "The same evidence in the team's 3D viewer: dots are data, globes are conclusions.",
       },
       {
-        "title": "Is fitness a probability? — reliability of the published score",
-        "explanation": "Fitness is not a probability.",
-        "src": "/dimensional/confidence_reliability.png"
+        title: "One referee tag, three systems — the cross-village benchmark chart",
+        explanation: "Same tag, three systems — the spread is the error.",
+        src: "/dimensional/benchmark_odom_pgo_module.png",
       },
       {
-        "title": "One fitness gate, five environments — does the threshold transfer?",
-        "explanation": "No single threshold transfers between environments.",
-        "src": "/dimensional/confidence_cross_recording.png"
+        title: "Why villages 2 and 4 are excluded — one id, several physical tags",
+        explanation:
+          "One printed id, three physical tags — stats invalid, two recordings excluded: the validity gate doing its job.",
+        src: "/dimensional/benchmark_excluded_duplicate_ids.png",
+      },
+    ],
+  },
+  {
+    heading:
+      "Offline verdict: markers rescue exactly the sections today's stack refuses — and the gain survives decorrelation",
+    intro:
+      "On the 120-section village3 replay (each section solved with no initial pose) the fiducial prior lifts success 77.5% → 95.8% (93/120 → 115/120) — with the entire gain on sections below the live 50k gate (the robot won't attempt a solve until its submap holds 50,000 points): 61.4% → 92.9% sub-gate (43/70 → 65/70), while gate-reached sections were already 50/50 without markers — plus roughly 25× less compute when tags are visible (median solve ~10 s → 0.4 s). So the honest headline is coverage extension into the power-on / tracking-recovery regime, not an accuracy fix of behavior the live gate already protects — and that recording's marker map is surveyed from the same recording that supplies its PGO-silver truth (offline-optimized reference poses: best available, measurably imperfect), deployment-realistic but truth-correlated, so 95.8% reads as coverage evidence only. The number of record is the decorrelated one: on the hard 100 m outdoor walk, 52.5% → 72.5% (n=40, full denominator, replay), where the referee id verifiably fed zero fixes; covered sections went 7/15 → 15/15, all 25 uncovered sections returned byte-identical answers — determinism proving the gain is the markers — and rescues were catastrophic-to-centimeters (6.7–72 m wrong-basin solves pulled to 0.05–0.10 m). Second environment (office replay, 850k-point premap): today's search succeeds 80% (32/40, full denominator), median error across its 40 answers 0.033 m — centimeter agreement with the silver truth on the 32 correct ones, 7.8–21.7 m off on the 8 wrong ones — at a 41 s median solve at this map scale (offline workstation, not an onboard number). All 8 failures pass the 0.45 gate, and 3 sit above the 50k size gate — wrong-room matches the gate would have published — so the village3 pattern where submap size catches every failure is environment-dependent: one more measured reason the confidence reading needs more signals than fitness alone.",
+    figures: [
+      {
+        title: "Risk vs coverage — what each accept threshold actually buys",
+        explanation:
+          "The accept threshold, chosen from data: 0.45 filters nothing; safety costs 40% of the correct answers.",
+        src: "/dimensional/confidence_risk_coverage.png",
       },
       {
-        "title": "Live rehearsal finding: 1° of tag-orientation error moves the fix 0.55 m at a 31 m lever",
-        "explanation": "The full live chain ran in replay (camera → tag → fix → judge) and the judge correctly rejected every scattered single-tag fix — geometry, not detection quality, was the cause (ρ +0.97). Deployment rule that falls out: survey tags near the map origin, prefer two tags in view.",
-        "src": "/dimensional/live_fix_quality_village3.png"
-      }
-    ]
-  }
+        title: "One fitness gate, five environments — does the threshold transfer?",
+        explanation:
+          "No single threshold transfers between environments — calibration must be per space.",
+        src: "/dimensional/confidence_cross_recording.png",
+      },
+    ],
+  },
+  {
+    heading:
+      "Rehearsing the live chain end-to-end exposed the real limiter: tag error scales with the tag's distance from the map origin",
+    intro:
+      "The full live chain — camera → tag detection → world→map fix → prior → judge — ran in replay on two recordings before any robot time: wiring proven by a round-trip test at 1e-9, zero tracebacks. The honest finding: the marker prior won zero judge rounds there, and that is the judge working — live single-tag fixes scattered meters, and the measured mechanism is geometry, not detection quality: village3's tag sits 31 m from the map origin, so 1° of orientation error moves the fix 0.55 m (correlation +0.97; even perfect detection gating floors at ~1.4–1.6 m on that geometry — replay-measured). What shipped from it: the ambiguity gate tightened 2.0→5.0 with per-gate observability, a measured smoothing lever (fix error 2.83→1.71 m with a 10 s causal window, replay), live-verified referee refusal (the referee id rejected as unmapped in the live path — decorrelation held), and the deployment rule robot day would test: survey tags near the map origin, prefer two in view.",
+    figures: [
+      {
+        title: "Live rehearsal on village3 — fix quality vs tag geometry (replay)",
+        explanation:
+          "1° of tag-orientation error moves the fix 0.55 m at a 31 m lever — the judge rightly rejected every scattered single-tag fix; rule: tags near the origin, two in view.",
+        src: "/dimensional/live_fix_quality_village3.png",
+      },
+    ],
+  },
+  {
+    heading:
+      "Robot day, IRL: on the first operational recording markers rescue again offline — and live, the judge kept every marker answer honest",
+    intro:
+      "First tier-B recording, captured today: SF office, go2-only rig, 13.6 min continuous, six printed tags plus a pre-existing wall tag as referee — chosen before any grading — with a survey pass, a loop, and a mid-run kidnap in one run. The same night it was graded offline against PGO-silver truth and the live stack was replayed once per arm (prior ON / prior OFF). Four results, one per figure below — each carrying its own truth caveat in the same sentence.",
+    figures: [
+      {
+        title: "SF office survey — the offline verdict on the first operational recording",
+        explanation:
+          "Fiducial lifts replay success 27%→38% (n=48), all of the gain sub-50k, 5 rescues / 0 regressions — graded on PGO truth whose measured wobble reaches 2.3 m late-run, so t>600 s calls are truth-limited.",
+        src: "/dimensional/robotday_sf_bench.png",
+      },
+      {
+        title: "The tag-placement lever rule, validated same-night on the new recording",
+        explanation:
+          "The 5.3 m tag delivered 6–8 cm answers; the 13–14 m tags, meter-class flips (open points truth-limited, not wrong; n=22 single-tag sections, 1 mixed-tag section excluded).",
+        src: "/dimensional/robotday_lever.png",
+      },
+      {
+        title: "Tilted-LIO lane of the recorded mid360 walk (replay)",
+        explanation:
+          "Fiducial fixes are the only relocalization that works — 15/15 fix-carrying sections at 1.6 cm median — while RANSAC's 0/40 is a frame-convention break (the gravity gate assumes an upright body; true tilt 44–54°), not scene difficulty, and RANSAC there is honestly lost (max fitness 0.38, 0/40 pass the gate), not confidently wrong; the bench is pessimistic for the combined arm here — it lacks the live per-source gravity fallback (verified), which is why its +fiducial bar equals RANSAC exactly.",
+        src: "/dimensional/robotday_livox.png",
+      },
+      {
+        title: "The honest live verdict — one replayed run per arm, behavior only",
+        explanation:
+          "Tag fixes flowed all run, but fiducial won zero of the 42 judge rounds holding a fresh fix — every accepted pose was the search's; the ON arm answered 1.9× more often (50 vs 27 accepts, median cycle 17.4 s vs 30.4 s — difference measured, cause unverified; behavior-only, no live truth).",
+        src: "/dimensional/robotday_sf_live.png",
+      },
+    ],
+    close:
+      "The live zero is consistent with the measured lever — this office's far tags (12–14 m) sit past the geometry where single-tag fixes can win, exactly what the placement rule predicts; the mirror-ambiguity gate fired 17/14 times (ON/OFF) live with zero tracebacks. The flip-flop exhibit at the top of this page is these same runs — both arms — which is why the confidence reading, not any single prior, is the product.",
+  },
+  {
+    heading:
+      "Trust the ruler, but measure it: PGO truth is silver — qualified per recording, never worse at loop returns, wobble measured",
+    intro:
+      "Every offline number above is graded against PGO-corrected poses, so the benchmark qualifies its own ruler per recording rather than assuming it. Across the four valid villages PGO never worsened loop-return agreement (improved three, tied one — replay, referee-tag truth); its run-to-run wobble is ~6 cm on the villages but reaches 2.3 m late in the SF run (measured from two independent rebuilds — why the robot-day section marks t>600 s calls truth-limited); and the tune is in-sample on these villages, with every caveat printed on the hardened figure itself. The hardened 5-run figure replaced an earlier 3-run version that failed an independent-rerun acceptance test — the acceptance test is part of the method.",
+    figures: [
+      {
+        src: "/dimensional/revisit_medians_hardened.png",
+        title:
+          "PGO cuts long-gap revisit disagreement to 0.17–0.42 m (raw odometry: 0.37–8.8 m)",
+        explanation:
+          "5 fresh PGO runs per recording (dots), bootstrap bands over visits, detection floors, caveats printed on the figure — in-sample for the tune; consistency, not absolute accuracy.",
+      },
+      {
+        title: "hk_village1 — each system's own placements of the referee tag",
+        explanation: "Sub-gate solves scatter to 1.8 m — attempts the live robot would refuse.",
+        src: "/dimensional/benchmark_hk_village1.png",
+      },
+      {
+        title: "hk_village3 — the reference recording, per-system tag placements",
+        explanation:
+          "At loop returns PGO wins: 0.93 → 0.28 m — but that median is draw-unstable, 0.22–0.47 m across fresh PGO draws, so quote the range.",
+        src: "/dimensional/benchmark_hk_village3.png",
+      },
+      {
+        title: "hk_village5 — the neutral case for PGO at loop returns",
+        explanation: "A tie: little drift to fix, nothing made worse.",
+        src: "/dimensional/benchmark_hk_village5.png",
+      },
+      {
+        title: "hk_village6 — PGO's clearest win on the referee tag",
+        explanation: "PGO's best village: 4.5× tighter at loop returns.",
+        src: "/dimensional/benchmark_hk_village6.png",
+      },
+      {
+        src: "/dimensional/pgo_marker_explainer_village6.png",
+        title: "village6 spatially — what a 0.67 → 0.31 m improvement looks like",
+        explanation:
+          "What 0.67 → 0.31 m looks like: three visits merge into one cluster; the final pass still sits apart. Better, not solved.",
+      },
+      {
+        title: "192 m outdoor walk, no tags — PGO's own correction profile",
+        explanation:
+          "1.45 m of drift over a 192 m walk, visible to the eye — PGO's own opinion of its drift (verified tag-free; self-consistency, not independent truth).",
+        src: "/dimensional/hk_building_all_around_pgo_profile.png",
+      },
+      {
+        title: "go2_hongkong_office — drift profile of the indoor eval map",
+        explanation: "Indoors too: meter-scale drift corrected over 186 m.",
+        src: "/dimensional/go2_hongkong_office_pgo_profile.png",
+      },
+    ],
+  },
 ];
 
 // Open questions — Aaryan's running list. ADD YOURS HERE: one string per
 // question, newest at the top. Public page: keep wording additive/neutral.
 export const openQuestions: string[] = [
+  "SF office with the mid360 rig — capture and grade the same space on both rigs?",
+  "Far-tag offices: multi-tag fusion vs. re-survey with origin-near tags — which first?",
   "The first 30–60 s after boot are map-blind: relocalization skips until the submap reaches 50k points (measured 34 s / 65 s to first accepted fix on two replays). Is 50k too high? Test later: sweep MIN_LOCAL_POINTS against risk on the benchmark's stored per-section sizes, and make the gate conditional when a fresh tag fix exists (Phase 4).",
   "Confidence calibration per environment: ship a per-space calibration artifact from the survey walk, or model the shift with covariates (submap size, sensor lane) in one global model?",
   "Premap freshness: when localization confidence is high, should well-localized scans write back into the map (content updates, frame frozen), and what confidence bar gates the pen?",
@@ -325,7 +444,8 @@ export const stackMap: StackCol[] = [
 ];
 
 
-// Read-this-first definitions shown above the evidence log.
+// Glossary — precise definitions for the terms used above (reference tier;
+// first use in body text carries a short inline gloss).
 export const glossary: { term: string; def: string }[] = [
   {
     "term": "fitness",
