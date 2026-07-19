@@ -996,6 +996,11 @@ orientation truth to give a 10 cm fix; a tag 2 m out tolerates 3°.
    DIM-1252 (Phase 1) as its verification runs are now real; DIM-1253 stays open until fiducial
    verified on-robot or cross-run.
 5. Rotate the Linear API key when convenient (it transited chat in plaintext).
+7. **Upload `sf_office_go2_20260718_survey1.db` (2.38 GB) to the company LFS data catalog**
+   (Aaryan, Jul 18: "we will put this in the company's LFS later") — it currently exists ONLY
+   on the CUDA laptop at `trial/harness/out/robot_day/` (+ symlink in `dimos/data/`). Until
+   uploaded, this machine is the sole copy of the first tier-B recording — don't wipe it.
+   After upload: flip the "Local file" note in `benchmark_setup.yaml`'s registration.
 6. **Fig-3 HOLD RESOLVED (Jul 18 ~1:30 AM): send `revisit_medians_hardened.png`, never the old
    figure.** The original FAILED its independent-rerun acceptance test (v3's PGO median is
    draw-unstable, 0.22–0.47 m across fresh graphs; the 3-run band didn't contain the verifier's
