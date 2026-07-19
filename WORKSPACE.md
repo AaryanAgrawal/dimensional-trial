@@ -373,6 +373,11 @@ propose, don't restructure.
 - **Publish the confidence tuple** (fitness, submap n_pts, winning source, seconds-since-
   fiducial-fix) as a typed output, not log lines — deferred out of the current PR per the
   no-caller-yet rule; first commit of the fusion ticket.
+- **OPEN QUESTION (Aaryan, Jul 18): is 50k too high?** First 30–60 s after boot are map-blind
+  (measured: 34 s / 65 s to first accepted fix on village3 / mid360-walk replays; no world→map,
+  no merged_map, costmap local-only). Test WITHOUT a robot, later: the benchmark already stores
+  per-section submap size + correctness → sweep MIN_LOCAL_POINTS vs risk from existing data
+  (risk-coverage as a function of the gate value). Pairs with the conditional-gate item above.
 
 **Phase 4 candidate design (Jul 16 study, not yet agreed with the team).** Three-part split: global
 search on demand (the existing `relocalize()`, fired at boot/kidnap/health-collapse instead of on a

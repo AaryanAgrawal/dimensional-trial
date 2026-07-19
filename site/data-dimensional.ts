@@ -252,6 +252,7 @@ export const evidence: EvidenceSection[] = [
 // Open questions — Aaryan's running list. ADD YOURS HERE: one string per
 // question, newest at the top. Public page: keep wording additive/neutral.
 export const openQuestions: string[] = [
+  "The first 30–60 s after boot are map-blind: relocalization skips until the submap reaches 50k points (measured 34 s / 65 s to first accepted fix on two replays). Is 50k too high? Test later: sweep MIN_LOCAL_POINTS against risk on the benchmark's stored per-section sizes, and make the gate conditional when a fresh tag fix exists (Phase 4).",
   "Confidence calibration per environment: ship a per-space calibration artifact from the survey walk, or model the shift with covariates (submap size, sensor lane) in one global model?",
   "Premap freshness: when localization confidence is high, should well-localized scans write back into the map (content updates, frame frozen), and what confidence bar gates the pen?",
   "Fiducial deployment policy: enforce unique tag ids per space at install time, or teach the prior multi-hypothesis handling for duplicate ids?",
