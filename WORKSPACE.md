@@ -392,6 +392,42 @@ propose, don't restructure.
 - **Publish the confidence tuple** (fitness, submap n_pts, winning source, seconds-since-
   fiducial-fix) as a typed output, not log lines — deferred out of the current PR per the
   no-caller-yet rule; first commit of the fusion ticket.
+- **RANSAC = event-triggered, not timer-triggered (Aaryan Jul 19: "ransac shouldn't run when a
+  tag is in view, fiducial is ~25× cheaper — configurable? lite mode? slider?").** Senior call:
+  NOT a slider/lite-mode UI (speculative flexibility, wrong abstraction — this is a deployment
+  property, not a per-second control). It's a `ransac_policy: always | on_demand | never`
+  per-deployment config (dimos idiom = pydantic field + blueprint variant, cf. use_fiducial_prior
+  bool); "lite" = a named blueprint preset pinning `on_demand` for compute-constrained robots
+  (lesh: "same architecture every tier, only rate/budget config differs"). TRADE-OFF to state
+  loudly: standing ransac down loses the INDEPENDENT global cross-check — a mis-surveyed/duplicate
+  tag can point at a locally-wall-fitting-but-globally-wrong spot (passes ICP, ransac would've
+  found the true basin). So it's compute-vs-robustness, not free. MEASURE FIRST from existing
+  bench data: replay `on_demand` and count how often it publishes a locally-plausible-globally-
+  wrong pose vs the full pipeline — no robot needed. The already-measured fiducial+judge config
+  (95% @ 0.4 s vs 9.7 s) IS this policy's happy path.
+- **THE OFFICE FLIP-FLOP (empirical finding, Jul 18 live SF replay — THIS is why Phase 4 needs a
+  jump/ambiguity gate):** on sf_office_go2_20260718_survey1, both live arms showed the accepted
+  world→map answer JUMPING between distinct spots at PASSING fitness in the early window —
+  consecutive accepts 9–19 m apart (ON arm: A[1.16,-0.94] → B[12.5,-7.67] → back to A to the cm,
+  t=49→61→73 s, all ransac→ransac, fitness 0.79–0.98). The office is self-similar (repeating
+  desks/aisles) so the global search finds multiple placements that all fit the walls; fitness
+  can't separate them; each flip teleports the whole map (and every goal) 13 m under the robot,
+  silently, with a green confidence score. Settles to mm-stable once the submap is rich enough
+  (~2.5 min). **The judge canNOT stop this today: it is memoryless — ranks THIS cycle's pool on
+  wall fitness, never sees the previous answer, so "13 m from last time" isn't an input.** A step
+  change is invisible to it. This is the concrete, measured justification for the Phase-4 gates
+  below — record it as the WHY.
+- **Basin-ambiguity gate (the Phase-4 answer to the flip-flop):** the judge publishes argmax
+  fitness with no notion of "the runner-up was 13 m away at nearly the same score" — exactly the
+  tag world's mirror-ambiguity problem, one level up. Two composed defenses: (a) jump-
+  implausibility — a new answer that moves the map >Xm must beat the incumbent by a real margin
+  OR persist K cycles before publishing (this is the memory the judge lacks); (b) basin-
+  ambiguity — if the pool's top-2 sit far apart at near-equal fitness, DECLARE ambiguous and hold
+  last pose instead of publishing. And (c) the tag: identity that can't alias anchors the basin.
+  NOTE the footgun: naive "just seed last pose" (LastPosePrior) is already built and MEASURED to
+  hurt (gravity walkover; lost wins v1/v5) — continuity must enter as a publish-gate/margin, NOT
+  as a candidate that entrenches a wrong basin. MEASURABLE FROM EXISTING DATA (run_bench saves
+  T_est; refine_candidates ranks the pool) before any live change.
 - **OPEN QUESTION (Aaryan, Jul 18): is 50k too high?** First 30–60 s after boot are map-blind
   (measured: 34 s / 65 s to first accepted fix on village3 / mid360-walk replays; no world→map,
   no merged_map, costmap local-only). Test WITHOUT a robot, later: the benchmark already stores
