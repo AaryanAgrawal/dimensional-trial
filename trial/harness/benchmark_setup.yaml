@@ -58,6 +58,17 @@ recordings:
     referee_tag: null
   china_office: {role: EXCLUDED, reason: Aaryan 2026-07-17 — do not use}
 
+  sf_office_go2_20260718_survey1:
+    role: "TIER B operational — FIRST SF-office recording (454 Natoma). go2-only rig,
+      13.6 min continuous (max stream gap 1.9 s), survey pass + loop + mid-run kidnap.
+      Streams: color 4105@5.0 Hz / lidar 5479@6.7 Hz / odom 15184@18.5 Hz. Live census
+      during capture (spy on marker TFs): 6 physical tags, all multi-sighted.
+      Local file: trial/harness/out/robot_day/ (2.38 GB; not in the shared catalog yet
+      — no-remote rule)."
+    referee_tag: 19         # the pre-existing wall start/end tag (Aaryan); >=3 revisit
+                            # waves observed live; chosen BEFORE any grading
+    fiducial_tags: [2, 3, 5, 6, 7]   # the Jul 18 printed 100 mm singles
+
 protocol:
   revisit_test: same-referee-tag pairwise distance, stratified by time gap
                 (0-10 / 10-30 / 30-60 / 60+ s); raw odometry vs corrected;
