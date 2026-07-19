@@ -165,6 +165,24 @@ every number bit-reproduced):**
   the LIVE stack passes sources= so it's less broken live — but the upright assumption is the
   root bug.) This is a real find to surface to lesh: mid360 is the priority rig.
 
+**Jul 19 — CODE-REVIEW PACKET (full defense at trial/harness/out/review_packet/REVIEW_PACKET.md;
+Aaryan's grilling armor — 8 hardest Qs each answered from a test/number). One finding changes our
+WORDING:**
+- **The age-DECAY curve is INERT — only the hard 120 s CUTOFF is load-bearing.** Nothing in dimos
+  reads `Candidate.confidence`; the judge ranks on wall fitness + source only (that IS the
+  no-prior-is-trusted invariant). The smooth τ=30 s decay is telemetry plumbing for a FUTURE
+  consumer — the Phase-4 fusion arbiter, which WILL read confidence. Stop saying "age-decayed" as
+  if the curve weights anything today; say "age-gated (hard 120 s cutoff; decay curve wired for
+  the fusion arbiter, inert under today's source-blind judge)." Exactly why confidence-weighting
+  is a Phase-4 deliverable, not done.
+- Other named soft spots (all in the packet; a reviewer WILL find them — own, don't defend as
+  validated): ambiguity 5.0 tuned on ONE recording (n=112); marker-map exporter reuses eval.py
+  (coupling smell); self_hosted replay test never runs in CI (manual gate); last-pose seed
+  frame-direction (module.py:195) untested, rests on a comment; cross-session (map-A →
+  relocalize-in-B) NOT proven. SOLID: parity bit-identical, no-bypass tested, fisheye regression,
+  per-source walkover reproduce-then-fix, 1e-9 frame inversion. Read-before-push: priors.py, the
+  ambiguity-gate block, relocalize.py + the walkover test.
+
 **RESEARCH METHOD (aligned with Aaryan, Jul 18 ~1 AM — every claim goes through this loop):**
 1. Falsifiable number FIRST — state the claim as a measurable quantity before running anything.
 2. Truth external to the system under test — the referee tag never helps what it grades.
