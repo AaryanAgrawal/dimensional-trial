@@ -11,12 +11,12 @@ export const trial = {
   title: "Fiducial Relocalization",
   objective:
     "An ArUco prior composed into the existing real-time judge — benchmarked on recordings, validated IRL on go2 with and without mid360",
+  // Short plan index — the full per-phase plan lives inside each phase section.
   deliverables: [
-    "Fiducial (ArUco / AprilTag 36h11) prior — toggleable, age-aware, never bypasses the judge",
-    "Universal confidence reading across pluggable relocalization priors",
-    "Offline confidence benchmark on recorded drives (replay, deterministic)",
-    "IRL validation on go2 — with and without livox mid360 (in progress)",
-    "Fusion of relocalization priors (next, after this ticket)",
+    "Phase 1 — universal confidence reading (built + verified)",
+    "Phase 2 — fiducial prior, live wiring, replay rehearsals (built) · IRL validation on go2 ± mid360 next",
+    "Phase 3 — offline benchmark, referee-tag truth (built; 6-recording suite)",
+    "Phase 4 — fusion of relocalization priors (after this ticket)",
   ],
   pr: {
     href: "https://github.com/dimensionalOS/dimos/pull/3016",
@@ -72,6 +72,12 @@ export const phase1 = {
   title: "Phase 1: Universal confidence reading",
   objective:
     "Objective: every relocalization answer carries one comparable confidence — pluggable priors propose, one shared fine-ICP judge scores them all, and the winning source is published with the pose.",
+  plan: [
+    "Candidate / RelocPrior protocol + relocalize_with_priors() — no prior ever bypasses the judge (done, unit-tested)",
+    "Publish fitness + winning source with every accepted pose (done, on the branch)",
+    "Confidence analytics: risk–coverage, AUROC, calibration — pure numpy, 8/8 tests (done)",
+    "Accept thresholds chosen per environment from the curves — measured: no global threshold transfers (standing rule)",
+  ],
   code: "dimos/mapping/relocalization/priors.py — Candidate · RelocPrior · relocalize_with_priors()",
 };
 
@@ -81,6 +87,13 @@ export const phase2 = {
   title: "Phase 2: Fiducial prior",
   objective:
     "Objective: a marker sighting proposes a high-confidence pose candidate into the same judge — toggleable, age-decayed, and it still has to win on geometry like every other candidate.",
+  plan: [
+    "FiducialPrior: age-gated (τ=30 s, hard stop 120 s), toggleable per deployment, judged on geometry (done)",
+    "Camera module → world_map_fix stream → prior: composed by name+type autoconnect; wiring proven by a round-trip test at 1e-9 (done)",
+    "Combined blueprint unitree-go2-fiducial-relocalization; full live chain rehearsed in replay on two recordings (done)",
+    "Live fix quality measured → ambiguity gate 2.0→5.0 + the lever rule: survey tags near the map origin, prefer two in view (done)",
+    "IRL validation on go2, with and without livox mid360 — referee-graded, every run recorded into the suite (next: robot day)",
+  ],
   lines: [
     "FiducialPrior — age-gated marker fixes into the shared judge (PR #3016)",
     "Decorrelated result (the referee tag never helps, only grades): 52.5% → 72.5% on a hard 100 m outdoor walk (n=40, full denominator, replay) — sections with marker coverage went 7/15 → 15/15 while all 25 uncovered sections returned byte-identical answers, proving the gain is the markers",
@@ -103,6 +116,12 @@ export const phase3 = {
   title: "Phase 3: Offline confidence benchmark",
   objective:
     "Objective: measure, on recorded drives with deterministic seeds, whether the published confidence predicts correctness — and pick accept thresholds from risk–coverage curves instead of folklore. Truth honesty built in: PGO's own noise floor is measured (marker revisit test) and every number carries its truth label.",
+  plan: [
+    "Referee / fiducial tag split: one physical tag per space only grades, never helps; v2/v4 excluded for duplicate ids (done)",
+    "120-section recovery benchmark + decorrelated retest; every headline number adversarially re-derived (done)",
+    "PGO-as-truth qualifier: the revisit test, hardened to 5 fresh PGO runs with caveats printed on the figure (done)",
+    "Every IRL run is recorded and re-graded here — the suite grows from reality (standing)",
+  ],
 };
 
 // Phase 4 — fusion of relocalization priors (after this ticket).
@@ -110,7 +129,13 @@ export const phase4 = {
   status: "pending" as Status,
   title: "Phase 4: Fusion of relocalization priors",
   objective:
-    "Objective: confidence- and age-weighted arbitration over parallel, toggleable sources — one owner of the world→map correction, degrading gracefully as sources come and go. Includes making the 50k-point attempt gate conditional: with a fresh fiducial fix in hand, attempt relocalization below the gate (a tag needs one camera frame, not 50,000 lidar points — measured 61%→93% success on sub-gate sections), plus publishing the confidence tuple (fitness, submap size, source, fix age) as a typed output.",
+    "Objective: confidence- and age-weighted arbitration over parallel, toggleable sources — one owner of the world→map correction, degrading gracefully as sources come and go.",
+  plan: [
+    "fusion.py arbiter: one owner of world→map; gated priority + age weighting; never average a disagreement",
+    "Conditional 50k gate: attempt relocalization below MIN_LOCAL_POINTS when a fresh tag fix exists (measured 61%→93% on sub-gate sections)",
+    "Confidence tuple (fitness, submap size, winning source, fix age) as a typed output instead of log lines",
+    "Per-space calibration artifact produced by the survey walk",
+  ],
   nodes: ["lidar prior", "fiducial prior", "fused correction"],
   line: "sources plug in; an arbiter owns the correction; a healthy source always carries the pose.",
   tree: `dimos/mapping/relocalization/

@@ -94,6 +94,26 @@ function InCode({ children }: { children: ReactNode }) {
   return <p className="mt-4 text-xs text-faint">In code: {children}</p>;
 }
 
+function PhasePlan({ items }: { items: string[] }) {
+  return (
+    <div className="mt-3 rounded-md border border-line bg-tile px-3 py-2.5">
+      <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-faint">
+        Plan
+      </p>
+      <ul className="mt-1.5 space-y-1 text-xs">
+        {items.map((p) => (
+          <li key={p} className="flex gap-2">
+            <span className="text-faint" aria-hidden>
+              –
+            </span>
+            <span className="text-soft">{p}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 const evidenceNumbered = (() => {
   let n = 0;
   return evidence.map((sec) => ({
@@ -143,6 +163,7 @@ export default function DimensionalPage() {
       <section className="mt-12 border-t border-line pt-6">
         <PhaseHeading status={phase1.status}>{phase1.title}</PhaseHeading>
         <p className="mt-3 text-sm font-medium text-ink">{phase1.objective}</p>
+        <PhasePlan items={phase1.plan} />
 
         <Flowchart />
 
@@ -193,6 +214,7 @@ export default function DimensionalPage() {
       <section className="mt-12 border-t border-line pt-6">
         <PhaseHeading status={phase2.status}>{phase2.title}</PhaseHeading>
         <p className="mt-3 text-sm font-medium text-ink">{phase2.objective}</p>
+        <PhasePlan items={phase2.plan} />
         <ul className="mt-3 space-y-1 text-sm">
           {phase2.lines.map((l) => (
             <li key={l} className="flex gap-2">
@@ -232,12 +254,14 @@ export default function DimensionalPage() {
       <section className="mt-12 border-t border-line pt-6">
         <PhaseHeading status={phase3.status}>{phase3.title}</PhaseHeading>
         <p className="mt-3 text-sm font-medium text-ink">{phase3.objective}</p>
+        <PhasePlan items={phase3.plan} />
       </section>
 
       {/* Phase 4 — fusion and runtime degradation */}
       <section className="mt-12 border-t border-line pt-6">
         <PhaseHeading status={phase4.status}>{phase4.title}</PhaseHeading>
         <p className="mt-3 text-sm font-medium text-ink">{phase4.objective}</p>
+        <PhasePlan items={phase4.plan} />
 
         <div className="mt-4 flex flex-col items-stretch gap-1.5 sm:flex-row sm:items-center sm:justify-center">
           <div className="rounded-md border border-line bg-tile px-3 py-2 text-center text-xs text-soft sm:flex-none">
