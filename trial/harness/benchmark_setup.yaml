@@ -72,5 +72,23 @@ protocol:
   handoff: sections + fixes (fiducial tags only) feed the relocalization-
            confidence harness (run_bench.py / analyze.py)
 
+# --- v2 target set (Aaryan, Jul 18: "we should have a good set for the benchmark") ---
+# The current set is TIER A = adversarial shorts (lesh's own description: very short
+# clips, robot thrown around; PGO defaults were TUNED on the villages — in-sample).
+# Good for mechanisms and regression, statistically thin for grading. Robot day
+# starts TIER B: operational recordings. A recording qualifies for tier B only if
+# ALL of these hold (they are pass criteria for the RECORDING, not the robot):
+suite_v2_acceptance:
+  tag_split: ">=2 fiducial tags in the marker map + 1 DISTINCT referee id, unique ids per space"
+  duration_s: ">=600 (10 min); target 10-20 min of walking-speed operation, not stress handling"
+  referee_revisits: ">=3 returns to the referee tag (visit-level statistics need n>=3, not bookends)"
+  scenarios_in_run: "normal loop + one kidnap segment + one power-on-near-tag start, in the same recording where practical"
+  rigs: "capture each space twice when hardware allows: go2-only AND go2+mid360"
+  provenance: "recording name states date/place/rig; referee id chosen BEFORE grading, logged here"
+tier_a_legacy: [hk_village1, hk_village3, hk_village5, hk_village6,
+                recording_go2_mid360_2026-05-29_4-45pm-PST,
+                hk_building_all_around, go2_hongkong_office]
+tier_b_planned: "robot day Jul 18, SF office — target 4-6 recordings (2 rigs x 2-3 runs); added here as they land"
+
 publication_intent: push under a "relocalization benchmark" home on GitHub
                     (Aaryan, Jul 17 — "maybe"; NOT pushed yet, no-remote rule)
