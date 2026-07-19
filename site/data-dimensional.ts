@@ -110,7 +110,7 @@ export const phase4 = {
   status: "pending" as Status,
   title: "Phase 4: Fusion of relocalization priors",
   objective:
-    "Objective: confidence- and age-weighted arbitration over parallel, toggleable sources — one owner of the world→map correction, degrading gracefully as sources come and go.",
+    "Objective: confidence- and age-weighted arbitration over parallel, toggleable sources — one owner of the world→map correction, degrading gracefully as sources come and go. Includes making the 50k-point attempt gate conditional: with a fresh fiducial fix in hand, attempt relocalization below the gate (a tag needs one camera frame, not 50,000 lidar points — measured 61%→93% success on sub-gate sections), plus publishing the confidence tuple (fitness, submap size, source, fix age) as a typed output.",
   nodes: ["lidar prior", "fiducial prior", "fused correction"],
   line: "sources plug in; an arbiter owns the correction; a healthy source always carries the pose.",
   tree: `dimos/mapping/relocalization/

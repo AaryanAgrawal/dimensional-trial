@@ -364,6 +364,16 @@ it today breaks. Trial discipline: build this **additively** (new files only —
 `visual.py`, a `fusion.py` skeleton) — the lidar file itself is lesh's, not touched on this branch;
 propose, don't restructure.
 
+**Fusion-phase additions (Aaryan, Jul 18 morning — from the startup-relocalization convo):**
+- **Conditional MIN_LOCAL_POINTS**: with a fresh fiducial fix in hand, attempt relocalization
+  BELOW the 50k gate (smaller floor so the judge still has walls to score). Today the gate sits
+  upstream of the judge, so a tag seen at boot waits for 50,000 lidar points anyway; benchmark
+  measured 61.4%→92.9% success on sub-gate sections with a marker seed. This is the change that
+  turns "tag in view at power-on" into "localized in seconds."
+- **Publish the confidence tuple** (fitness, submap n_pts, winning source, seconds-since-
+  fiducial-fix) as a typed output, not log lines — deferred out of the current PR per the
+  no-caller-yet rule; first commit of the fusion ticket.
+
 **Phase 4 candidate design (Jul 16 study, not yet agreed with the team).** Three-part split: global
 search on demand (the existing `relocalize()`, fired at boot/kidnap/health-collapse instead of on a
 timer) · cheap continuous tracking (ICP seeded by the last `world→map`, plus the marker prior when a
