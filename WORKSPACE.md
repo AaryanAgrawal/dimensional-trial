@@ -959,6 +959,28 @@ Figure: `live_fix_quality_village3.png` (takeaway title). Analysis: `live_fix_qu
   TERM — **ops rule: kill replays by exact PID only** — and are re-running serially now
   (`$CLAUDE_JOB_DIR/tmp/replay_runner.sh`, logs `replay_run2.log` / `replay_run_pass2.log`).
 
+**Final replay scorecards (Jul 18, both arms complete):**
+- **village3 pass2 (gated, clean 150 s):** 40 fixes / 23 accepts all source=ransac / 0 tracebacks /
+  clean shutdown. Consistent with pass1 (44/21) — the gated live path is stable across passes.
+- **mid360 walk (full 780 s):** 207 fixes / 11 accepts all source=ransac / 0 tracebacks; gate
+  observability tallies: 34 mirror_ambiguous rejects (tag2's flagged ambiguity, caught as
+  predicted), 12 unmapped_id (referee tag 4 correctly refused — decorrelation held live),
+  1 high_reprojection. Fiducial wins live: still 0 on tier-A recordings — consistent with the
+  measured lever ceiling; the win case needs tags near the map origin (robot-day placement).
+
+**Integration test LANDED (dimos `c6415c9b9`, adversarially verified):**
+`test_unitree_go2_fiducial_relocalization_replay.py` — the fiducial blueprint replays
+hk_village3 inside pytest: premap load asserted, ≥1 accept above the configured threshold,
+≥1 fix on `/world_map_fix` via an in-process subscriber (verifier proved this leg REAL by fault
+injection: remapping the tag id failed the test exactly there while 18 lidar accepts flowed),
+0 tracebacks, clean SIGTERM within 30 s. Opt-in only (`-m self_hosted`, auto-skips in CI and
+without the recording; skip paths verified ~2 s, zero downloads). Inputs built-and-cached from
+the recording itself (premap via CLI, marker map via a surgical `corrected_marker_transforms`
+extraction in eval.py — behavior-preserving, eval CLI re-run confirms). 68 s cold / 49 s cached.
+Named gap (by design): prior *consumption* leg is covered by the wiring unit tests, not this
+test. Village3's tag 10 doubles as its referee — this test is a WIRING gate, never grading
+evidence (stated in its docstring).
+
 **ROBOT-DAY DESIGN RULE (falls straight out of the lever mechanism):** survey tags NEAR the map
 origin (or start mapping next to a tag), and prefer ≥2 tags in view for fixes — world→map error
 scales as (tag distance from map origin) × (orientation error). A tag 30 m out needs ~0.2°
@@ -967,7 +989,7 @@ orientation truth to give a 10 cm fix; a tag 2 m out tolerates 3°.
 **Morning checklist (Aaryan):**
 1. Review + push trial repo `main` (all local commits).
 2. Review dimos branch (history REWRITTEN by the rebase/necessity surgery; backup ref
-   `surgery-backup`; head now `d4e126f51` = blueprint + docs + measured ambiguity gate) → push
+   `surgery-backup`; head now `c6415c9b9` = blueprint + docs + measured ambiguity gate + replay integration test) → push
    to fork with **`git push --force-with-lease`** → PR #3016 updates.
 3. Portfolio: review local commit → `vercel --prod` (from `~/portfolio` on this box, or laptop).
 4. Linear: paste bench results comment on DIM-920 (draft in §5-adjacent block below); mark
