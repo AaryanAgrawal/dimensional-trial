@@ -125,6 +125,20 @@ Next actions.
   (fix within 5 s near tag) → kidnap prior-on/off → start/end referee → with/without mid360 →
   record everything.
 
+**HONEST FRAMING OF RECORD (Aaryan agreed, Jul 19 ~1 AM — use this wording everywhere, page
+included; never claim fiducial precision):**
+- **Marker = identity, coarse.** A tag fix is unambiguous (one id, one place — cannot flip-flop)
+  but metrically weak: ~2–4° orientation error even gated (uncalibrated fisheye, 100 mm tag),
+  × lever arm = dm–m of world→map error.
+- **Lidar ICP = precision, gullible.** ~3 cm agreement with truth on rich submaps (office median
+  0.033 m) but zero identity — the measured ±9–19 m office flip-flop at passing fitness.
+- **The system composes them:** fiducial proposes WHICH basin, ICP polishes the centimeters,
+  the judge arbitrates on geometry. Fiducial "wins" only when ransac is about to be confidently
+  wrong — which is the regime that matters (power-on, kidnap, aliased spaces), and which the
+  live pipeline currently locks out (per-source gate = the fix, fusion phase).
+- Therefore the public claim is NEVER "fiducial is more accurate" — it is "fiducial makes the
+  answer RIGHT where lidar alone is confidently wrong, and lidar makes it precise."
+
 **RESEARCH METHOD (aligned with Aaryan, Jul 18 ~1 AM — every claim goes through this loop):**
 1. Falsifiable number FIRST — state the claim as a measurable quantity before running anything.
 2. Truth external to the system under test — the referee tag never helps what it grades.
