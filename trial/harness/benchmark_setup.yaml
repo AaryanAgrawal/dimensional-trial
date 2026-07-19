@@ -45,14 +45,19 @@ recordings:
   hk_village2: {role: EXCLUDED, reason: 3 physical tags share id 10 (cluster check)}
   hk_village4: {role: EXCLUDED, reason: 2 physical tags share id 10 (cluster check)}
   hk_building_all_around:
-    role: PGO-truth-only benchmark run (replaces markers_go2, Aaryan Jul 17) —
+    role: CONFIDENCE-EVAL ONLY, NOT a benchmark run (Aaryan Jul 19 reclassification —
+          tag-free means no external referee, so truth is self-referential PGO-silver;
+          this grades the relocal MODULE's confidence, never PGO itself; kept for
+          environment diversity in the thresholds-don't-transfer finding) —
           measured 83.3% (20/24) ransac, 0.028 m median on successes, 24.6 s median
           solve on the 1.4M-pt premap; failures at fitness 0.32-0.66 (the 0.45 gate
           correctly rejects 3 of 4 HERE — unlike the villages); only 3 loop closures,
           truth thin; NO marker referee (VERIFIED tag-free, 0/663 sampled frames)
     referee_tag: null
   go2_hongkong_office:
-    role: PGO-truth-only benchmark run — no tags (verified, 0/398 sampled frames);
+    role: CONFIDENCE-EVAL ONLY, NOT a benchmark run (same Jul 19 reclassification —
+          no referee, self-referential PGO-silver truth) — no tags (verified, 0/398
+          sampled frames);
           measured 80% (32/40, full denominator) ransac, 0.033 m median on
           successes, 41 s median solve on the 850k-pt premap
     referee_tag: null
@@ -97,8 +102,9 @@ suite_v2_acceptance:
   rigs: "capture each space twice when hardware allows: go2-only AND go2+mid360"
   provenance: "recording name states date/place/rig; referee id chosen BEFORE grading, logged here"
 tier_a_legacy: [hk_village1, hk_village3, hk_village5, hk_village6,
-                recording_go2_mid360_2026-05-29_4-45pm-PST,
-                hk_building_all_around, go2_hongkong_office]
+                recording_go2_mid360_2026-05-29_4-45pm-PST]
+confidence_eval_only: [hk_building_all_around, go2_hongkong_office]  # tag-free: module
+                # confidence evals vs PGO-silver — NOT benchmark-grade (Jul 19)
 tier_b_planned: "robot day Jul 18, SF office — target 4-6 recordings (2 rigs x 2-3 runs); added here as they land"
 # Tier-B registration template (copy under `recordings:` BEFORE building any marker map —
 # make_rehearsal_marker_map.py reads the referee id from here; an unregistered recording
