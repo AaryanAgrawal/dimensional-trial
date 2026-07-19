@@ -64,7 +64,10 @@ recordings:
   china_office: {role: EXCLUDED, reason: Aaryan 2026-07-17 — do not use}
 
   sf_office_go2_20260718_survey1:
-    role: "TIER B operational — FIRST SF-office recording (454 Natoma). go2-only rig,
+    role: "TIER B PROVISIONAL (red-team Jul 19: referee-19 got only 2 clean revisits, not
+      the >=3 this file's own suite_v2_acceptance requires; referee floor ~3.6 m and
+      referee∩fiducial overlap = 0, so NO decorrelated verdict from it — recapture with
+      referee+fiducial co-visible >=3x). FIRST SF-office recording (454 Natoma). go2-only rig,
       13.6 min continuous (max stream gap 1.9 s), survey pass + loop + mid-run kidnap.
       Streams: color 4105@5.0 Hz / lidar 5479@6.7 Hz / odom 15184@18.5 Hz. Live census
       during capture (spy on marker TFs): 6 physical tags, all multi-sighted.

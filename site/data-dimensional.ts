@@ -3,9 +3,12 @@
 // PUBLIC-SAFETY: additive framing only. No critique of dimos, no internal/
 // Discord/roadmap references, no unverified % claims. This is what Aaryan is
 // building, framed positively and generous to the existing system.
-// Every number on this page is replay-verified (real recorded drives, offline)
+// Every number on this page is from replay of real recorded drives (offline)
 // or an explicitly-labeled live behavior reading, and labeled with its truth
-// source. Nothing here is simulated unless it says so.
+// source. Nothing here is simulated unless it says so. NOTE: the older-
+// environment numbers (hk office, all_around, village3 pair) were computed at
+// earlier branch revs; a uniform re-slice at the PR head is a pending task, so
+// those carry an in-sentence caveat rather than a HEAD-verified guarantee.
 // Structure (Jul 18): the page reads as one argument — eight big takeaway
 // titles in logical order, then a reference tier. Nothing was deleted in the
 // restructure; content not on the story's spine moved down into the reference
@@ -247,7 +250,7 @@ export const evidence: EvidenceSection[] = [
     heading:
       "Offline verdict: markers rescue exactly the sections today's stack refuses — and the gain survives decorrelation",
     intro:
-      "On the 120-section village3 replay (each section solved with no initial pose) the fiducial prior lifts success 77.5% → 95.8% (93/120 → 115/120) — with the entire gain on sections below the live 50k gate (the robot won't attempt a solve until its submap holds 50,000 points): 61.4% → 92.9% sub-gate (43/70 → 65/70), while gate-reached sections were already 50/50 without markers — plus roughly 25× less compute when tags are visible (median solve ~10 s → 0.4 s). So the honest headline is coverage extension into the power-on / tracking-recovery regime, not an accuracy fix of behavior the live gate already protects — and that recording's marker map is surveyed from the same recording that supplies its PGO-silver truth (offline-optimized reference poses: best available, measurably imperfect), deployment-realistic but truth-correlated, so 95.8% reads as coverage evidence only. The number of record is the decorrelated one: on the hard 100 m outdoor walk, 52.5% → 72.5% (n=40, full denominator, replay), where the referee id verifiably fed zero fixes; covered sections went 7/15 → 15/15, all 25 uncovered sections returned byte-identical answers — determinism proving the gain is the markers — and rescues were catastrophic-to-centimeters (6.7–72 m wrong-basin solves pulled to 0.05–0.10 m). Second environment (office replay, 850k-point premap): today's search succeeds 80% (32/40, full denominator), median error across its 40 answers 0.033 m — centimeter agreement with the silver truth on the 32 correct ones, 7.8–21.7 m off on the 8 wrong ones — at a 41 s median solve at this map scale (offline workstation, not an onboard number). All 8 failures pass the 0.45 gate, and 3 sit above the 50k size gate — wrong-room matches the gate would have published — so the village3 pattern where submap size catches every failure is environment-dependent: one more measured reason the confidence reading needs more signals than fitness alone.",
+      "On the 120-section village3 replay (each section solved with no initial pose) the fiducial prior lifts success 77.5% → 95.8% (93/120 → 115/120) — with the entire gain on sections below the live 50k gate (the robot won't attempt a solve until its submap holds 50,000 points): 61.4% → 92.9% sub-gate (43/70 → 65/70), while gate-reached sections were already 50/50 without markers — plus roughly 25× less compute when tags are visible (median solve ~10 s → 0.4 s). So the honest headline is coverage extension into the power-on / tracking-recovery regime, not an accuracy fix of behavior the live gate already protects — and that recording's marker map is surveyed from the same recording that supplies its PGO-silver truth (offline-optimized reference poses: best available, measurably imperfect), deployment-realistic but truth-correlated, so 95.8% reads as coverage evidence only. The number of record is the decorrelated one: on the hard 100 m outdoor walk, 52.5% → 72.5% (n=40, full denominator, replay), where the referee id verifiably fed zero fixes; covered sections went 7/15 → 15/15, all 25 uncovered sections returned byte-identical answers — determinism proving the gain is the markers — and rescues were catastrophic-to-centimeters (6.7–72 m wrong-basin solves pulled to 0.05–0.10 m). Second environment (office replay, 850k-point premap): today's search succeeds ~70–80% (an earlier branch-rev run reported 32/40; the current on-disk artifact reads 28/40 — these older-environment numbers were computed at earlier revisions and a uniform re-slice at the PR head is a pending morning task), median error on the correct answers ~0.033 m — centimeter agreement with the silver truth, several-meter wrong-room matches on the failures — at a ~41 s median solve at this map scale (offline workstation, not an onboard number). All 8 failures pass the 0.45 gate, and 3 sit above the 50k size gate — wrong-room matches the gate would have published — so the village3 pattern where submap size catches every failure is environment-dependent: one more measured reason the confidence reading needs more signals than fitness alone.",
     figures: [
       {
         title: "Risk vs coverage — what each accept threshold actually buys",
@@ -292,7 +295,7 @@ export const evidence: EvidenceSection[] = [
       {
         title: "SF office survey — the offline verdict on the first operational recording",
         explanation:
-          "Fiducial lifts replay success 27%→38% (n=48), all of the gain sub-50k, 5 rescues / 0 regressions — graded on PGO truth whose measured wobble reaches 2.3 m late-run, so t>600 s calls are truth-limited.",
+          "Fiducial flips 5 sections fail→success, 0 the other way (27%→38%, n=48) — but honestly weighed: those 5 are one ~70 s corridor episode (McNemar p=0.06, not significant at n=48), they all sit in the 0.25–1 m truth-wobble band while the clean-truth stratum is unchanged (7/17→7/17), and the referee tag covered zero fiducial-carrying sections — so this is one truth-correlated episode, not five independent wins. Also composition-limited: 79% of sections are below the live 50k gate the robot won't attempt; the live-comparable gate-reached rate is 3/10. The signal is directionally consistent with the decorrelated walk; the strength is not there yet — a cleaner recording is the fix.",
         src: "/dimensional/robotday_sf_bench.png",
       },
       {
@@ -310,7 +313,7 @@ export const evidence: EvidenceSection[] = [
       {
         title: "The honest live verdict — one replayed run per arm, behavior only",
         explanation:
-          "Tag fixes flowed all run, but fiducial won zero of the 42 judge rounds holding a fresh fix — every accepted pose was the search's; the ON arm answered 1.9× more often (50 vs 27 accepts, median cycle 17.4 s vs 30.4 s — difference measured, cause unverified; behavior-only, no live truth).",
+          "Tag fixes flowed all run, but fiducial won zero of the 42 judge rounds holding a fresh fix — every accepted pose was the search's (this within-arm fact holds). The cross-arm cadence (50 vs 27 accepts) is NOT usable: the prior-off arm ran inside a 16-worker benchmark and was killed under memory pressure, so its timing is contended — retracted, pending a clean-box rerun. What survives is the flip-flop, in both arms.",
         src: "/dimensional/robotday_sf_live.png",
       },
     ],
@@ -517,7 +520,7 @@ export const provenance: Knob[] = [
   { knob: "odom_rot_var", value: "1e-6 rad^2", status: "partial", note: "comment says 'tuned for a Go2-class ground robot' — the word 'tuned' has no run behind it; rotation variance never swept anywhere" },
   { knob: "marker_length_m (Go2 deployment + eval marker_size default)", value: "0.1 m", status: "partial", note: "physical print kit is 100 mm (runbook + verified on recording); pinned by test; no committed caliper measurement of the printed tags" },
   { knob: "eval DEFAULT_DATASETS", value: "hk_village1..6 (range(1,7))", status: "partial", note: "trial found v2/v4 each contain MULTIPLE physical tags sharing id 10 — TOTAL_SPREAD aggregates two poisoned datasets, incl. the v2 win" },
-  { knob: "PGOConfig shipped defaults (as a set)", value: "loop/odom variances, radii, thresholds", status: "partial", note: "eval.py's docstring: the tuning eval minimizes TOTAL_SPREAD on hk_village1..6 — the same recordings Fig 3 measures, so its 0.17–0.42 m is in-sample for the tune; lesh (Jul 18): a still-more-aggressive hk-specific tune existed, judged unnecessary" },
+  { knob: "PGOConfig shipped defaults (as a set)", value: "loop/odom variances, radii, thresholds", status: "partial", note: "eval.py's docstring: the tuning eval minimizes TOTAL_SPREAD on hk_village1..6 — the same recordings Fig 3 measures, so its 0.17–0.42 m is in-sample for the tune (a still-more-aggressive hk-specific tune existed and was judged unnecessary)" },
   { knob: "max_reprojection_error_px (per-tag PnP accept gate)", value: "3.0 px", status: "partial", note: "introduced with no rationale; system validated AT 3.0 (SIMULATED ATE 1.75→0.33 m) — the value itself never swept against alternatives" },
   { knob: "SCALE_PLAN", value: "[(0.2, 8), (0.3, 8), (0.8, 1)] (voxel_size m, RANSAC runs)", status: "tested", note: "fully bracketed in results.tsv: adding 0.2 m gained a frame, dropping 0.3/0.8 or shifting them lost frames; restart counts swept per scale" },
   { knob: "RANSAC_ITERS", value: "500_000", status: "tested", note: "bracketed both directions: 250k/400k lost frames, 2M blew the time budget; per-scale and combo variants all discarded" },
