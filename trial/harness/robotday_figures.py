@@ -378,14 +378,19 @@ def fig_lever() -> None:
         by_tag.setdefault(tag, []).append((err, limited))
     short_tag = min(lever_m, key=lambda t: lever_m[t])
     short_clean = sorted(e for e, _ in by_tag[short_tag] if e < 1.0)
+    short_all = sorted(e for e, _ in by_tag[short_tag])
+    short_n = len(short_all)
+    short_miss = [e for e in short_all if e >= 1.0]
 
     fig = plt.figure(figsize=(7.6, 5.0), dpi=200)
     title, top = head(
         fig,
         f"Tag-placement lever rule validated same-night: fiducial-only error grows with the "
-        f"map-origin→tag lever — the {lever_m[short_tag]:.1f} m tag delivered "
-        f"{100 * short_clean[0]:.0f}–{100 * short_clean[-1]:.0f} cm answers, the 13–14 m tags "
-        f"meter-class flips (open points: truth-limited late-run)",
+        f"map-origin→tag lever — the {lever_m[short_tag]:.1f} m tag delivered mostly "
+        f"{100 * short_clean[0]:.0f}–{100 * short_clean[-1]:.0f} cm answers "
+        f"({len(short_clean)} of {short_n}"
+        + (f"; one {short_miss[0]:.1f} m miss" if short_miss else "")
+        + f"), the 13–14 m tags meter-class flips (open points: truth-limited late-run)",
         f"fiducial-only + judge arm, one point per section (n={len(pts)} single-tag sections; "
         f"{mixed} mixed-tag section excluded); in the combined arm the shared judge rejected "
         f"every meter-class fiducial answer (0 regressions, fig 1)",
