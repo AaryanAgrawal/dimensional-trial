@@ -139,6 +139,32 @@ included; never claim fiducial precision):**
 - Therefore the public claim is NEVER "fiducial is more accurate" — it is "fiducial makes the
   answer RIGHT where lidar alone is confidently wrong, and lidar makes it precise."
 
+**Jul 19 — PROOF PACKAGE (SF office + livox lane, adversarially verified, figures robotday_*.png,
+every number bit-reproduced):**
+- **SF office (tonight's recording, n=48, offline bench):** ransac 27.1% → +fiducial 37.5%
+  (+10.4 pts), ALL gain sub-50k (26%→39%), **5 fail→success rescues / 0 regressions** (clean
+  0.06–0.15 m via short-lever tags 3 & 7); fiducial+judge answers in 2.0 s vs 26–28 s. This
+  RECONCILES the "0 live wins" contradiction: fiducial DOES win — in the sub-50k stratum the
+  live 50k gate blocks from judging. Offline judges it, live doesn't (yet) → the per-source gate
+  is the unlock, now evidenced twice.
+- **PROBLEM 1 (recording truth-floor):** SF PGO truth FAILS its own referee test late-run —
+  referee-19 revisit at 60+s gap goes 2.67→3.64 m (PGO *worse*), truth wobble median 0.41 m /
+  max 2.28 m. So late-run (t>600 s) calls are TRUTH-limited, not relocalizer-limited; absolute
+  rates grade the recording as much as the algo. Fix for next capture: sight referee AND a
+  fiducial in the same window ≥3× (referee∩fix overlap was n=0 → no fully-decorrelated verdict),
+  and fix the stale-timestamp bug (22/5479 lidar rows at a glitch ts; frame 4313 misplaced
+  1.32 m). Recording-quality lesson, not an algo failure.
+- **PROBLEM 2 (ACTIONABLE DIMOS BUG — tilted-body gravity gate):** on the mid360/FAST-LIO lane,
+  plain RANSAC relocalization is **0/40** — NOT scene difficulty. FAST-LIO's body frame IS the
+  physically tilted mid360 (true tilt 44–54°), but relocalize.py's gravity gate
+  (GRAVITY_TILT_MAX_DEG=10) assumes an upright body → it discards every geometrically-correct
+  (tilted) candidate and keeps upright-wrong ones. **Fiducial+judge is the ONLY working reloc on
+  that lane: 15/15 fix-carrying at 0.7–3.5 cm.** Any tilted-sensor rig breaks plain RANSAC reloc
+  regardless of priors — the internal gravity filter needs to be body-attitude-aware, not
+  identity-upright. (Bench arms 1≡2 there = the run_bench.py-lacks-`sources=` walkover again;
+  the LIVE stack passes sources= so it's less broken live — but the upright assumption is the
+  root bug.) This is a real find to surface to lesh: mid360 is the priority rig.
+
 **RESEARCH METHOD (aligned with Aaryan, Jul 18 ~1 AM — every claim goes through this loop):**
 1. Falsifiable number FIRST — state the claim as a measurable quantity before running anything.
 2. Truth external to the system under test — the referee tag never helps what it grades.
