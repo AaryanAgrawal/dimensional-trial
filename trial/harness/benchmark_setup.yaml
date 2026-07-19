@@ -89,6 +89,13 @@ tier_a_legacy: [hk_village1, hk_village3, hk_village5, hk_village6,
                 recording_go2_mid360_2026-05-29_4-45pm-PST,
                 hk_building_all_around, go2_hongkong_office]
 tier_b_planned: "robot day Jul 18, SF office — target 4-6 recordings (2 rigs x 2-3 runs); added here as they land"
+# Tier-B registration template (copy under `recordings:` BEFORE building any marker map —
+# make_rehearsal_marker_map.py reads the referee id from here; an unregistered recording
+# skips the referee-refusal safety entirely):
+#   sf_office_go2_<date>_survey1:
+#     role: tier B operational (SF office, go2-only rig)
+#     referee_tag: 10          # grades only — never in any marker_map.yaml
+#     fiducial_tags: [0, 1, 2, 3, 4, 5]
 
 publication_intent: push under a "relocalization benchmark" home on GitHub
                     (Aaryan, Jul 17 — "maybe"; NOT pushed yet, no-remote rule)

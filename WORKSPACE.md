@@ -1071,10 +1071,13 @@ helps: id 10 must never appear in any marker_map.yaml (the builder refuses it on
 recording is registered in `trial/harness/benchmark_setup.yaml`).
 
 ### Morning prep (~30 min, before leaving)
-1. Print tags at 100 mm (= `marker_length_m 0.10` everywhere; detector family matches):
+1. Print tags at 100 mm (= `marker_length_m 0.10` everywhere; detector family matches).
+   **Already generated (preflight Jul 18): `trial/robotday_kit/fiducials_0-5.pdf` (3 letter
+   pages, 2 tags/page) + `referee_10.pdf` (1 page) — render-verified, 0–100 mm caliper ruler
+   on every page.** To regenerate (default page is a4 — US printers want letter):
    ```bash
-   uv run dimos apriltag --ids 0-5 --size-mm 100 --family tag36h11 -o fiducials_0-5.pdf
-   uv run dimos apriltag --ids 10 --size-mm 100 --family tag36h11 -o referee_10.pdf
+   uv run dimos apriltag --ids 0-5 --size-mm 100 --family tag36h11 --page-size letter -o fiducials_0-5.pdf
+   uv run dimos apriltag --ids 10 --size-mm 100 --family tag36h11 --page-size letter -o referee_10.pdf
    ```
    Print 100%/Actual Size. **Caliper the baked-in ruler on EVERY sheet — must be 100 mm** (a 5%
    print-scale error is a systematic 5% range error on every fix).
@@ -1084,29 +1087,72 @@ recording is registered in `trial/harness/benchmark_setup.yaml`).
    uv run dimos --replay --replay-db=go2_short run unitree-go2-markers go2-memory
    ```
    Expect: modules deploy, `Replay mode active — Recorder disabled`, zero tracebacks. Ctrl+C.
+   **ONE COORDINATOR PER BUS: this (or any replay) must never run while another stack is up.**
+   If anything else is running you get, ~3 s after the modules deploy: `RuntimeError: another
+   Coordinator service is already running on the lcm bus. Run 'dimos stop' first.` (reproduced
+   Jul 18: a stale 02:24 replay killed the operator's first live attempt at 18:35, then killed
+   the preflight smoke at 18:47). Worse than the crash: the Jul 18 live run's data flow FROZE
+   at 18:47:13 — the exact seconds that smoke's 13 modules touched the shared bus/viewer
+   (correlation, not proven causation; WebRTC accept_track + rerun h2 errors in the same
+   window) — so treat any second stack as able to silently kill a live recording, not just
+   itself. `uv run dimos status` both lists live runs AND auto-cleans dead registry entries;
+   kill stray processes by exact PID before any start.
 
-### On-site preflight
+### On-site preflight (FINAL ordered list — robot-only checks, preflight-verified Jul 18 evening)
+0. **Quiet box.** `uv run dimos status` (auto-cleans dead registry entries) + `ps aux | grep -E
+   "dimos|replay"` → kill strays by exact PID. From here on, no replays, no laptop smokes, no
+   second stacks: one coordinator per bus, and a busy box drops frames (rerun "Sender has been
+   blocked" warnings = saturation). Close leftover `dimos-viewer` windows between runs.
 1. Linux laptop only, once per boot: `sudo ip link set lo multicast on && sudo ip route add
    224.0.0.0/4 dev lo`; take the LCM hint too: `sudo sysctl -w net.core.rmem_max=67108864
-   net.core.rmem_default=67108864`.
-2. Robot on (side button), wait ~30–60 s until it stands = ready. Find it: try `10.0.0.104`,
-   else `nmap -p 9991 --open 10.0.0.0/24` (adjust subnet). Printed label IP is STALE — ignore.
-3. Tape tags. **Lever rule (measured 0.546 m/deg at 31 m): world→map fix error =
+   net.core.rmem_default=67108864`. sudo needs a real terminal (the stack's own attempt fails
+   quietly). **Tell you skipped it: `LCM detected that large packets are being received, but
+   the kernel UDP receive buffer is very small` in the console — it fired all through the Jul
+   18 live session.**
+2. Robot on (side button), wait ~30–60 s until it stands = ready. Find it — IP history:
+   **10.0.0.79 (Jul 18 live)**, 10.0.0.104 (Jul 17); DHCP moves it, printed label is STALE.
+   `nmap` is NOT installed on this laptop (checked); use the no-tools sweep:
+   ```bash
+   for i in $(seq 1 254); do (timeout 0.4 bash -c "echo >/dev/tcp/10.0.0.$i/9991" 2>/dev/null \
+     && echo 10.0.0.$i) & done 2>/dev/null | sort -V; wait
+   ```
+   (technique verified against the live robot: 10.0.0.79:9991 open, dead IP times out).
+3. **Every recording run: prove the .db exists AND GROWS within 60 s, and keeps growing**
+   (`ls -la data/<name>.db` twice; the -wal file must churn too). Full-rate go2 recording is
+   **~200–215 MB/min** (go2_short measured 215 MiB/min; live run1 measured ~195 MB/min) — a
+   10-min survey ≈ 2 GB. A frozen size = data flow stopped even if the process lives (Jul 18
+   run1 froze at 18:47 after ~4 min, unnoticed for 15+ min). **Never `rm` a .db path once a
+   stack is up** — run1 was also deleted-while-open and recorded its 879 MB into an unlinked
+   inode (rescued via /proc fd copy; see out/robot_day/README_RUN1_DB_WAS_DELETED_READ_ME.txt).
+   Check open handles before deleting anything: `ls -l /proc/<worker-pid>/fd | grep .db`.
+4. WebRTC + sensors: rerun shows camera + lidar + odom moving. Then `dimos mem summary <smoke
+   db>` — reference Hz (measured, go2_short): color_image ~14, lidar ~8, odom ~19, tf present.
+5. Tag detection range: show one printed 100 mm tag at 2–4 m, oblique — `marker_<id>` TF in
+   rerun (markers bp) or the visual gate line (fiducial bp). Unverified before first contact:
+   fisheye detection range/rate for 100 mm print.
+6. color_image pose semantics of a FRESH recording: run the marker-map builder on the smoke db
+   (any visible tag) — its health prints (Markley dev, cross-checks) catch a world_T_optical
+   violation before the survey depends on it.
+7. mid360 arm (if a mid360 go2 exists): get its lidar IP (livox default 192.168.1.155;
+   `DIMOS_POINTLIO_LIDAR_IP` has NO default — both exports required), confirm subnet
+   reachable from the laptop.
+8. Battery: note % at start, time per swap when it happens (unmeasured — swaps are the natural
+   premap-build windows).
+9. Tape tags. **Lever rule (measured 0.546 m/deg at 31 m): world→map fix error =
    tag-distance-from-map-origin × tag-orientation error** — so ≥2 fiducials AT the spot where
    mapping will start (that spot becomes the map origin; a tag 2 m out tolerates 3°, 30 m needs
    0.2°), rest of 0–5 along the loop, referee 10 at the loop start/end. Mount flat, view them
    oblique (20–30°, never square-on — PnP depth conditioning). One physical tag per id ever
    (duplicate ids invalidated villages 2/4).
-4. Live smoke + recording path proof (~2 min run):
+10. Live smoke + recording path proof (~2 min run; use the ACTUAL date in all names):
    ```bash
    ROBOT_IP=<ip> uv run dimos run unitree-go2-markers go2-memory \
-     -o go2memory.db_path=data/sf_office_go2_20260718_smoke1.db
+     -o go2memory.db_path=data/sf_office_go2_<date>_smoke1.db
    ```
-   Rerun opens native by default: confirm camera + lidar + `marker_<id>` TF when a tag is shown.
-   Ctrl+C, then `uv run dimos mem summary sf_office_go2_20260718_smoke1` — color_image / lidar /
-   odom / tf streams present at sane Hz. **This proves live recording end-to-end before any run
-   that matters** (replay-rehearsed only; a robot was never available to verify it before).
-
+   Rerun opens native by default: confirm camera + lidar + `marker_<id>` TF when a tag is shown,
+   and the db grows (item 3). Ctrl+C, then `uv run dimos mem summary sf_office_go2_<date>_smoke1`
+   — streams at the item-4 reference Hz. **This proves live recording end-to-end before any run
+   that matters.**
 ### go2 rig — the 5-run protocol
 Every run composes the recorder (`go2-memory` + `-o go2memory.db_path=data/<name>.db`; relative
 paths resolve under `dimos/`, existing files get backed up, tf is recorded too).
@@ -1118,7 +1164,9 @@ ROBOT_IP=<ip> uv run dimos run unitree-go2-markers go2-memory \
 ```
 Walk ≥10 min at operating pace, see every fiducial from ≥2 angles, revisit the referee ≥3
 times (suite v2 acceptance: ≥600 s, ≥3 referee revisits, ≥2 fiducials + distinct referee).
-Watch: `marker_<id>` TFs appear in rerun as tags are met. Pass: all 7 ids seen; ≥600 s.
+Watch: `marker_<id>` TFs appear in rerun as tags are met; db growing ~200 MB/min (preflight
+item 3 — check MID-WALK too, run1's flow froze silently after 4 min). Pass: all 7 ids seen;
+≥600 s.
 Artifact: `data/..._survey1.db`. Verify immediately with `dimos mem summary`.
 
 **Build the survey artifacts** (laptop, during a break — order matters):
@@ -1135,8 +1183,11 @@ uv run python ../trial/harness/make_rehearsal_marker_map.py sf_office_go2_202607
   --tags 0,1,2,3,4,5 --out-dir robotday
 # -> ../trial/harness/out/robotday/sf_office_go2_20260718_survey1.marker_map.yaml
 ```
-Health bars: Markley max dev per tag ≤ ~15° (worse = re-survey that tag: more/closer/oblique
-views); builder refuses partial maps. Referee check: id 10 absent from the yaml. Fallback path
+Health bars, recalibrated on the Jul 18 preflight drill (5-tag build on the mid360 recording,
+~3 min nice'd; every tag reproduced the standing benchmark positions to 0.0000 m): healthy
+tags show Markley max dev ~15–25°; ≫ that = re-survey that tag (a known-weak tag printed
+115°). Builder refuses partial maps and the referee id (both refusals drill-verified).
+Referee check: id 10 absent from the yaml. Fallback path
 B (no compute, only if A fails): read `marker_<id>` TFs off rerun during the survey into the
 yaml by hand (schema = `office_markers.yaml` header) — raw-odom poses, no PGO correction,
 strictly worse.
@@ -1181,7 +1232,7 @@ The fiducial blueprint rides the go2 camera either way; the mid360 adds the seco
 to the RECORDING for offline lane-B analysis. No combined mid360+fiducial live blueprint exists
 — treat the mid360 rig as record-only today (repeat R1's walk + R5's loop):
 ```bash
-export DIMOS_MID360_LIDAR_IP=<mid360 ip>  DIMOS_POINTLIO_LIDAR_IP=<same>   # default 192.168.1.155
+export DIMOS_MID360_LIDAR_IP=<mid360 ip>  DIMOS_POINTLIO_LIDAR_IP=<same>   # livox default 192.168.1.155; POINTLIO has NO default — both exports required
 ROBOT_IP=<ip> uv run dimos run unitree-go2-mid360-record
 ```
 Pygame WASD teleop drives; records go2_lidar/go2_odom/color_image + pointlio/livox streams into
@@ -1190,6 +1241,28 @@ when done. Premaps for its lanes build offline via `prep.py --lidar-pose-from-od
 (the mid360-walk pattern; `dimos map global` can't — placeholder lidar poses, learned Jul 18).
 No mid360 go2 available → run the go2-only protocol and note "mid360 arm not run" in
 benchmark_setup.yaml.
+
+### Timing plan (preflight estimate, Jul 18 — measured where possible)
+Per-run overhead: robot boot→standing ~30–60 s; stack start ~30 s; 50k boot-blind 30–65 s
+(measured; replay tonight: first accept ~40 s from process start — the visual fix can land in
+~5 s, only the lidar judge is blind); stop + `mem summary` verify ~2 min.
+- Setup + preflight items 0–10 (incl. tag taping + smoke): **30–45 min**
+- R1 survey 10–15 min walk + verify: **15 min**
+- Survey artifacts build: marker map **~3–5 min** (measured on a 13-min recording);
+  premap `map global --export` + `prep --n-queries 4`: **UNMEASURED for a 10-min recording**
+  — a 102 s village took ~3 min on a Mac CPU; budget **15–30 min** on this laptop and run it
+  during a battery swap / lunch. Flag: if it exceeds 30 min, continue R2–R5 against the
+  fallback path B marker map and rebuild after.
+- R2 accept: **5–10 min** (power-cycle included). R3 kidnap ON: **5–10 min**. R4 kidnap OFF:
+  **5–10 min**. R5 referee loop: **10–15 min**.
+- go2-only total: **~2–2.5 h** including builds and slack. mid360 arm (R1+R5 repeat,
+  record-only): **+30–45 min** plus unknown IP/subnet debugging.
+- Battery swaps: count/duration UNKNOWN (go2 walking runtime ~1–2 h → expect 1–2 swaps; each
+  is a build window). Whole day fits an afternoon with margin.
+- If it does not fit, cut in this order (recommendation): (1) mid360 arm (offline lane-B value
+  only), (2) R5 as a separate run — R1 already satisfies ≥3 referee revisits, so a loop
+  segment inside R1 can stand in, (3) second kidnap repetitions. Never cut R1, R2, or the
+  R3/R4 ON-vs-OFF pair — the pair is the deliverable.
 
 ### Post-day (any machine; every run joins the replay suite)
 1. All `.db` in `dimos/data/`; register each in `benchmark_setup.yaml` (tier B).
@@ -1209,14 +1282,25 @@ benchmark_setup.yaml.
    `uv run dimos --replay --replay-db=<rec> run unitree-go2-fiducial-relocalization -o <same -o set, minus go2memory>`.
 4. Numbers + surprises into §7; push both repos per the morning checklist.
 
-**Standing facts behind the bars above (all re-verified in source this run):** accept gate
-fitness 0.45 (docs' 0.6 stale); MIN_LOCAL_POINTS 50k → 30–65 s map-blind after boot (measured);
-ambiguity gate default 5.0 (measured, village3); reloc attempt cadence 2 s; skip/reject/accept
-log lines quoted verbatim above. Could NOT be verified without a robot (that's what the on-site
-smoke is for): live WebRTC connect, the recorder actually writing during a live run,
-color_image pose semantics in a fresh recording (rehearsal precedent says world_T_optical; the
-marker-map builder's health prints catch it if wrong), 100 mm tag detection range/rate in the
-office, mid360 rig presence + its lidar IP, office subnet for the sweep.
+**Standing facts behind the bars above (re-verified in source again by the Jul 18-evening
+preflight, at dimos c6415c9b9):** accept gate fitness 0.45, module.py:57 (docs' 0.6 stale);
+MIN_LOCAL_POINTS 50_000 :48 → 30–65 s map-blind after boot (measured; ~40 s again tonight);
+reloc cadence 2 s :47; ambiguity gate 5.0, visual_relocalization_module.py:57; marker_length_m
+required-no-default :50; skip/reject/accept log lines quoted verbatim above (`source=` suffix
+appears on accepts only when priors are active — 18x/21x `source=ransac` in tonight's two
+ON-arm replays). `dimos run <bp> --help` still crashes AND exits 0 — don't trust its exit code
+either. Preflight-executed Jul 18 evening: apriltag PDFs (letter, render-checked), replay
+smoke + `-o go2memory.db_path` (13 modules, recorder self-disable line, no file written),
+`mem summary` bare-name, `map global --help` (--export implies --pgo), prep/markers/run_bench/
+referee_verdict argparse, marker-map builder end-to-end 5-tag drill + both refusal drills,
+/dev/tcp port probe against the live robot. Verified BY the live session itself: WebRTC
+connect (10.0.0.79), recorder writes during a live run (879 MB in ~12 min — into a deleted
+inode, see preflight item 3), office subnet 10.0.0.0/24. STILL unverified: 100 mm tag
+detection range/rate on the go2 fisheye (preflight item 5), color_image pose semantics of a
+fresh recording (item 6), mid360 rig presence/IP (item 7), battery cadence (item 8), and the
+`-o relocalizationmodule.use_fiducial_prior=false` OFF arm in an actual replay — parse-proven
+only; no log anywhere shows it run. Drill it against out/rehearsal artifacts the moment the
+bus is free (ON arm shows `source=` on accepts, OFF arm must show none).
 
 **Removed instruments** (Jul 17 cleanup, Aaryan-authorized — the cut real-life benchmark's kit,
 superseded by `trial/harness/`; code + full usage docs in git history ≤ 90c494a, e.g.
