@@ -281,7 +281,7 @@ export const evidence: EvidenceSection[] = [
     heading:
       "Robot day, IRL: on the first operational recording markers rescue again offline — and live, the judge kept every marker answer honest",
     intro:
-      "First tier-B recording, captured today: SF office, go2-only rig, 13.6 min continuous, six printed tags plus a pre-existing wall tag as referee — chosen before any grading — with a survey pass, a loop, and a mid-run kidnap in one run. The same night it was graded offline against PGO-silver truth and the live stack was replayed once per arm (prior ON / prior OFF). Four results, one per figure below — each carrying its own truth caveat in the same sentence.",
+      "First tier-B recording, captured today: SF office, go2-only rig, 13.6 min continuous, five printed tags plus a pre-existing wall tag as referee — chosen before any grading — with a survey pass, a loop, and a mid-run kidnap in one run. The same night it was graded offline against PGO-silver truth and the live stack was replayed once per arm (prior ON / prior OFF). Four results, one per figure below — each carrying its own truth caveat in the same sentence.",
     figures: [
       {
         title: "SF office survey — the offline verdict on the first operational recording",
@@ -292,7 +292,7 @@ export const evidence: EvidenceSection[] = [
       {
         title: "The tag-placement lever rule, validated same-night on the new recording",
         explanation:
-          "The 5.3 m tag delivered 6–8 cm answers; the 13–14 m tags, meter-class flips (open points truth-limited, not wrong; n=22 single-tag sections, 1 mixed-tag section excluded).",
+          "The 5.3 m tag delivered mostly 6–8 cm answers (3 of 4; one 1.4 m miss); the 13–14 m tags, meter-class flips (open points truth-limited, not wrong; n=22 single-tag sections, 1 mixed-tag section excluded).",
         src: "/dimensional/robotday_lever.png",
       },
       {
@@ -309,11 +309,11 @@ export const evidence: EvidenceSection[] = [
       },
     ],
     close:
-      "The live zero is consistent with the measured lever — this office's far tags (12–14 m) sit past the geometry where single-tag fixes can win, exactly what the placement rule predicts; the mirror-ambiguity gate fired 17/14 times (ON/OFF) live with zero tracebacks. The flip-flop exhibit at the top of this page is these same runs — both arms — which is why the confidence reading, not any single prior, is the product.",
+      "The live zero is consistent with the measured lever for this office's far tags (12–14 m), which flipped meter-class offline too — but the near tags produced the clean offline wins, so the live zero itself stays behavior-only, cause unverified (per the figure), not the lever alone; the mirror-ambiguity gate fired 17/14 times (ON/OFF) live with zero tracebacks. The flip-flop exhibit at the top of this page is these same runs — both arms — which is why the confidence reading, not any single prior, is the product.",
   },
   {
     heading:
-      "Trust the ruler, but measure it: PGO truth is silver — qualified per recording, never worse at loop returns, wobble measured",
+      "Trust the ruler, but measure it: PGO truth is silver — qualified per recording, never worse at loop returns on the villages, wobble measured",
     intro:
       "Every offline number above is graded against PGO-corrected poses, so the benchmark qualifies its own ruler per recording rather than assuming it. Across the four valid villages PGO never worsened loop-return agreement (improved three, tied one — replay, referee-tag truth); its run-to-run wobble is ~6 cm on the villages but reaches 2.3 m late in the SF run (measured from two independent rebuilds — why the robot-day section marks t>600 s calls truth-limited); and the tune is in-sample on these villages, with every caveat printed on the hardened figure itself. The hardened 5-run figure replaced an earlier 3-run version that failed an independent-rerun acceptance test — the acceptance test is part of the method.",
     figures: [
