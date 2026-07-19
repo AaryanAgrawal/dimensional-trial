@@ -1030,26 +1030,171 @@ orientation truth to give a 10 cm fix; a tag 2 m out tolerates 3°.
 > recordings are short adversarial clips; PGO is not bit-deterministic (~6 cm run-to-run, up to
 > 2× swing in sparse buckets).
 
-## 8. Runbook — day-of operational essentials
+## 8. Runbook — ROBOT DAY (Jul 18, SF office): fiducial relocalization IRL, turnkey
 
-**Self-survey installer flow** (no tape measure, condensed from the execute-verified flow):
-1. Print tags: `dimos apriltag --ids 0-5 --size-mm 100 --family tag36h11 -o markers.pdf`. 100mm
-   matches `unitree_go2_markers`' default. **Print-scale check every sheet:** 100%/Actual Size
-   only, caliper-measure the baked-in ruler — a 5% print-scale error is a systematic 5% range
-   error on every fix.
-2. Build the map with the robot, no hand measuring: `dimos run unitree-go2-markers`, let it see
-   each tag from a couple of angles, read `marker_<id>` transforms off the TF tree (rerun viewer,
-   on by default) into `office_markers.yaml`. Orientation matters more than position — a 2°
-   orientation error displaces the computed camera pose ~3.5cm per meter of range.
-   **Lever rule (measured, village3 Jul 18): world→map fix error = tag-distance-from-map-origin
-   × tag-orientation error (0.546 m/deg at 31 m). Survey tags NEAR the map origin or start
-   mapping next to a tag, and prefer ≥2 tags in view (`min_tags=2`) for fixes.**
-3. Compose + run: `pytest dimos/robot/test_all_blueprints_generation.py` (regenerates the
-   registry, fails "please commit" by design — expected), then
-   `dimos run unitree-go2-visual-relocalization`.
-4. **`--daemon` warning:** crashes on this Mac (`coordinator.start_rpc_service()` panics right
-   after the fork — Zenoh's I/O driver doesn't survive it). **Always run foreground** in its own
-   terminal/pane; `--daemon` leaves orphaned workers `dimos status`/`stop` can't see.
+Every command below was verified against the repo pre-dawn Jul 18 (CLIs executed offline where
+possible: apriltag PDFs generated, blueprint+recorder composition deployed in replay with 0
+tracebacks, every `-o` set validated through the real `load_config_args`). Ground rules:
+**run everything from `dimos/`** (`cd dimos`, prefix `uv run`); **foreground only** (`--daemon`
+panics post-fork — Zenoh; orphaned workers = that); one terminal per stack, Ctrl+C stops it;
+kill stray replays **by exact PID only** (pattern-kills murdered healthy runs overnight).
+`dimos run <bp> --help` CRASHES (upstream arg_help/pydantic bug) — this runbook is the flag
+reference, don't go looking. Recordings land in `dimos/data/` so every tool finds them by bare
+name.
+
+**Naming (decided):** `sf_office_<rig>_20260718_<phase><n>` — rig ∈ {go2, go2mid360}; phase ∈
+{smoke, survey, accept, kidnap_on, kidnap_off, loop}. States date/place/rig (suite v2 rule).
+**Tag kit (decided):** fiducial ids **0–5**, referee id **10** — the referee grades, never
+helps: id 10 must never appear in any marker_map.yaml (the builder refuses it once the
+recording is registered in `trial/harness/benchmark_setup.yaml`).
+
+### Morning prep (~30 min, before leaving)
+1. Print tags at 100 mm (= `marker_length_m 0.10` everywhere; detector family matches):
+   ```bash
+   uv run dimos apriltag --ids 0-5 --size-mm 100 --family tag36h11 -o fiducials_0-5.pdf
+   uv run dimos apriltag --ids 10 --size-mm 100 --family tag36h11 -o referee_10.pdf
+   ```
+   Print 100%/Actual Size. **Caliper the baked-in ruler on EVERY sheet — must be 100 mm** (a 5%
+   print-scale error is a systematic 5% range error on every fix).
+2. Pack: tape, caliper, charged go2 + spare battery, laptop + charger, this section printed.
+3. Laptop smoke (no robot, ~2 min — proves imports/wiring/composition on THIS machine):
+   ```bash
+   uv run dimos --replay --replay-db=go2_short run unitree-go2-markers go2-memory
+   ```
+   Expect: modules deploy, `Replay mode active — Recorder disabled`, zero tracebacks. Ctrl+C.
+
+### On-site preflight
+1. Linux laptop only, once per boot: `sudo ip link set lo multicast on && sudo ip route add
+   224.0.0.0/4 dev lo`; take the LCM hint too: `sudo sysctl -w net.core.rmem_max=67108864
+   net.core.rmem_default=67108864`.
+2. Robot on (side button), wait ~30–60 s until it stands = ready. Find it: try `10.0.0.104`,
+   else `nmap -p 9991 --open 10.0.0.0/24` (adjust subnet). Printed label IP is STALE — ignore.
+3. Tape tags. **Lever rule (measured 0.546 m/deg at 31 m): world→map fix error =
+   tag-distance-from-map-origin × tag-orientation error** — so ≥2 fiducials AT the spot where
+   mapping will start (that spot becomes the map origin; a tag 2 m out tolerates 3°, 30 m needs
+   0.2°), rest of 0–5 along the loop, referee 10 at the loop start/end. Mount flat, view them
+   oblique (20–30°, never square-on — PnP depth conditioning). One physical tag per id ever
+   (duplicate ids invalidated villages 2/4).
+4. Live smoke + recording path proof (~2 min run):
+   ```bash
+   ROBOT_IP=<ip> uv run dimos run unitree-go2-markers go2-memory \
+     -o go2memory.db_path=data/sf_office_go2_20260718_smoke1.db
+   ```
+   Rerun opens native by default: confirm camera + lidar + `marker_<id>` TF when a tag is shown.
+   Ctrl+C, then `uv run dimos mem summary sf_office_go2_20260718_smoke1` — color_image / lidar /
+   odom / tf streams present at sane Hz. **This proves live recording end-to-end before any run
+   that matters** (replay-rehearsed only; a robot was never available to verify it before).
+
+### go2 rig — the 5-run protocol
+Every run composes the recorder (`go2-memory` + `-o go2memory.db_path=data/<name>.db`; relative
+paths resolve under `dimos/`, existing files get backed up, tf is recorded too).
+
+**R1 — survey walk** (builds premap + marker map; START NEXT TO THE ORIGIN TAGS):
+```bash
+ROBOT_IP=<ip> uv run dimos run unitree-go2-markers go2-memory \
+  -o go2memory.db_path=data/sf_office_go2_20260718_survey1.db
+```
+Walk ≥10 min at operating pace, see every fiducial from ≥2 angles, revisit the referee ≥3
+times (suite v2 acceptance: ≥600 s, ≥3 referee revisits, ≥2 fiducials + distinct referee).
+Watch: `marker_<id>` TFs appear in rerun as tags are met. Pass: all 7 ids seen; ≥600 s.
+Artifact: `data/..._survey1.db`. Verify immediately with `dimos mem summary`.
+
+**Build the survey artifacts** (laptop, during a break — order matters):
+```bash
+# (a) register the recording in ../trial/harness/benchmark_setup.yaml (tier B block):
+#     referee_tag: 10, fiducial_tags: [0,1,2,3,4,5] — tools read the referee id from there
+# (b) premap -> ./sf_office_go2_20260718_survey1.pc2.lcm (cwd = dimos/):
+uv run dimos map global sf_office_go2_20260718_survey1 --export --no-gui --device CPU:0
+# (c) pose graph for the marker map (sections not needed yet, so keep it small):
+uv run python ../trial/harness/prep.py sf_office_go2_20260718_survey1 --n-queries 4 --device CPU:0
+# (d) marker map from the RECORDING (PGO-corrected centroids + Markley consensus — the
+#     rehearsal path, RECOMMENDED; refuses the referee id; prints health signals):
+uv run python ../trial/harness/make_rehearsal_marker_map.py sf_office_go2_20260718_survey1 \
+  --tags 0,1,2,3,4,5 --out-dir robotday
+# -> ../trial/harness/out/robotday/sf_office_go2_20260718_survey1.marker_map.yaml
+```
+Health bars: Markley max dev per tag ≤ ~15° (worse = re-survey that tag: more/closer/oblique
+views); builder refuses partial maps. Referee check: id 10 absent from the yaml. Fallback path
+B (no compute, only if A fails): read `marker_<id>` TFs off rerun during the survey into the
+yaml by hand (schema = `office_markers.yaml` header) — raw-odom poses, no PGO correction,
+strictly worse.
+
+**R2 — acceptance (DIM-920 bar)**: power-cycle the robot NEXT TO an origin tag, then:
+```bash
+ROBOT_IP=<ip> uv run dimos run unitree-go2-fiducial-relocalization go2-memory \
+  -o relocalizationmodule.map_file=$PWD/sf_office_go2_20260718_survey1.pc2.lcm \
+  -o visualrelocalizationmodule.marker_map_file=$PWD/../trial/harness/out/robotday/sf_office_go2_20260718_survey1.marker_map.yaml \
+  -o visualrelocalizationmodule.marker_length_m=0.10 \
+  -o go2memory.db_path=data/sf_office_go2_20260718_accept1.db
+```
+(`marker_length_m` MUST be repeated in every `-o` set that touches visualrelocalizationmodule —
+validated landmine, the command fails without it.) Watch, in order:
+- `relocalize skipped: n_pts=... < MIN_LOCAL_POINTS=50000` — EXPECTED for the first 30–65 s
+  (measured); the lidar judge is map-blind, the tag is not.
+- world→map TF lands in rerun within ~5 s of a mapped tag in view (the visual module publishes
+  the fix directly). **Pass bar = DIM-920: fix within 5 s of seeing one tag, placement sane.**
+- `VisualRelocalizationModule: gate rejected (N tags seen, rejects={...})` — actionable:
+  `mirror_ambiguous` → get closer/more oblique; `high_reprojection` → detection/calibration;
+  `unmapped_id` → tag not in the yaml.
+- After the 50k gate: first `relocalize: fitness=... time_cost=... n_pts=... source=...` accept.
+Artifact: `..._accept1.db`.
+
+**R3 — kidnap, prior ON**: same command, `db_path=data/..._kidnap_on1.db`. Mid-run: pick the
+robot up (cover the camera), carry it to another surveyed spot with a tag visible, set down.
+Watch `source=` on the next accepts — fiducial CAN win here (tags near origin kill the lever
+that blocked it in village3 replay; this is the open live question). Pass: accepted, sane fix
+within ~2 reloc cycles (~4–10 s) of a tag re-sighted once past the gate; no wrong-basin accept.
+
+**R4 — kidnap, prior OFF (control)**: add `-o relocalizationmodule.use_fiducial_prior=false`
+(verified: string coerces to bool), `db_path=data/..._kidnap_off1.db`, repeat the same kidnap.
+Replay-derived expectation: slower/failed recovery on sparse submaps (61.4% vs 92.9% sub-gate).
+Pass bar for the PAIR: ON is never worse than OFF; log both recovery times.
+
+**R5 — referee loop**: start the stack viewing referee tag 10, walk the full loop, end viewing
+it again (≥3 visits ideal), `db_path=data/..._loop1.db`. The referee is not in the map — it
+only grades, offline. Pass: clean run, ≥1 loop, start+end sightings recorded.
+
+### mid360 arm — IF a mid360-equipped go2 is available
+The fiducial blueprint rides the go2 camera either way; the mid360 adds the second lidar lane
+to the RECORDING for offline lane-B analysis. No combined mid360+fiducial live blueprint exists
+— treat the mid360 rig as record-only today (repeat R1's walk + R5's loop):
+```bash
+export DIMOS_MID360_LIDAR_IP=<mid360 ip>  DIMOS_POINTLIO_LIDAR_IP=<same>   # default 192.168.1.155
+ROBOT_IP=<ip> uv run dimos run unitree-go2-mid360-record
+```
+Pygame WASD teleop drives; records go2_lidar/go2_odom/color_image + pointlio/livox streams into
+`recordings/<timestamp>/mem2.db` — move/rename to `data/sf_office_go2mid360_20260718_<phase>1.db`
+when done. Premaps for its lanes build offline via `prep.py --lidar-pose-from-odom <odom stream>`
+(the mid360-walk pattern; `dimos map global` can't — placeholder lidar poses, learned Jul 18).
+No mid360 go2 available → run the go2-only protocol and note "mid360 arm not run" in
+benchmark_setup.yaml.
+
+### Post-day (any machine; every run joins the replay suite)
+1. All `.db` in `dimos/data/`; register each in `benchmark_setup.yaml` (tier B).
+2. Referee-grade each recording (manual chain — `run_suite.sh`'s marker stage only pattern-matches
+   the legacy names):
+   ```bash
+   uv run python ../trial/harness/prep.py <rec> --n-queries 24        # --device CUDA:0 on this box
+   uv run python ../trial/harness/markers.py <rec>                    # referee split from setup yaml
+   uv run python ../trial/harness/run_bench.py <rec> --config ransac
+   uv run python ../trial/harness/run_bench.py <rec> --config ransac+fiducial \
+     --fiducial-fixes ../trial/harness/out/markers/<rec>.fixes.json
+   uv run python ../trial/harness/run_bench.py <rec> --config fiducial+judge \
+     --fiducial-fixes ../trial/harness/out/markers/<rec>.fixes.json
+   uv run python ../trial/harness/referee_verdict.py <rec>
+   ```
+3. Replay any live run against its own artifacts (recorder self-disables in replay):
+   `uv run dimos --replay --replay-db=<rec> run unitree-go2-fiducial-relocalization -o <same -o set, minus go2memory>`.
+4. Numbers + surprises into §7; push both repos per the morning checklist.
+
+**Standing facts behind the bars above (all re-verified in source this run):** accept gate
+fitness 0.45 (docs' 0.6 stale); MIN_LOCAL_POINTS 50k → 30–65 s map-blind after boot (measured);
+ambiguity gate default 5.0 (measured, village3); reloc attempt cadence 2 s; skip/reject/accept
+log lines quoted verbatim above. Could NOT be verified without a robot (that's what the on-site
+smoke is for): live WebRTC connect, the recorder actually writing during a live run,
+color_image pose semantics in a fresh recording (rehearsal precedent says world_T_optical; the
+marker-map builder's health prints catch it if wrong), 100 mm tag detection range/rate in the
+office, mid360 rig presence + its lidar IP, office subnet for the sweep.
 
 **Removed instruments** (Jul 17 cleanup, Aaryan-authorized — the cut real-life benchmark's kit,
 superseded by `trial/harness/`; code + full usage docs in git history ≤ 90c494a, e.g.
