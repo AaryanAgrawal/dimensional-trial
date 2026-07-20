@@ -47,6 +47,26 @@ say so plainly — agreement is not a deliverable, and an echo helps no one. "I 
    proves strictly more than the last. A claim with no run behind it is a guess; say so instead
    of dressing it up.
 
+## Test real dimos — never a re-implementation (Aaryan, Jul 20; the hardest lesson so far)
+
+Every test, benchmark, or eval must exercise the **actual dimos pipeline** — `dimos --replay run
+<blueprint>`, the real modules, the real data path — never a harness that rebuilds a dimos step
+its own way. The instant a benchmark re-implements a data-path step (submap building, frame
+re-anchoring, candidate generation, pose composition), it becomes a *different program* that
+silently drifts from production and measures itself, not dimos.
+
+Proof, and why this rule exists: our offline harness re-anchored the relocalization submap to the
+**full body frame** (`prep.py`, `world_pts @ inv(P)`) — a step dimos never does (production builds
+the submap in the LIO's gravity-aligned **world** frame via the real `VoxelGridMapper`). On the
+tilted mid360 rig that manufactured a 52° tilt and a phantom "gravity-gate bug" that does not exist
+in production. A full night went into "fixing" a bug in our own test scaffolding. Testing a
+re-implementation tests the re-implementation.
+
+So: the harness may **orchestrate** (pick recordings, hold PGO/referee-tag truth, score, analyze)
+and may call real dimos for the legitimate steps (premap = `dimos map global --pgo --export`), but
+it must **grade fixes the real pipeline published**, never fixes it computed itself. If you cannot
+test something through real dimos, say so — do not substitute a look-alike.
+
 ## Robotics non-negotiables
 
 - **Every pose names its frame. Every number names its unit.** `world_T_camera`, never bare
