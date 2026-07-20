@@ -6,6 +6,32 @@ and what each prior buys. Phase 3 of the trial plan; the successor to the cut
 real-life benchmark. Imports dimos as a library from the sibling checkout;
 never lives inside dimos.
 
+## CANONICAL PATH — grade the real pipeline (read `BENCHMARK_METHOD.md` first)
+
+New grading goes through the **dimos-native replay path**: run the shipped blueprint
+under `dimos --replay` and score what the `RelocalizationModule` actually publishes —
+the harness re-implements **no** data-path step. See `BENCHMARK_METHOD.md` for the full
+rule + audit.
+
+```
+uv run --project /home/dimos/dimensional-trial/dimos dimos map global <rec> --pgo --export --no-gui  # premap (real dimos)
+uv run --project /home/dimos/dimensional-trial/dimos python trial/harness/replay_bench.py <rec> --premap /abs/<rec>.pc2.lcm  # driver: runs blueprint, listens
+uv run --project /home/dimos/dimensional-trial/dimos python trial/harness/score_replay.py <rec>  # scorer: published fixes vs PGO truth
+```
+
+> **SUPERSEDED — the sections harness below (`prep.py` sections + `run_bench.py`'s direct
+> `relocalize()`/`refine_candidates()` call).** `prep.py::build_sections` re-anchors the
+> submap to the robot **body frame** (`world_pts @ inv(Pg)`) and `prep.py::build_premap`
+> re-implements `dimos map global --pgo` — steps production never does (it feeds the
+> **world-frame** cumulative `VoxelGridMapper.global_map` to `relocalize()` untouched).
+> `run_bench.py` then grades a fix **it computed itself**, not one the module published;
+> its `--map-up-from-premap` path even calls a `map_up`/`estimate_map_up` API absent from
+> every dimos clone. That body-frame re-anchor manufactured the **phantom mid360
+> gravity-gate bug** — the reason this path is retired. These two files are **kept, not
+> deleted** (their SILVER numbers are archived in `WORKSPACE.md`); use them only to read
+> the archived results, never to produce new benchmark numbers. Canonical replacement:
+> `replay_bench.py` + `score_replay.py`.
+
 ## One command each (from `dimos/`)
 
 ```bash

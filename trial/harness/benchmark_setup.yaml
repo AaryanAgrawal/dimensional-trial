@@ -7,6 +7,14 @@
 #                               judge -> one published score; decides between/fuses
 #                               priors on-robot. The benchmark calibrates it offline.
 #
+# Grading method (canonical, see trial/harness/BENCHMARK_METHOD.md):
+#   Grade the REAL pipeline under `dimos --replay run <blueprint>` via replay_bench.py +
+#   score_replay.py — the harness re-implements NO data-path step. Premap = real
+#   `dimos map global --pgo --export`; truth = real PGO `correction_at`. The old sections
+#   path (prep.py body-frame submaps + run_bench.py's direct relocalize()) is SUPERSEDED:
+#   its body-frame re-anchor manufactured the phantom mid360 gravity-gate bug. Kept for its
+#   archived SILVER numbers only; do not produce new numbers on it.
+#
 # Tag policy (the decorrelation rule):
 #   Each recording designates ONE referee tag — the "start/end tag" — used ONLY for
 #   benchmarking. It NEVER enters the marker map and NEVER produces fiducial fixes.
