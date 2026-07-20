@@ -102,11 +102,24 @@ def reposed_lidar_obs(store: SqliteStore, lidar_stream: str, odom_stream: str,
     identity placeholder too — read obs.data). Nearest-ts join, tolerance
     0.15 s, obs.with_pose(...) — clouds stay lazy and world-frame."""
     from dimos.msgs.geometry_msgs.PoseStamped import PoseStamped
+    from dimos.msgs.nav_msgs.Odometry import Odometry
 
-    if pose_type is None:
-        pose_type = PoseStamped
-    # Both PoseStamped and nav_msgs Odometry expose .position/.orientation.
-    odom = [(o.ts, o.data) for o in store.stream(odom_stream, pose_type)]
+    # Both PoseStamped and nav_msgs Odometry expose .position/.orientation, but
+    # the store REFUSES to open a stream with the wrong registered type. Rigs
+    # differ: some log fastlio_odometry as PoseStamped, others as Odometry (the
+    # flashdrive grassy/stairs mid360 runs). Try the caller's type, else both.
+    candidates = [pose_type] if pose_type is not None else [PoseStamped, Odometry]
+    odom = None
+    for t in candidates:
+        try:
+            odom = [(o.ts, o.data) for o in store.stream(odom_stream, t)]
+            break
+        except ValueError:
+            odom = None  # wrong registered type — try the next
+    if odom is None:
+        raise ValueError(
+            f"odom stream '{odom_stream}' is neither PoseStamped nor Odometry "
+            f"(store rejected both) — cannot re-pose")
     ots = np.array([t for t, _ in odom])
     out = []
     for obs in store.stream(lidar_stream, PointCloud2):
