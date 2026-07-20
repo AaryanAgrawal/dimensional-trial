@@ -19,7 +19,7 @@ export const trial = {
   kicker: "Dimensional FDE Trial · Aaryan Agrawal · July 15 – July 24",
   title: "Fiducial Relocalization",
   objective:
-    "Fiducial relocalization — an ArUco prior, robustly fused and composed into the real-time judge; benchmarked on recordings, and the priority mid360 rig's gravity-gate bug found + fixed",
+    "Fiducial relocalization — an ArUco prior, robustly fused and composed into the real-time judge; benchmarked on recordings, and the priority mid360 rig's gravity-gate bug found + fixed (partial)",
   // Short plan index — the full per-phase plan lives inside each phase section.
   deliverables: [
     "Phase 1 — universal confidence reading (built + verified)",
