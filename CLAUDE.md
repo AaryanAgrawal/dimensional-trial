@@ -154,8 +154,16 @@ SIMULATED scenes; unit-suffixed names (marker_length_m, _gravity_tilt_deg). Drif
 - [ ] `MIN_WALL_POINTS = 100` (relocalization/relocalize.py:44) is naked while its neighbors
       carry why/unit comments (:35-38).
 
+**Citations in code (Aaryan, Jul 20):** cite only *non-obvious* algorithms and tuned/"magic"
+thresholds, with a simple URL on the same line — e.g. Huber IRLS, Markley quaternion mean, IPPE
+mirror-ambiguity, Umeyama alignment, Open3D `segment_plane`. **Do NOT cite industry-standard
+technique** — no FAST-LIO / Point-LIO / ICP / RANSAC / PGO / solvePnP references; that's assumed
+knowledge and clutters the code. Rule of thumb: if a reader would need the paper to understand
+*why this specific method/number*, cite it; if it's a household SLAM/vision term, don't.
+
 **Checklist before pushing dimos code:**
-1. Magic numbers: unit or physical translation on the same line.
+1. Magic numbers: unit or physical translation on the same line; non-obvious algos/thresholds
+   get a simple-URL citation (Huber/Markley/IPPE/Umeyama/segment_plane), never industry-standard.
 2. Quantities carry units in the identifier; every pose names its frame.
 3. No bare `except:`; `except Exception` only at a boundary, and logged.
 4. Error messages: got-vs-want (`"got {n}"`, memory2/transform.py:115) or the caller's next step.
