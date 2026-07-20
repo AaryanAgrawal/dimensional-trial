@@ -77,6 +77,128 @@ recordings:
                             # waves observed live; chosen BEFORE any grading
     fiducial_tags: [2, 3, 5, 6, 7]   # the Jul 18 printed 100 mm singles
 
+  # === Flashdrive mid360 runs — SELECTED + registered night Jul 20 (autonomous session) ===
+  # Source: /media/dimos/datasets/mid360_recordings/ (non-china). Per-recording detection
+  # sweeps in the session log. Purpose: attack caveat #1 (fiducial-on-mid360 evidence was a
+  # single 2026-05-29 episode) with more marker-bearing mid360 runs, plus baseline gravity-
+  # gate tests. EVERY marker referee below is PROVISIONAL: protocol.validity_gate (1.0 m
+  # single-linkage spatial-cluster duplicate-id check, cf. hk_village2/4 exclusions) is
+  # UNRUN — run markers.py per recording before trusting any referee id or building any
+  # marker_map.yaml. Marker ids are certain; per-id sighting totals are floors (guided
+  # frame samples, not full-stream scans). Dropped this round (logged, not registered):
+  # mid360_outdoor_small_loop_20260528 (weakest gravity — 49 deg, single tag 7);
+  # mid360_gir_park1_2_20260602 (near-dup of gir_park1: same park +21 min, tag ids a subset,
+  #   366 s < 600 s tier-B floor, go2/livox lidar poses placeholder);
+  # mid360_huge_loop_realsense_20260604 (BENCH-BLOCKED: markers.py hardcodes go2 720p
+  #   intrinsics `_camera_info_static()` (markers.py:90); realsense frames are 848x480 ->
+  #   DetectMarkers skips on size mismatch -> 0 detections. Needs the detector pointed at
+  #   realsense K/D (harness change, out of this select+register scope). Near-dup loop of
+  #   huge_loop_go2 (same ids 10/11/13/21/29). WORTH benching once wired: its referee 13
+  #   got 3 revisit waves — the only candidate that clears referee_revisits>=3).
+
+  mid360_gir_stairs2_20260602:
+    role: "TIER B PROVISIONAL — single-episode mid360 marker run (rig = mid360; go2+mid360
+      dual-lane recording, go2 front cam 1280x720 for markers). Multi-floor stairwell,
+      2119 s (>=600 tier-B duration). 9 distinct AprilTag ids — the richest mid360 marker
+      run found on the flashdrive. DUPLICATE-ID RISK HIGH: stairwells commonly reuse a tag
+      per landing (the exact hk_village2/4 exclusion pattern) — the 1.0 m single-linkage
+      spatial-cluster gate MUST pass before referee 11 is trusted OR any marker map is
+      built; if any id proves multi-instance this recording is EXCLUDED, not benched.
+      Referee 11 = widest span (0-2093 s, full run); PROVISIONAL. Referee >=3-revisit gate
+      unconfirmed. Referee id chosen from the detect sweep BEFORE any grading (protocol)."
+    referee_tag: 11          # full-run span (0-2093 s); PROVISIONAL — cluster gate unrun
+    fiducial_tags: [10, 12, 13, 21, 28, 29, 30, 31]
+    lanes:
+      go2:
+        lidar: lidar
+        odom: odom
+        note: "storage poses REAL (0/5886 placeholder) — no --lidar-pose-from-odom needed.
+          Marker + PGO-truth lane (go2 body level, median tilt 2.2 deg)."
+      mid360_fastlio:
+        lidar: fastlio_lidar
+        odom: fastlio_odometry
+        note: "storage poses REAL; body tilt median 52.4 deg (gravity-gate regime), real
+          vertical from a stairs climb. Optional --lidar-pose-from-odom fastlio_odometry
+          to stay faithful to the mid360 lane."
+
+  mid360_gir_park1_20260602:
+    role: "TIER B PROVISIONAL — single-episode mid360 marker run (rig = mid360; go2+mid360
+      dual-lane recording, go2 front cam 1280x720 for markers). Outdoor park loop, 1202 s
+      (>=600 tier-B duration). 5 distinct fiducial ids. Referee 21 = widest start-to-end
+      span (seen 34 s AND 1197 s); PROVISIONAL — spatial-cluster duplicate-id gate UNRUN
+      (outdoor space could host repeated physical tags), and referee >=3-revisit gate
+      unconfirmed (start+end coverage in a 200-frame sample; run markers.py +
+      referee_verdict.py to confirm >=3 before trusting 21). Referee chosen BEFORE grading."
+    referee_tag: 21          # widest span (34-1197 s, start+end); PROVISIONAL
+    fiducial_tags: [11, 12, 29, 30]
+    lanes:
+      go2:
+        lidar: lidar
+        odom: odom
+        note: "storage poses REAL (0/9227 placeholder) — no --lidar-pose-from-odom needed.
+          Marker + PGO-truth lane (go2 body level, median tilt 4.4 deg)."
+      mid360_fastlio:
+        lidar: fastlio_lidar
+        odom: fastlio_odometry
+        note: "storage poses REAL; body tilt median 50.8 deg (gravity-gate regime) — doubles
+          as a RANSAC-reloc gravity test. Optional --lidar-pose-from-odom fastlio_odometry."
+
+  mid360_huge_loop_go2_20260604:
+    role: "TIER B PROVISIONAL — single-episode mid360 marker run (rig = mid360; go2+mid360
+      dual-lane recording, go2 front cam 1280x720 for markers). ~53 min huge loop, 3206 s
+      (>=600 tier-B duration). 5 distinct fiducial ids, each physically revisited exactly
+      TWICE (loop bookends ~1000-1600 s apart). Referee 13 = the start/end tag; only 2
+      revisit waves -> FAILS the suite_v2_acceptance referee_revisits>=3 gate (same
+      limitation as sf_office survey1) -> PROVISIONAL, no fully-decorrelated visit-level
+      verdict. Spatial-cluster duplicate-id gate UNRUN (risk LOW — each id's two clusters
+      are a coherent out-and-back, not co-temporal duplicates — but run before map-build).
+      Referee chosen from the detect sweep BEFORE any grading (protocol)."
+    referee_tag: 13          # start/end tag; PROVISIONAL — only 2 revisit waves (<3 gate)
+    fiducial_tags: [10, 11, 21, 29]
+    lanes:
+      go2:
+        lidar: lidar
+        odom: odom
+        note: "storage poses REAL (match odom endpoint) — no --lidar-pose-from-odom needed.
+          Genuine loop closure (returns near origin mid-run). Marker + PGO-truth lane."
+      mid360_fastlio:
+        lidar: fastlio_lidar
+        odom: fastlio_odometry
+        note: "storage poses REAL; body tilt median 51.1 deg (gravity-gate regime) — doubles
+          as a RANSAC-reloc gravity test. Optional --lidar-pose-from-odom fastlio_odometry."
+
+  mid360_grassy_field_20260601:
+    role: "GRAVITY-GATE RANSAC TEST (no usable markers). mid360 tilted-body lane, body tilt
+      median 52.3 deg (46.7-53.9). Selected (night Jul 20) to show plain RANSAC
+      relocalization fails on a tilted-sensor lane at baseline — expect ransac ~0/N, median
+      tens of meters (relocalize.py GRAVITY_TILT_MAX_DEG=10 discards the geometrically-
+      correct tilted candidates and keeps upright-wrong ones). 174 m outdoor grassy-field
+      walk, 752 s. Only 2 fiducial ids (18,21), each revisited 2x -> NOT a marker bench
+      (needs >=3 ids + >=3 referee revisits); markers ignored here."
+    referee_tag: null
+    lanes:
+      mid360_fastlio:
+        lidar: fastlio_lidar
+        odom: fastlio_odometry
+        note: "storage poses PLACEHOLDER -> REQUIRES --lidar-pose-from-odom fastlio_odometry.
+          The gravity test lives on this fastlio lane; the go2 odom lane is level (2.8 deg)."
+
+  mid360_gir_stairs1_20260601:
+    role: "GRAVITY-GATE RANSAC TEST (no usable markers). mid360 tilted-body lane, body tilt
+      median 52.4 deg (fastlio; pointlio 51.5) with real vertical from a stairs climb (z up
+      to 3.4 m) — a distinct terrain stressor vs the flat grassy-field test. Selected (night
+      Jul 20) to show plain RANSAC relocalization fails on a tilted-sensor lane at baseline
+      (expect ransac ~0/N, median tens of meters). 763 s. Only ONE tag id (21) -> NOT a
+      marker bench (no >=2-fiducial + distinct-referee split possible); markers ignored here."
+    referee_tag: null
+    lanes:
+      mid360_fastlio:
+        lidar: fastlio_lidar
+        odom: fastlio_odometry
+        note: "storage poses REAL (already populated, match odom) — prep runs without a
+          re-pose flag; optional --lidar-pose-from-odom fastlio_odometry to stay faithful.
+          The go2 odom lane is level (2.2 deg) — gravity test lives on this fastlio lane."
+
 protocol:
   revisit_test: same-referee-tag pairwise distance, stratified by time gap
                 (0-10 / 10-30 / 30-60 / 60+ s); raw odometry vs corrected;
