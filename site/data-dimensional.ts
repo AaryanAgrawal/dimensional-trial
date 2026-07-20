@@ -9,16 +9,17 @@
 // environment numbers (hk office, all_around, village3 pair) were computed at
 // earlier branch revs; a uniform re-slice at the PR head is a pending task, so
 // those carry an in-sentence caveat rather than a HEAD-verified guarantee.
-// Structure (Jul 18): the page reads as one argument — eight big takeaway
-// titles in logical order, then a reference tier. Nothing was deleted in the
-// restructure; content not on the story's spine moved down into the reference
-// tier.
+// Structure (Jul 20): a hero on top — the objective + the three main-takeaway
+// graphs (the "one look" proof) — then the story as one argument in ten big
+// takeaway titles in logical order, then a reference tier. Each hero graph
+// recurs in full, with its test and caveat, in its own per-claim section below.
+// Nothing was deleted; content off the story's spine lives in the reference tier.
 
 export const trial = {
   kicker: "Dimensional FDE Trial · Aaryan Agrawal · July 15 – July 24",
   title: "Fiducial Relocalization",
   objective:
-    "An ArUco prior composed into the existing real-time judge — benchmarked on recordings, validated IRL on go2 (first SF-office operational recording, Jul 18); the mid360 lane measured in replay of a recorded walk",
+    "Fiducial relocalization — an ArUco prior, robustly fused and composed into the real-time judge; benchmarked on recordings, and the priority mid360 rig's gravity-gate bug found + fixed",
   // Short plan index — the full per-phase plan lives inside each phase section.
   deliverables: [
     "Phase 1 — universal confidence reading (built + verified)",
@@ -30,8 +31,34 @@ export const trial = {
     href: "https://github.com/dimensionalOS/dimos/pull/3016",
     label: "PR #3016",
   },
-  lastUpdated: "July 18, 2026",
+  lastUpdated: "July 20, 2026",
 };
+
+// Hero — the "one look" proof shown on top: the three main-takeaway graphs.
+// Each recurs in full, with its test and caveat, in its own per-claim section
+// below (regime map §4, robust fusion §6, gravity gate §8). Titles ARE the
+// takeaway; every number carries its truth label and its caveat in-sentence.
+export type HeroFigure = { src: string; title: string; takeaway: string };
+export const heroFigures: HeroFigure[] = [
+  {
+    src: "/dimensional/regime_map.png",
+    title: "When the global search wins — and when a marker does",
+    takeaway:
+      "Below the 50k-point gate today's robot won't even try, a marker prior lifts pooled replay success 31%→69% at sub-30k submaps; above the gate the search roughly doubles but tops out ~50% where the space aliases — markers cover its blind spots (replay, n=88, referee excluded).",
+  },
+  {
+    src: "/dimensional/gravity_gate_stairs1_before_after.png",
+    title: "The mid360 rig's gravity-gate bug — found and fixed (partial)",
+    takeaway:
+      "The physically-tilted mid360 body broke the search's upright-gravity gate; a body-attitude-aware fix rescues 4 of 8 catastrophic gate-hijacks (success 4/18→7/18) with 1 regression, the scene-ambiguity failures unchanged (replay, mid360 stairs1, PGO-silver truth).",
+  },
+  {
+    src: "/dimensional/aggregation_fused_vs_single.png",
+    title: "Robust fusion cuts the fiducial fix error 46%",
+    takeaway:
+      "Huber-fusing a tag's sightings across a visit — not trusting the latest single fix — cuts the median world→map fix error 3.47→1.87 m and wins 4 of 5 visits (replay, hk_village3, one recording/tag).",
+  },
+];
 
 export type Status = "active" | "done" | "pending";
 
@@ -288,6 +315,20 @@ export const evidence: EvidenceSection[] = [
   },
   {
     heading:
+      "Robust temporal fusion, not latest-single-best: fusing a tag's sightings cuts the fiducial fix error 46%",
+    intro:
+      "The live rehearsal's limiter was single-glimpse geometry — one sighting of a tag 31 m from the map origin scatters meters. The accuracy fix is to stop trusting the latest single fix and instead robustly fuse every gated sighting of a tag across a visit (Huber weighting, so one bad glimpse can't drag the estimate). Measured on the same hk_village3 replay with real detections — tag-10, 164 gated glimpses across 5 visits at the 31.3 m lever — the fuse cuts the median world→map fix error from 3.47 m (latest-single) to 1.87 m, a 46% cut, and beats latest-single on 4 of the 5 visits (v3, n=5, the lone regression). Caveats in the same breath: the IPPE ambiguity + reprojection gate that feeds this (ambiguity ≥ 2.0, reprojection ≤ 3 px) is dormant in the live wire today — the live path drops the per-corner data the gate needs — and this is one recording and one tag, so it reads as a mechanism result, not a fleet number; wiring the gate live and fusing across tags is Phase-4 arbiter work.",
+    figures: [
+      {
+        title: "Latest-single vs Huber-fused fix error, per visit (hk_village3, replay)",
+        explanation:
+          "Fusing a visit's sightings cuts median fix error 3.47→1.87 m (46%) and wins 4 of 5 visits — v3 (n=5) the lone regression; the raw per-frame single glimpse sits at 2.47 m (replay, real detections, PGO-silver truth, one recording/tag).",
+        src: "/dimensional/aggregation_fused_vs_single.png",
+      },
+    ],
+  },
+  {
+    heading:
       "Robot day, IRL: on the first operational recording markers rescue again offline — and live, the judge kept every marker answer honest",
     intro:
       "First tier-B recording, captured today: SF office, go2-only rig, 13.6 min continuous, five printed tags plus a pre-existing wall tag as referee — chosen before any grading — with a survey pass, a loop, and a mid-run kidnap in one run. The same night it was graded offline against PGO-silver truth and the live stack was replayed once per arm (prior ON / prior OFF). Four results, one per figure below — each carrying its own truth caveat in the same sentence.",
@@ -319,6 +360,20 @@ export const evidence: EvidenceSection[] = [
     ],
     close:
       "The live zero is consistent with the measured lever for this office's far tags (12–14 m), which flipped meter-class offline too — but the near tags produced the clean offline wins, so the live zero itself stays behavior-only, cause unverified (per the figure), not the lever alone; the mirror-ambiguity gate fired 17/14 times (ON/OFF) live with zero tracebacks. The flip-flop exhibit at the top of this page is these same runs — both arms — which is why the confidence reading, not any single prior, is the product.",
+  },
+  {
+    heading:
+      "The mid360 rig's gravity gate rejected correct tilted poses — found, and fixed (partial: 4 of 8 rescued, 1 regression)",
+    intro:
+      "The robot-day mid360 lane above exposed a real, live bug on the mid360 rig — not scene difficulty. FAST-LIO's body frame IS the physically tilted mid360 (~50° off gravity), but the shared judge's gravity gate measured every candidate's up-axis against world-z and assumed an upright body — so it discarded each geometrically-correct (tilted) candidate and let an upright-but-wrong decoy win the pool. Isolated on the tilted mid360 stairs1 lane (replay, 18 sections, PGO-silver truth, a byte-identical seeded RANSAC candidate pool — only the judge's gravity gate differs), the shipped world-z gate solves 4/18; a body-attitude-aware fix — estimate the submap's own up per frame (segment_plane) and gate on gravity DIRECTION, i.e. does the pose carry the submap's floor onto the map's floor — solves 7/18. Honestly partial: it rescues 4 of the 8 catastrophic gate-hijack busts (67.5 / 18.3 / 58.8 / 68.8 m → 0.9 / 0.0 / 0.0 / 0.3 m), costs 1 regression (a previously-correct section, frame 433, 0.6 → 13.3 m), and leaves the 6 scene-ambiguity failures unchanged — the gate was never their cause. This is a relocalization-search result on the tilted lane graded against PGO-silver truth, kept distinct from the fiducial-marker evidence: the mid360 marker recordings still can't grade fiducial (warped truth, duplicate referees), so no marker claim rides on it.",
+    figures: [
+      {
+        title: "World-z gate vs body-attitude gate on the tilted mid360 stairs1 lane (replay)",
+        explanation:
+          "Same seeded RANSAC pool, only the judge's gravity gate differs: the body-attitude fix rescues 4 of 8 gate-hijack busts (meters → centimeters) and lifts success 4/18→7/18, at the cost of 1 regression; the 6 scene-ambiguity failures are unchanged — the gate was never their cause (replay, mid360 stairs1, PGO-silver truth).",
+        src: "/dimensional/gravity_gate_stairs1_before_after.png",
+      },
+    ],
   },
   {
     heading:

@@ -5,6 +5,7 @@ import {
   baselines,
   evidence,
   glossary,
+  heroFigures,
   notes,
   nextSection,
   provenance,
@@ -189,7 +190,27 @@ export default function DimensionalPage() {
         <p className="text-base font-semibold text-ink sm:text-lg">{trial.objective}</p>
       </div>
 
-      <ul className="mt-4 space-y-1 text-sm">
+      {/* Hero — the "one look" proof: the 3 main-takeaway graphs. Each recurs
+          in full, with its test and caveat, in its own per-claim section below. */}
+      <p className="mt-6 text-[11px] font-medium uppercase tracking-[0.08em] text-faint">
+        The result in three graphs — each shown in full, with its test and caveat, in its section below
+      </p>
+      <div className="mt-3 grid gap-5 sm:grid-cols-3">
+        {heroFigures.map((f) => (
+          <figure key={f.src} className="flex flex-col">
+            <img
+              src={f.src}
+              alt={f.title}
+              className="w-full rounded-md border border-line bg-tile"
+            />
+            <figcaption className="mt-2 text-xs text-soft">
+              <span className="font-medium text-ink">{f.title}.</span> {f.takeaway}
+            </figcaption>
+          </figure>
+        ))}
+      </div>
+
+      <ul className="mt-6 space-y-1 text-sm">
         {trial.deliverables.map((d, i) => (
           <li key={d} className="flex gap-2">
             <span className="text-faint" aria-hidden>
