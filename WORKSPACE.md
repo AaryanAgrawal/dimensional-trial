@@ -1879,3 +1879,249 @@ checkouts, the duality already caused a wrong analysis (#2/#11). On-disk `go2_ho
 - Process/ops, not results-affecting, not independently re-derived: AES key handling (R4#7), LCM sysctl (R4#11), naming (R4#12), missing run1 README / rescued-db (R4#10 — filesystem not swept).
 
 **Held clean under attack:** referee/tag-4 decorrelation discipline; full denominator (crashes + no-candidates counted); per-frame seeds + revs + commands on every summary; SF determinism (0 ransac-source divergences ransac vs ransac_fiducial); mid360 go2-lane numbers reproduce from disk. Recurring failure mode = NOT fabrication but a real measurement (2.28 m wobble; the present-but-unused `sources=` fix; the stale `~/dimos` checkout) failing to propagate into the labels and headlines it should govern.
+
+## 13. Jul 20–21 — PR-ready session (state of record; nothing pushed, local only)
+
+All work ran in ultracode workflows (Opus), main window = orchestration only. dimos edits on
+`feat/fiducial-relocalization`; harness/site/docs in this repo. Nothing pushed to any remote.
+
+**What landed (built + tested, local):**
+- **Fiducial prior, honest form.** A marker proposes a `Candidate` into the same `refine_candidates`
+  judge as RANSAC; wins only on wall-ICP fitness; never publishes alone. Off by default
+  (`use_fiducial_prior`). PR draft: `trial/PR_fiducial_relocalization.md` (house template + core-why
+  + hardware-first How-to-Test + Evidence). It does NOT claim a live win — every sf_office fix is
+  still `source=ransac`; the gap is marker-pose accuracy, not plumbing.
+- **Hyperparameters → pydantic Config** (all CLI `-o`-overridable, same shape as `fitness_threshold`):
+  `min_local_points`, `reloc_interval_s`, `gravity_tilt_max_deg`, `ambiguity_ratio_min`,
+  `marker_map_file`, `marker_length_m`, `use_fiducial_prior`, `use_last_pose_seed`. Convention pinned
+  in CLAUDE.md: **pydantic config = operator tunables; frozen @dataclass = geometry value types;
+  UPPER_SNAKE module const = fixed internal (promote to config if it ever needs per-run tuning).**
+- **Ambiguity-ratio gate** (`ambiguity_gated_pose`, marker_pose.py) wired detector→stream config, on
+  for the reloc detector. Proven by test. **Still DORMANT live** — `corners_px` are structurally
+  dropped at the `Detection3DMarker`→LCM boundary (generated `__slots__` has no corners field). The
+  corners-on-wire fix (add a corners field to the Detection3D msg) is an OPEN design item.
+- **Held-out benchmark = THE testing method.** Premap from survey1, replay survey2 of the SAME scene
+  (never same-recording). `trial/harness/eval.py` + `RelocEval` collector + Umeyama truth-align +
+  top-down trajectory plot colored by winning source (`out/eval/survey2_heldout.trajectory.png`).
+  The relocalization succeeding on B IS the same-scene proof.
+- **Camera intrinsics checker** (DIM-1308 tool): `dimos cameracalibrate --check` (checkerboard reproj
+  RMS + drift → OK/DEGRADED), ChArUco support (`--board charuco`), and capture-reuse
+  (`--min-frame-diff-px` diversity gate, `--frames-out` saves the 20 frames, `--recalibrate-if-degraded`
+  re-solves from those same frames). Uses cv2 verified functions. 59 tests, ruff+mypy clean, both CLIs.
+- **Marker storage + render.** Flat JSON `map_T_tag` file next to the map, same `map` frame, separate
+  file — NO KV store yet. `trial/harness/show_markers_on_map.py` → `out/eval/markers_on_map.rrd`
+  (premap cloud + 5 surveyed tags as labeled triads); open with `rerun <path>`.
+- **Tests: 120+ hermetic, seeded, known-truth.** Medoid flip (recovers truth on clean-majority
+  0.19°/3 mm; follows flip on flip-majority = documented limit, not a bug), ambiguity gate,
+  synthetic gate+fusion integration. codecov PATCH gate respected.
+- **Website** `/dimensional` consolidated: PR as main section, story/findings collapsed; embeds the
+  trajectory plot. Deploy is Aaryan's (`vercel --prod` — no CLI/auth here).
+
+**Root cause of record (proven, not guessed):** fiducial loses on **marker-pose accuracy** (mirror
+flip + static not-per-unit fisheye calibration), NOT the medoid. The medoid working correctly IS why
+the failure is upstream of it. Tag 6 is the hard case (11/14 flipped → gate drops only 1 → orientation
+~44° off). See [[fiducial-prior-marker-pose-quality]], DIM-1308.
+
+**OPEN design decisions (track until Aaryan closes):**
+- [ ] **KV marker storage + on-disk format** — move markers into the map bundle in `memory2`, keyed
+  by space, so a map ships with its markers (leshy's "K/V in `map global`"). Today = loose JSON
+  sidecar (`map_T_tag`, same frame as `.pc2.lcm`, separate file). Cannot go inside `.pc2.lcm`
+  (PointCloud2 schema). Format decision (Jul 21): **JSON now → KV-in-map-global later; skip a
+  `.markers.lcm` sidecar** — a serialized `Detection3DArray` file would match the `.pc2.lcm`
+  convention and carry covariance, but it's still a loose file you pair by hand (no co-location win)
+  and loses the readability that hand-surveying/flip-correcting a marker map needs today. Typed
+  storage becomes worth it when the map is produced automatically + consumed by the Phase-4 fusion
+  arbiter — same line as the KV move. Aaryan's call on when.
+- [ ] **Determinism** — RANSAC is unseeded live; a single held-out run isn't reproducible. Peg seeds
+  vs average N runs in the eval. Validates DIM-944.
+- [ ] **Corners-on-wire** — add a corners field to the Detection3D LCM msg so the ambiguity gate can
+  fire live (it's a core/msgs touch → needs the core-why justification).
+- [ ] **Find X (DIM-1308)** — run `--check --board charuco` on greenwald → recalibrate → re-survey →
+  re-run held-out reloc → measure the accuracy delta. Needs the physical ChArUco board (Aaryan).
+  Live-run gotcha (Jul 21): the Go2 publishes raw `rgb8` on `/color_image`, so the check topic is
+  `lcm:/color_image`, NOT `jpeg_lcm:` (that decoder errors "Expected JPEG, got rgb8").
+- [x] **Recalibrate UX** (Aaryan, Jul 21) — DONE (w0vrm7z60): `--recalibrate-if-degraded` removed from
+  both CLIs; interactive y/N prompt on DEGRADED kept (guard = verdict DEGRADED + drift ran + isatty);
+  `write_recalibration_from_check` + fresh_K/D kept for that path; 60 tests pass, ruff+mypy clean.
+- [ ] **Per-unit camera calibration — a CORE FEATURE (Aaryan, Jul 21; own PR/ticket = DIM-1308, NOT in
+  the fiducial PR).** dimos today loads ONE per-MODEL `front_camera_720.yaml` for every Go2; no per-UNIT
+  mechanism. Grounded native design (agent investigation, Jul 21, all file:line cited):
+  - **Format = ROS CameraInfo YAML** (runtime loads via `connection.py` `_camera_info_static()` →
+    `CameraInfo.from_yaml`). NOT JSON — the recordings' `camera_intrinsics.json` is a write-only
+    provenance dump with ZERO readers. The `cameracalibrate` tool already emits this yaml → no format
+    change. Embed `robot_descriptor` + `calibration_date` as provenance fields INSIDE the yaml
+    (self-describing); default filename `front_camera_720_<descriptor>_<date>.yaml`, user-overridable.
+  - **memory2 is a STREAM store, not KV** → NOT the home (scratch the earlier "memory2 KV" idea for
+    calibs AND markers). **Reuse `CalibrationProvider`** (`CameraInfo.py:426`, already used for the ZED
+    cam) — a dir of calib yamls keyed by filename — pointed at the **machine-local data dir**
+    `_get_user_data_dir()` → `~/.local/share/dimos/calib/<descriptor>.yaml`. NOT the git package
+    (calibs aren't code).
+  - **Load-resolution order** (move calib resolution from the import-time class default
+    `connection.py:278` into `GO2Connection.__init__` where `self.config` exists, ~:302): (1) explicit
+    `camera_info_file` config override (resolved like `map_file`); (2) per-unit file by descriptor via
+    `CalibrationProvider`; (3) fallback to packaged `front_camera_720.yaml` (unchanged; inert unless a
+    per-unit file exists = safety story).
+  - **The one real GAP = per-unit identity.** Runtime identifies a Go2 only by IP. `robot_id` exists on
+    `GlobalConfig` but is unpopulated/unused for the go2 camera path; the device serial is readable
+    (discovery CLIs) but not captured at connect. NEW machinery, small: v1 = operator-assigned
+    `robot_id` (`.env` / `--robot-id`), SAME token as `--robot-descriptor` → unifies (assign `greenwald`
+    once: filename, `.env`, and lookup all key on it). v2 = capture the true serial (more correct, new
+    plumbing). Reuses schema + `CalibrationProvider` + machine-local dir + `.env`; only new = the
+    descriptor + the 3-step resolution.
+  - **`--robot-descriptor` rename** of the calibrate CLI's `--out` (tool builds filename from descriptor
+    + date). Nothing here blocks tomorrow's find-X (that needs only the calib yaml + a `-o
+    ...camera_info=<path>` override). Implement as its own core PR; `cameracalibrate.py` is now free.
+- [ ] **Long-loop 2nd benchmark** — go2+realsense+livox loop recording as a 2nd held-out pair, exclude
+  the dynamic tag (~id 17) from the premap. Agent investigating. Not critical (sf_office suffices).
+
+**Push decision:** everything is local. Nothing to any remote until Aaryan says go (overnight
+no-remote rule).
+
+## 14. TOMORROW MORNING (2026-07-21 handoff) — do these in order *(superseded by §16; kept for the calibration steps, which still stand)*
+
+**HANDOFF STATUS — read first:**
+- ✅ **ChArUco-fisheye fix DONE + tested** (w4dmw82aq): `--board charuco --distortion-model fisheye`
+  now produces a deployable equidistant (fisheye) calib via `cv2.fisheye.calibrate` (reused
+  `_calibrate_fisheye`, no reimpl). 66 tests pass, ruff+mypy clean, synthetic known-truth recovers
+  K/D exactly. LOCAL, uncommitted.
+- ✅ **Fiducial simplify + cite + test + PR-rewrite pass DONE + reconciled** (wr9e3p1o1 → wjdozqiot).
+  Code simplified to convention (unit/why comments, a RuntimeError premap guard replacing the bare
+  assert, the FiducialPrior negative-age guard, dead-code removal, citations kept where the algorithms
+  live), and the f-string operational logs converted to structlog event+kwargs with the co-located
+  tests updated ATOMICALLY (single serialized agent — the coupled code+test change no longer split, per
+  the lesson now in memory). **Final: 145 tests pass across both packages, 0 skips, ruff+mypy clean** —
+  verified by a fresh run. The PR (`trial/PR_fiducial_relocalization.md`) was rewritten dead-simple and
+  stays honest (prior wins 0 today, hardware not run, Coming: markers). The earlier "~2 failing tests"
+  alarm was a mid-flight artifact — the tree was green throughout. LOCAL, uncommitted — ready to commit
+  on your push call. Minor residual (non-blocking): `MIN_WALL_POINTS = 100` in relocalize.py is still a
+  naked constant while its neighbors carry unit/why comments.
+- Nothing pushed to any remote. Working tree carries BOTH efforts, uncommitted.
+
+**1. Calibrate greenwald — the find-X hardware run (only you can do this).** Power on the Go2, wait
+for it to stand. Ensure something publishes `/color_image` (a running Go2 blueprint, or the base
+connection). Hold the ChArUco board, cover the frame (center, corners, tilts, near/far):
+```
+uv run dimos cameracalibrate \
+  --source topic --topic 'lcm:/color_image' \
+  --board charuco --dict DICT_4X4_50 --squares-x 5 --squares-y 5 \
+  --square-size-m 0.11176 --marker-ratio 0.8 --distortion-model fisheye \
+  --guided --frames-out ./go2_calib_frames \
+  --out ./go2_front_camera_greenwald.yaml
+```
+(`lcm:` not `jpeg_lcm:` — raw rgb8. `--distortion-model fisheye` works now; the yaml will say
+`equidistant`.) Then **find X** — reuse the saved frames, no second capture:
+```
+uv run dimos cameracalibrate --check \
+  --camera-info dimos/robot/unitree/go2/front_camera_720.yaml \
+  --source folder --images ./go2_calib_frames \
+  --board charuco --dict DICT_4X4_50 --squares-x 5 --squares-y 5 \
+  --square-size-m 0.11176 --marker-ratio 0.8 \
+  --out ./go2_front_check.json
+```
+**X = the `drift` block** in `go2_front_check.json` (`max_rel_intrinsics_drift`, `delta_fx/fy/cx/cy`,
+`fresh_rms_px`). CORRECTION to §13: there is **no** `-o relocalizationmodule.camera_info=` override —
+the static calib is hard-loaded by `_camera_info_static()`. To make reloc actually USE the fresh
+calib, back up + replace the packaged file (only a fisheye/equidistant yaml is a valid drop-in, which
+the fix now produces): `cp dimos/robot/unitree/go2/front_camera_720.yaml /tmp/front_camera_720.bak.yaml`
+then swap in `go2_front_camera_greenwald.yaml`. The marker detector runs on `/color_image` @ 1280×720
+with exactly this yaml, so a better calib directly changes every tag's estimated pose (the fiducial
+accuracy lever).
+
+**2. The two PRs (your push calls — nothing pushed overnight).**
+- **Calibration PR** (DIM-1309 checker + DIM-1308 groundwork): `cameracalibrate --check` + ChArUco +
+  the fisheye fix + capture-reuse. Body drafted overnight; review the diff (`cameracalibrate.py`,
+  `robot/cli/dimos.py`, the calibration tests), then commit + push + `gh pr create`.
+- **Fiducial PR**: simplified overnight (see wr9e3p1o1 result below). Read-ready. Ship-ready needs
+  the commit (squash #3016) + ideally the held-out benefit number (survey2 markers).
+
+**3. Optional: deploy the site** — `cd /home/dimos/portfolio && vercel --prod`.
+
+**Still open (not blocking morning):** per-unit calib storage build (DIM-1308, design settled in §13),
+determinism (peg RANSAC seeds), corners-on-wire (make the gate live), long-loop 2nd eval set, KV
+marker storage.
+
+---
+
+## 15. Jul 21–22 overnight — PR #3137 open, priors config + reloc eval, two measurement bugs killed
+
+All work in ultracode workflows (Opus); main window orchestration only. Branch
+**`feat/relocalization-fiducial-prior`**, local HEAD `3471c8cae`.
+
+**PR #3137 is the live PR** — https://github.com/dimensionalOS/dimos/pull/3137, open, 33 commits, head
+`cdbacdd16`. The two newest commits (`27d50ac72`, `3471c8cae`) are **local, not pushed**. Body draft:
+`trial/PR_priors_config.md` (house template; Evidence + How-to-Test still marked INCOMPLETE — no
+hardware rung). #3016 is the earlier marker-localization PR; this one is the priors-config work.
+
+**What landed tonight:**
+- **Config-driven priors** (`708332fe7`): `priors: list[PriorConfig]` (pydantic union on `type`),
+  RANSAC becomes a toggleable entry, three blueprints named by their active priors —
+  `unitree-go2-relocalization-lidar` / `-lidar-fiducial` / `-fiducial`.
+- **`--eval` reloc bench** (`eval_module.py`, `reloc-eval`): subscribes `/tf` + `/odom`, scores
+  held-out accuracy by Umeyama recovery of `map_B_T_map_A` from shared tags; winner viz (`3471c8cae`).
+- **Review fixes** (`5973fd90f`, `cdbacdd16`): concurrency, yaml marker maps, eval correctness, replay
+  wiring, a bounded concurrent-observe writer so the suite stops hanging.
+- **Demo runbook** `trial/DEMO_leshy.md` — three-blueprint replay demo + talking points for the call.
+
+**Bug 1 — the log parser that could only ever say `ransac`** (fixed `27d50ac72`, `3471c8cae`). The
+harness/eval parsers matched `source=` *before* `fitness=`; the module emits `source=` last, so the
+parser was structurally incapable of reporting a fiducial win. **The "fiducial proposed 24/28, won 0"
+number had zero measurement power — do not cite it anywhere** (page, PR, call). Every count since is
+re-derived from raw run logs.
+
+**Bug 2 — `get_run_log_dir()` returned `None` in every module worker** (fixed,
+`dimos/utils/logging_config.py:75-88`, uncommitted). Only the CLI main process calls
+`set_run_log_dir()`; forkserver workers inherit the directory as `DIMOS_RUN_LOG_DIR`
+(`process_lifecycle.py:114`). The getter read only the module global, so `resolve_run_log(None)` found
+no `main.jsonl` and **every eval fix was labelled `source=unknown`**. Fix = env-var fallback, same
+order as `_get_log_file_path()`; resolve-only, no `mkdir` in a getter. New hermetic test file
+`dimos/utils/test_logging_config.py`, 8 tests (autouse fixture reproduces a worker: globals None, env
+cleared). Regression proof: revert `logging_config.py` → 4/8 fail (`assert None == PosixPath(...)`);
+with the fix 8/8 in 0.03 s. Suite `pytest dimos/mapping/relocalization/ dimos/utils/ -q` = 427 passed,
+4 failed, 87 s — the 4 are `dimos/utils/test_data.py` LFS pulls (no LFS creds on this box),
+environmental and untouched; the in-scope slice is 109 passed in 5.3 s. ruff check + format clean.
+Adjacent, deliberately not fixed: `perception/experimental/temporal_memory/temporal_memory.py:182-190`
+hand-rolls the same env fallback and is now redundant — its owner's call.
+
+**Measured results of record (raw logs, not parsers):**
+- **`hk_village3`, three blueprints, replay:** accepted 17 / 20 / 21. `-lidar-fiducial` winners ransac
+  20/20, fiducial 0/20. `-fiducial` 21/21 fiducial at median `time_cost_s` 0.2 vs 4.4 (~20x), but the
+  last seven fixes drift to ~1 m with fitness 0.59–0.63, which clears the 0.45 threshold and publishes.
+  hk_village3 has ONE tag id (10) with 1.38 m inter-track spread — a weak prior; the 1.37 m worst
+  divergence matches that spread.
+- **`sf_office` held out (survey1 premap → survey2 replay, shipped defaults, nothing tuned):** 32
+  cycles, 21 accepted, 11 rejected (all fitness-threshold misses 0.365–0.447). Winners ransac 18
+  (median fitness 0.661), **fiducial 3 (median 0.687)**. Fiducial proposed in 27/32, reached the judge
+  5 times, won 3 of those 5.
+- **The architectural finding:** `relocalize.py` refines only the top-10 candidates ranked on
+  **pre-ICP** wall fitness. Fiducial candidates are unpolished marker-derived poses competing against
+  ~34 RANSAC candidates, so the prior is mostly eliminated *before* the judge, not by it.
+
+**Uncommitted in `dimos/`:** `utils/logging_config.py` + `utils/test_logging_config.py` (bug 2),
+`mapping/relocalization/eval_module.py`, `utils/cli/cameracalibrate/` (the calibration lane, §14).
+`mapping/relocalization/test_eval_module.py` is another lane's file — not touched by the logging fix.
+
+**Open items:**
+- [ ] **Hardware run** — still zero. Every number above is replay. Blocks the PR's How-to-Test and
+      Evidence sections coming off INCOMPLETE.
+- [ ] **Clean recording** — hk_village3's single 1.38 m-spread tag is the weakest possible prior. Need
+      a multi-tag capture (several distinct ids, short lever arms) before any accuracy claim.
+- [ ] **Top-K decision (leshy's call)** — reserved slots for prior-proposed candidates, or ICP-polish
+      priors before the pre-ICP ranking? Open design decision #1 in the PR body.
+- [ ] **Fitness-collapse gate** — the 0.83 → 0.59 drop fires exactly when the fix goes wrong and
+      nothing consumes it; a relative-drop or per-source threshold is the candidate fix.
+- [ ] Arbiter knobs per-prior vs a `judge:` block; `-o` list indexing (PR open decisions #2, #3).
+
+## 16. THIS MORNING (2026-07-22 handoff) — do these in order
+
+1. **Demo prep for leshy (the call).** `trial/DEMO_leshy.md` is the runbook: three blueprints in order,
+   copy-pasteable replay commands, results table, talking points in §6. Two things to do before the
+   call: dry-run blueprint 2 once (~110 s) so the viewer is warm, and note the startup gotcha —
+   `dimos run` dies on `sudo ip link set lo multicast on`, so prefix `PYTEST_VERSION=1` or enable
+   loopback multicast on the host.
+2. **Commit + push the local work (your call).** `27d50ac72` + `3471c8cae` are unpushed; the bug-2
+   logging fix and its test are uncommitted. Pushing moves PR #3137 off head `cdbacdd16`.
+3. **Update the PR #3137 body** from `trial/PR_priors_config.md` — it now carries three open design
+   decisions (top-10 pre-ICP cut is #1), the corrected sf_office Evidence row, and the parser-bug
+   correction note.
+4. **Hardware run** — the one gap that changes the PR's status. Needs greenwald + a surveyed room.
+5. Calibration lane steps from §14 (ChArUco capture, find-X) still stand and are independent.
