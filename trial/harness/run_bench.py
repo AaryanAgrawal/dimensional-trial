@@ -145,7 +145,7 @@ def _eval_one(i: int) -> dict:
         "n_pts": int(len(s.body_pts)), "reached_gate": bool(s.reached_gate),
         "success": bool(err_t < SUCCESS_T_M and err_r < SUCCESS_R_DEG),
         "accepted_at_gate": bool(fitness >= FITNESS_GATE),
-        "T_est": np.asarray(T).tolist(),  # marker-referee scoring needs the pose itself
+        "T_est": np.asarray(T).tolist(),  # scoring needs the pose itself
     }
 
 

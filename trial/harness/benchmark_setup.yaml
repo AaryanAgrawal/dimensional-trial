@@ -1,11 +1,8 @@
 # THE RELOCALIZATION BENCHMARK — canonical setup (v1, 2026-07-17, Aaryan + night session)
 #
-# Taxonomy (Aaryan, Jul 17):
-#   relocalization benchmark  = THIS: marker-truth, offline referee. Physical tags
-#                               as external truth; grades PGO and any relocalizer.
-#   relocalization confidence = separate, real-time track: pluggable priors -> one
-#                               judge -> one published score; decides between/fuses
-#                               priors on-robot. The benchmark calibrates it offline.
+# This file is a MANIFEST: which recordings exist, what role each plays, which are
+# excluded and why, and each one's lane wiring. No code reads it — trial/PLAN.md:17
+# uses it as the same-scene pair list for the premap benchmark.
 #
 # Grading method (canonical, see trial/harness/BENCHMARK_METHOD.md):
 #   Grade the REAL pipeline under `dimos --replay run <blueprint>` via replay_bench.py +
@@ -15,21 +12,17 @@
 #   its body-frame re-anchor manufactured the phantom mid360 gravity-gate bug. Kept for its
 #   archived SILVER numbers only; do not produce new numbers on it.
 #
-# Tag policy (the decorrelation rule):
-#   Each recording designates ONE referee tag — the "start/end tag" — used ONLY for
-#   benchmarking. It NEVER enters the marker map and NEVER produces fiducial fixes.
-#   All other tag ids are the live-fiducial set (marker map + FiducialPrior fixes).
-#   Selection rule: the id with the widest start-to-end sighting coverage across the
-#   run (strongest revisit anchor), validated single-instance by the spatial-cluster
-#   check (duplicate physical ids invalidate an id as referee — see hk_village2/4).
-#
-# Referee decisions (from detection sweeps over 3 candidate runs, 2026-07-17):
+# DEPRECATED 2026-07-22: the referee-tag split (one id per recording held out to grade
+# against) is gone, with its instruments (referee_verdict.py, cluster_gate.py,
+# show_benchmark.py, fig3_hardened.py, fastlio_lane_markers.py) — last present at git
+# b713aec. Relocalization is scored against the PREMAP now. Per-recording `referee_tag:`
+# and `fiducial_tags:` were merged into one `tags:` list; role prose below still names
+# the historical referee decisions where they explain an exclusion.
 
 recordings:
   recording_go2_mid360_2026-05-29_4-45pm-PST:
     role: primary multi-tag benchmark run (BOTH lidar lanes in one file)
-    referee_tag: 4          # seen 0.0% -> 98.7% of the 780 s run; span 769.6 s
-    fiducial_tags: [0, 1, 2, 6, 7]   # id 6 is weak (24.5 s span) but valid
+    tags: [0, 1, 2, 4, 6, 7]   # id 6 is weak (24.5 s span) but valid; id 4 spans 769.6 s
     lanes:
       go2:
         lidar: lidar
@@ -46,52 +39,47 @@ recordings:
   markers_go2:
     role: REMOVED from the set (Aaryan Jul 17) — lidar obs carry no poses, so it
           can never grade PGO or the module; detector-dev recording only
-  hk_village1: {role: referee-only, referee_tag: 10, fiducial_tags: []}
-  hk_village3: {role: referee-only, referee_tag: 10, fiducial_tags: []}
-  hk_village5: {role: referee-only, referee_tag: 10, fiducial_tags: []}
-  hk_village6: {role: referee-only, referee_tag: 10, fiducial_tags: []}
+  hk_village1: {role: single-tag run, tags: [10]}
+  hk_village3: {role: single-tag run, tags: [10]}
+  hk_village5: {role: single-tag run, tags: [10]}
+  hk_village6: {role: single-tag run, tags: [10]}
   hk_village2: {role: EXCLUDED, reason: 3 physical tags share id 10 (cluster check)}
   hk_village4: {role: EXCLUDED, reason: 2 physical tags share id 10 (cluster check)}
   hk_building_all_around:
     role: CONFIDENCE-EVAL ONLY, NOT a benchmark run (Aaryan Jul 19 reclassification —
-          tag-free means no external referee, so truth is self-referential PGO-silver;
+          tag-free means no external anchor, so truth is self-referential PGO-silver;
           this grades the relocal MODULE's confidence, never PGO itself; kept for
           environment diversity in the thresholds-don't-transfer finding) —
           measured 83.3% (20/24) ransac, 0.028 m median on successes, 24.6 s median
           solve on the 1.4M-pt premap; failures at fitness 0.32-0.66 (the 0.45 gate
           correctly rejects 3 of 4 HERE — unlike the villages); only 3 loop closures,
-          truth thin; NO marker referee (VERIFIED tag-free, 0/663 sampled frames)
-    referee_tag: null
+          truth thin (VERIFIED tag-free, 0/663 sampled frames)
+    tags: []
   go2_hongkong_office:
     role: CONFIDENCE-EVAL ONLY, NOT a benchmark run (same Jul 19 reclassification —
-          no referee, self-referential PGO-silver truth) — no tags (verified, 0/398
-          sampled frames);
+          no external anchor, self-referential PGO-silver truth) — no tags (verified,
+          0/398 sampled frames);
           measured 80% (32/40, full denominator) ransac, 0.033 m median on
           successes, 41 s median solve on the 850k-pt premap
-    referee_tag: null
+    tags: []
   china_office: {role: EXCLUDED, reason: Aaryan 2026-07-17 — do not use}
 
   sf_office_go2_20260718_survey1:
-    role: "TIER B PROVISIONAL (red-team Jul 19: referee-19 got only 2 clean revisits, not
-      the >=3 this file's own suite_v2_acceptance requires; referee floor ~3.6 m and
-      referee∩fiducial overlap = 0, so NO decorrelated verdict from it — recapture with
-      referee+fiducial co-visible >=3x). FIRST SF-office recording (454 Natoma). go2-only rig,
+    role: "TIER B. FIRST SF-office recording (454 Natoma). go2-only rig,
       13.6 min continuous (max stream gap 1.9 s), survey pass + loop + mid-run kidnap.
       Streams: color 4105@5.0 Hz / lidar 5479@6.7 Hz / odom 15184@18.5 Hz. Live census
       during capture (spy on marker TFs): 6 physical tags, all multi-sighted.
       Local file: trial/harness/out/robot_day/ (2.38 GB; not in the shared catalog yet
       — no-remote rule)."
-    referee_tag: 19         # the pre-existing wall start/end tag (Aaryan); >=3 revisit
-                            # waves observed live; chosen BEFORE any grading
-    fiducial_tags: [2, 3, 5, 6, 7]   # the Jul 18 printed 100 mm singles
+    tags: [2, 3, 5, 6, 7, 19]   # 2-7 = the Jul 18 printed 100 mm singles;
+                                # 19 = the pre-existing wall start/end tag (Aaryan)
 
   # === Flashdrive mid360 runs — SELECTED + registered night Jul 20 (autonomous session) ===
   # Source: /media/dimos/datasets/mid360_recordings/ (non-china). Per-recording detection
   # sweeps in the session log. Purpose: attack caveat #1 (fiducial-on-mid360 evidence was a
   # single 2026-05-29 episode) with more marker-bearing mid360 runs, plus baseline gravity-
-  # gate tests. EVERY marker referee below is PROVISIONAL: protocol.validity_gate (1.0 m
-  # single-linkage spatial-cluster duplicate-id check, cf. hk_village2/4 exclusions) is
-  # UNRUN — run markers.py per recording before trusting any referee id or building any
+  # gate tests. Duplicate-id risk below is UNCHECKED (1.0 m single-linkage spatial-cluster
+  # check, cf. hk_village2/4 exclusions) — run markers.py per recording before building any
   # marker_map.yaml. Marker ids are certain; per-id sighting totals are floors (guided
   # frame samples, not full-stream scans). Dropped this round (logged, not registered):
   # mid360_outdoor_small_loop_20260528 (weakest gravity — 49 deg, single tag 7);
@@ -101,8 +89,8 @@ recordings:
   #   intrinsics `_camera_info_static()` (markers.py:90); realsense frames are 848x480 ->
   #   DetectMarkers skips on size mismatch -> 0 detections. Needs the detector pointed at
   #   realsense K/D (harness change, out of this select+register scope). Near-dup loop of
-  #   huge_loop_go2 (same ids 10/11/13/21/29). WORTH benching once wired: its referee 13
-  #   got 3 revisit waves — the only candidate that clears referee_revisits>=3).
+  #   huge_loop_go2 (same ids 10/11/13/21/29). WORTH benching once wired: its tag 13
+  #   got 3 revisit waves, the richest revisit coverage of any candidate).
 
   mid360_gir_stairs2_20260602:
     role: "TIER B PROVISIONAL — single-episode mid360 marker run (rig = mid360; go2+mid360
@@ -110,12 +98,10 @@ recordings:
       2119 s (>=600 tier-B duration). 9 distinct AprilTag ids — the richest mid360 marker
       run found on the flashdrive. DUPLICATE-ID RISK HIGH: stairwells commonly reuse a tag
       per landing (the exact hk_village2/4 exclusion pattern) — the 1.0 m single-linkage
-      spatial-cluster gate MUST pass before referee 11 is trusted OR any marker map is
-      built; if any id proves multi-instance this recording is EXCLUDED, not benched.
-      Referee 11 = widest span (0-2093 s, full run); PROVISIONAL. Referee >=3-revisit gate
-      unconfirmed. Referee id chosen from the detect sweep BEFORE any grading (protocol)."
-    referee_tag: 11          # full-run span (0-2093 s); PROVISIONAL — cluster gate unrun
-    fiducial_tags: [10, 12, 13, 21, 28, 29, 30, 31]
+      spatial-cluster check MUST pass before any marker map is built; if any id proves
+      multi-instance this recording is EXCLUDED, not benched. Tag 11 spans the full run
+      (0-2093 s)."
+    tags: [10, 11, 12, 13, 21, 28, 29, 30, 31]
     lanes:
       go2:
         lidar: lidar
@@ -132,13 +118,11 @@ recordings:
   mid360_gir_park1_20260602:
     role: "TIER B PROVISIONAL — single-episode mid360 marker run (rig = mid360; go2+mid360
       dual-lane recording, go2 front cam 1280x720 for markers). Outdoor park loop, 1202 s
-      (>=600 tier-B duration). 5 distinct fiducial ids. Referee 21 = widest start-to-end
-      span (seen 34 s AND 1197 s); PROVISIONAL — spatial-cluster duplicate-id gate UNRUN
-      (outdoor space could host repeated physical tags), and referee >=3-revisit gate
-      unconfirmed (start+end coverage in a 200-frame sample; run markers.py +
-      referee_verdict.py to confirm >=3 before trusting 21). Referee chosen BEFORE grading."
-    referee_tag: 21          # widest span (34-1197 s, start+end); PROVISIONAL
-    fiducial_tags: [11, 12, 29, 30]
+      (>=600 tier-B duration). 5 distinct tag ids; 21 has the widest start-to-end span
+      (seen 34 s AND 1197 s). Spatial-cluster duplicate-id check UNRUN (outdoor space
+      could host repeated physical tags); revisit coverage is start+end only in a
+      200-frame sample — run markers.py before building a marker map."
+    tags: [11, 12, 21, 29, 30]
     lanes:
       go2:
         lidar: lidar
@@ -154,15 +138,12 @@ recordings:
   mid360_huge_loop_go2_20260604:
     role: "TIER B PROVISIONAL — single-episode mid360 marker run (rig = mid360; go2+mid360
       dual-lane recording, go2 front cam 1280x720 for markers). ~53 min huge loop, 3206 s
-      (>=600 tier-B duration). 5 distinct fiducial ids, each physically revisited exactly
-      TWICE (loop bookends ~1000-1600 s apart). Referee 13 = the start/end tag; only 2
-      revisit waves -> FAILS the suite_v2_acceptance referee_revisits>=3 gate (same
-      limitation as sf_office survey1) -> PROVISIONAL, no fully-decorrelated visit-level
-      verdict. Spatial-cluster duplicate-id gate UNRUN (risk LOW — each id's two clusters
-      are a coherent out-and-back, not co-temporal duplicates — but run before map-build).
-      Referee chosen from the detect sweep BEFORE any grading (protocol)."
-    referee_tag: 13          # start/end tag; PROVISIONAL — only 2 revisit waves (<3 gate)
-    fiducial_tags: [10, 11, 21, 29]
+      (>=600 tier-B duration). 5 distinct tag ids, each physically revisited exactly
+      TWICE (loop bookends ~1000-1600 s apart); 13 is the start/end tag. Only 2 revisit
+      waves, so visit-level statistics are bookends, not a sample. Spatial-cluster
+      duplicate-id check UNRUN (risk LOW — each id's two clusters are a coherent
+      out-and-back, not co-temporal duplicates — but run before map-build)."
+    tags: [10, 11, 13, 21, 29]
     lanes:
       go2:
         lidar: lidar
@@ -181,9 +162,9 @@ recordings:
       relocalization fails on a tilted-sensor lane at baseline — expect ransac ~0/N, median
       tens of meters (relocalize.py GRAVITY_TILT_MAX_DEG=10 discards the geometrically-
       correct tilted candidates and keeps upright-wrong ones). 174 m outdoor grassy-field
-      walk, 752 s. Only 2 fiducial ids (18,21), each revisited 2x -> NOT a marker bench
-      (needs >=3 ids + >=3 referee revisits); markers ignored here."
-    referee_tag: null
+      walk, 752 s. Only 2 tag ids (18,21), each revisited 2x -> too thin for a marker
+      bench; markers ignored here."
+    tags: [18, 21]
     lanes:
       mid360_fastlio:
         lidar: fastlio_lidar
@@ -197,8 +178,8 @@ recordings:
       to 3.4 m) — a distinct terrain stressor vs the flat grassy-field test. Selected (night
       Jul 20) to show plain RANSAC relocalization fails on a tilted-sensor lane at baseline
       (expect ransac ~0/N, median tens of meters). 763 s. Only ONE tag id (21) -> NOT a
-      marker bench (no >=2-fiducial + distinct-referee split possible); markers ignored here."
-    referee_tag: null
+      marker bench; markers ignored here."
+    tags: [21]
     lanes:
       mid360_fastlio:
         lidar: fastlio_lidar
@@ -208,18 +189,13 @@ recordings:
           The go2 odom lane is level (2.2 deg) — gravity test lives on this fastlio lane."
 
 protocol:
-  revisit_test: same-referee-tag pairwise distance, stratified by time gap
-                (0-10 / 10-30 / 30-60 / 60+ s); raw odometry vs corrected;
-                report per-visit composition, never aggregate alone
-  validity_gate: spatial-cluster check per id (single-linkage, 1.0 m) before
-                 trusting any id as referee or map entry
-  truth_policy: PGO poses are SILVER, qualified per recording by the revisit
-                test; referee-tag agreement is co-truth; decimeter floor on
-                long accumulation windows; ~6 cm PGO run-to-run wobble
+  truth_policy: PGO poses are SILVER; decimeter floor on long accumulation
+                windows; ~6 cm PGO run-to-run wobble between two independent
+                builds of the same recording
   determinism: per-frame seeds = frame_idx; OMP_NUM_THREADS=1 before open3d
                import; full denominator (crashes/no-candidates = failures)
-  handoff: sections + fixes (fiducial tags only) feed the relocalization-
-           confidence harness (run_bench.py / analyze.py)
+  handoff: sections + fixes feed the relocalization-confidence harness
+           (run_bench.py / analyze.py)
 
 # --- v2 target set (Aaryan, Jul 18: "we should have a good set for the benchmark") ---
 # The current set is TIER A = adversarial shorts (lesh's own description: very short
@@ -228,24 +204,19 @@ protocol:
 # starts TIER B: operational recordings. A recording qualifies for tier B only if
 # ALL of these hold (they are pass criteria for the RECORDING, not the robot):
 suite_v2_acceptance:
-  tag_split: ">=2 fiducial tags in the marker map + 1 DISTINCT referee id, unique ids per space"
   duration_s: ">=600 (10 min); target 10-20 min of walking-speed operation, not stress handling"
-  referee_revisits: ">=3 returns to the referee tag (visit-level statistics need n>=3, not bookends)"
   scenarios_in_run: "normal loop + one kidnap segment + one power-on-near-tag start, in the same recording where practical"
   rigs: "capture each space twice when hardware allows: go2-only AND go2+mid360"
-  provenance: "recording name states date/place/rig; referee id chosen BEFORE grading, logged here"
+  provenance: "recording name states date/place/rig, logged here"
 tier_a_legacy: [hk_village1, hk_village3, hk_village5, hk_village6,
                 recording_go2_mid360_2026-05-29_4-45pm-PST]
 confidence_eval_only: [hk_building_all_around, go2_hongkong_office]  # tag-free: module
                 # confidence evals vs PGO-silver — NOT benchmark-grade (Jul 19)
 tier_b_planned: "robot day Jul 18, SF office — target 4-6 recordings (2 rigs x 2-3 runs); added here as they land"
-# Tier-B registration template (copy under `recordings:` BEFORE building any marker map —
-# make_rehearsal_marker_map.py reads the referee id from here; an unregistered recording
-# skips the referee-refusal safety entirely):
+# Tier-B registration template (copy under `recordings:`):
 #   sf_office_go2_<date>_survey1:
 #     role: tier B operational (SF office, go2-only rig)
-#     referee_tag: 10          # grades only — never in any marker_map.yaml
-#     fiducial_tags: [0, 1, 2, 3, 4, 5]
+#     tags: [0, 1, 2, 3, 4, 5]
 
 publication_intent: push under a "relocalization benchmark" home on GitHub
                     (Aaryan, Jul 17 — "maybe"; NOT pushed yet, no-remote rule)

@@ -25,10 +25,10 @@ for rec in $RUNS; do
 
   uv run python $H/prep.py "$rec" --n-queries $NQ $EXTRA 2>&1 | grep -E "PGO:|premap:|sections:|wrote|Traceback|Error" | tee -a $LOG
 
-  # Marker stage only where tags exist (referee split per benchmark_setup.yaml)
+  # Marker stage only where tags exist (see benchmark_setup.yaml)
   case "$rec" in
     hk_village*|$MID360)
-      uv run python $H/markers.py "$rec" 2>&1 | grep -E "detections:|referee|marker map|fiducial fixes|wrote|note|Traceback" | tee -a $LOG ;;
+      uv run python $H/markers.py "$rec" 2>&1 | grep -E "detections:|marker map|fiducial fixes|wrote|note|Traceback" | tee -a $LOG ;;
     *) echo "(no tags — PGO-truth-only run)" | tee -a $LOG ;;
   esac
 
@@ -45,7 +45,6 @@ done
 
 echo "=== cross-recording + figures ===" | tee -a $LOG
 uv run python $H/cross_recording_confidence.py 2>&1 | tail -5 | tee -a $LOG
-uv run python $H/show_benchmark.py 2>&1 | grep -E "hk_|figure:" | tee -a $LOG
 uv run python $H/allaround_profile.py hk_building_all_around 2>&1 | grep -E "path_length|correction_median|wrote" | tee -a $LOG
 uv run python $H/allaround_profile.py go2_hongkong_office 2>&1 | grep -E "path_length|correction_median|wrote" | tee -a $LOG
 uv run python $H/make_rrd.py $MARKER_RUNS_DEFAULT 2>&1 | grep wrote | tee -a $LOG

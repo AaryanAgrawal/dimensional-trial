@@ -317,9 +317,6 @@ def fig_livox() -> None:
     okj = [r for r in res["fiducial_judge"] if r["status"] == "ok"]
     s_fix, n_fix = rate(res["fiducial_judge"], lambda r: r["frame_idx"] in fixed_frames)
     med_ok = float(np.median([r["err_t"] for r in okj]))
-    ref = (ROOT / "trial/harness/out/robotday_build/referee_verdict_fastlio.log").read_text()
-    m = re.search(r"REFEREE VERDICT \(tag (\d+), (\d+) sightings, consensus rms ([\d.]+) m", ref)
-    t_true_vs = re.search(r"T_true \(truth\): vs consensus median ([\d.]+) m", ref).group(1)
 
     groups = strata_groups(res, npts)
     for cfg, _, _ in CONFIGS:
@@ -342,8 +339,8 @@ def fig_livox() -> None:
     grouped_bars(ax, groups)
     footer(fig, [
         "method: offline sections bench (trial/harness/run_bench.py), replay rung — real recorded mid360 sensors, lane fastlio_lidar re-posed from fastlio_odometry payloads; seeds=frame_idx; OMP_NUM_THREADS=1; SEED=0",
-        f"truth: PGO-silver, referee-certified on this lane — T_true vs tag-{m.group(1)} consensus ({m.group(2)} sightings, rms {m.group(3)} m): median {t_true_vs} m (the referee tag is never in any marker map)",
-        f"src: out/results/{LX}.{{ransac,ransac_fiducial,fiducial_judge}}.json + prepared/{LX}.pkl + referee_verdict_fastlio.log; git dimos {sums['ransac']['git_rev_dimos']} trial {sums['ransac']['git_rev_trial']}",
+        "truth: PGO-silver on this lane, full denominator (crashes / no-fix sections count as failures)",
+        f"src: out/results/{LX}.{{ransac,ransac_fiducial,fiducial_judge}}.json + prepared/{LX}.pkl; git dimos {sums['ransac']['git_rev_dimos']} trial {sums['ransac']['git_rev_trial']}",
     ])
     out = FIGS / "robotday_livox.png"
     fig.savefig(out)

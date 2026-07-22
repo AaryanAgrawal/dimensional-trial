@@ -62,7 +62,7 @@ tilted mid360 rig that manufactured a 52° tilt and a phantom "gravity-gate bug"
 in production. A full night went into "fixing" a bug in our own test scaffolding. Testing a
 re-implementation tests the re-implementation.
 
-So: the harness may **orchestrate** (pick recordings, hold PGO/referee-tag truth, score, analyze)
+So: the harness may **orchestrate** (pick recordings, hold PGO/premap truth, score, analyze)
 and may call real dimos for the legitimate steps (premap = `dimos map global --pgo --export`), but
 it must **grade fixes the real pipeline published**, never fixes it computed itself. If you cannot
 test something through real dimos, say so — do not substitute a look-alike.

@@ -24,7 +24,7 @@ export const trial = {
   deliverables: [
     "Phase 1 — universal confidence reading (built + verified)",
     "Phase 2 — fiducial prior (built; rehearsed in replay; first IRL recording graded Jul 18 — live wins still zero, judged honestly)",
-    "Phase 3 — offline benchmark, referee-tag truth (active; tier A: 7 recordings + first tier-B operational recording landed)",
+    "Phase 3 — offline benchmark (tier A: 7 recordings + first tier-B operational recording landed). Referee-tag truth retired 2026-07-22; scoring is against the premap now, and the referee-era numbers below stand as recorded but cannot be rebuilt",
     "Phase 4 — fusion of relocalization priors (pending — after this ticket)",
   ],
   pr: {
@@ -44,7 +44,7 @@ export const heroFigures: HeroFigure[] = [
     src: "/dimensional/regime_map.png",
     title: "When the global search wins — and when a marker does",
     takeaway:
-      "Below the 50k-point gate today's robot won't even try, a marker prior lifts pooled replay success 31%→69% at sub-30k submaps; above the gate the search roughly doubles but tops out ~50% where the space aliases — markers cover its blind spots (replay, n=88, referee excluded).",
+      "Below the 50k-point gate today's robot won't even try, a marker prior lifts pooled replay success 31%→69% at sub-30k submaps; above the gate the search roughly doubles but tops out ~50% where the space aliases — markers cover its blind spots (replay, n=88, graded tag held out of every marker map; referee-era measurement, retired 2026-07-22).",
   },
   {
     src: "/dimensional/gravity_gate_stairs1_before_after.png",
@@ -127,11 +127,11 @@ export const phase2 = {
     "Camera module → world_map_fix stream → prior: composed by name+type autoconnect; wiring proven by a round-trip test at 1e-9 (done)",
     "Combined blueprint unitree-go2-fiducial-relocalization; full live chain rehearsed in replay on two recordings (done)",
     "Live fix quality measured → ambiguity gate 2.0→5.0 + the lever rule: survey tags near the map origin, prefer two in view (done)",
-    "IRL validation on go2 — referee-graded, the run recorded into the suite (done Jul 18 — see the robot-day section); the mid360 lane measured in replay of a recorded walk, not IRL yet",
+    "IRL validation on go2 — tag-graded, the run recorded into the suite (done Jul 18 — see the robot-day section); the mid360 lane measured in replay of a recorded walk, not IRL yet",
   ],
   lines: [
     "FiducialPrior — age-gated marker fixes into the shared judge (PR #3016)",
-    "Decorrelated result (the referee tag never helps, only grades): 52.5% → 72.5% on a hard 100 m outdoor walk (n=40, full denominator, replay) — sections with marker coverage went 7/15 → 15/15 while all 25 uncovered sections returned byte-identical answers, proving the gain is the markers",
+    "Decorrelated result (the graded tag is held out of every marker map, so it never helps): 52.5% → 72.5% on a hard 100 m outdoor walk (n=40, full denominator, replay; referee-era measurement — the instrument was retired 2026-07-22, so this stands as recorded but cannot be rebuilt) — sections with marker coverage went 7/15 → 15/15 while all 25 uncovered sections returned byte-identical answers, proving the gain is the markers",
     "Rescues were catastrophic-to-centimeters: 6.7–72 m wrong-basin solves pulled to 0.05–0.10 m",
     "Markers visible → the global search can stand down: 100% of attempted at ~9× faster on that walk; coverage (not accuracy) is the limiter",
   ],
@@ -242,7 +242,7 @@ export const evidence: EvidenceSection[] = [
     plan: {
       label: "Phase 3 — offline confidence benchmark (active) · plan",
       items: [
-        "Referee / fiducial tag split: one physical tag per space only grades, never helps; v2/v4 excluded for duplicate ids (done)",
+        "Referee / fiducial tag split: one physical tag per space only grades, never helps; v2/v4 excluded for duplicate ids (done — RETIRED 2026-07-22: this whole section is the historical method, superseded by held-out premap scoring; the figures and numbers below stand as recorded and cannot be rebuilt)",
         "120-section recovery benchmark + decorrelated retest; every headline number adversarially re-derived (done)",
         "PGO-as-truth qualifier: the revisit test, hardened to 5 fresh PGO runs with caveats printed on the figure (done)",
         "Every IRL run is recorded and re-graded here — the suite grows from reality (standing)",
@@ -294,7 +294,7 @@ export const evidence: EvidenceSection[] = [
       {
         title: "When is each source good? The regime map — pooled across two recordings, decorrelated",
         explanation:
-          "Below the 50k gate (where the robot won't even try today) a marker prior lifts pooled success 31%→69% at sub-30k submaps; above the gate the search roughly doubles but tops out ~50% because self-similar spaces alias — confident-wrong is not only a sparse-submap failure. Markers cover exactly the search's blind spots (n=88, full denominator, referee excluded).",
+          "Below the 50k gate (where the robot won't even try today) a marker prior lifts pooled success 31%→69% at sub-30k submaps; above the gate the search roughly doubles but tops out ~50% because self-similar spaces alias — confident-wrong is not only a sparse-submap failure. Markers cover exactly the search's blind spots (n=88, full denominator, graded tag held out; referee-era measurement, retired 2026-07-22).",
         src: "/dimensional/regime_map.png",
       },
     ],
@@ -331,12 +331,12 @@ export const evidence: EvidenceSection[] = [
     heading:
       "Robot day, IRL: on the first operational recording markers rescue again offline — and live, the judge kept every marker answer honest",
     intro:
-      "First tier-B recording, captured today: SF office, go2-only rig, 13.6 min continuous, five printed tags plus a pre-existing wall tag as referee — chosen before any grading — with a survey pass, a loop, and a mid-run kidnap in one run. The same night it was graded offline against PGO-silver truth and the live stack was replayed once per arm (prior ON / prior OFF). Four results, one per figure below — each carrying its own truth caveat in the same sentence.",
+      "First tier-B recording, captured today: SF office, go2-only rig, 13.6 min continuous, five printed tags plus a pre-existing wall tag held out for grading — chosen before any grading — with a survey pass, a loop, and a mid-run kidnap in one run. The same night it was graded offline against PGO-silver truth and the live stack was replayed once per arm (prior ON / prior OFF). Four results, one per figure below — each carrying its own truth caveat in the same sentence.",
     figures: [
       {
         title: "SF office survey — the offline verdict on the first operational recording",
         explanation:
-          "Fiducial flips 5 sections fail→success, 0 the other way (27%→38%, n=48) — but honestly weighed: those 5 are one ~70 s corridor episode (McNemar p=0.06, not significant at n=48), they all sit in the 0.25–1 m truth-wobble band while the clean-truth stratum is unchanged (7/17→7/17), and the referee tag covered zero fiducial-carrying sections — so this is one truth-correlated episode, not five independent wins. Also composition-limited: 79% of sections are below the live 50k gate the robot won't attempt; the live-comparable gate-reached rate is 3/10. The signal is directionally consistent with the decorrelated walk; the strength is not there yet — a cleaner recording is the fix.",
+          "Fiducial flips 5 sections fail→success, 0 the other way (27%→38%, n=48) — but honestly weighed: those 5 are one ~70 s corridor episode (McNemar p=0.06, not significant at n=48), they all sit in the 0.25–1 m truth-wobble band while the clean-truth stratum is unchanged (7/17→7/17), and the held-out tag covered zero fiducial-carrying sections — so this is one truth-correlated episode, not five independent wins. (Referee-era measurement: the instrument that produced this verdict and its caveats was retired 2026-07-22.) Also composition-limited: 79% of sections are below the live 50k gate the robot won't attempt; the live-comparable gate-reached rate is 3/10. The signal is directionally consistent with the decorrelated walk; the strength is not there yet — a cleaner recording is the fix.",
         src: "/dimensional/robotday_sf_bench.png",
       },
       {
@@ -379,7 +379,7 @@ export const evidence: EvidenceSection[] = [
     heading:
       "Trust the ruler, but measure it: PGO truth is silver — qualified per recording, never worse at loop returns on the villages, wobble measured",
     intro:
-      "Every offline number above is graded against PGO-corrected poses, so the benchmark qualifies its own ruler per recording rather than assuming it. Across the four valid villages PGO never worsened loop-return agreement (improved three, tied one — replay, referee-tag truth); its run-to-run wobble is ~6 cm on the villages but reaches 2.3 m late in the SF run (measured from two independent rebuilds — why the robot-day section marks t>600 s calls truth-limited); and the tune is in-sample on these villages, with every caveat printed on the hardened figure itself. The hardened 5-run figure replaced an earlier 3-run version that failed an independent-rerun acceptance test — the acceptance test is part of the method.",
+      "Every offline number above is graded against PGO-corrected poses, so the benchmark qualifies its own ruler per recording rather than assuming it. Across the four valid villages PGO never worsened loop-return agreement (improved three, tied one — replay, held-out-tag truth; referee-era measurement, instrument retired 2026-07-22); its run-to-run wobble is ~6 cm on the villages but reaches 2.3 m late in the SF run (measured from two independent rebuilds — why the robot-day section marks t>600 s calls truth-limited); and the tune is in-sample on these villages, with every caveat printed on the hardened figure itself. The hardened 5-run figure replaced an earlier 3-run version that failed an independent-rerun acceptance test — the acceptance test is part of the method.",
     figures: [
       {
         src: "/dimensional/revisit_medians_hardened.png",
@@ -441,7 +441,7 @@ export const openQuestions: string[] = [
   "Premap freshness: when localization confidence is high, should well-localized scans write back into the map (content updates, frame frozen), and what confidence bar gates the pen?",
   "Fiducial deployment policy: enforce unique tag ids per space at install time, or teach the prior multi-hypothesis handling for duplicate ids?",
   "Online PGO: worth building now for the exploration lane, or after the mid360 fiducial-first runtime ships?",
-  "Decorrelation at scale: record a fresh purpose-built walk (unique ids, referee at start/end, PointLIO aboard) to grow the benchmark set beyond one multi-tag recording?",
+  "Decorrelation at scale: record a fresh purpose-built walk (unique ids, a held-out tag at start/end, PointLIO aboard) to grow the benchmark set beyond one multi-tag recording?",
   "Marker map storage: stream-published for now vs a persistent K/V store under the map — when to switch?",
   "Where should the relocalization benchmark live long-term (own repo, docs page, CI job on recordings)?",
 ];
@@ -534,7 +534,7 @@ export const glossary: { term: string; def: string }[] = [
   },
   {
     "term": "referee tag",
-    "def": "one tag per space used only for grading — never in the marker map, never a fix."
+    "def": "RETIRED 2026-07-22. One tag per space used only for grading — never in the marker map, never a fix. Relocalization is scored against the premap now; the numbers this method produced are labelled referee-era."
   },
   {
     "term": "ransac",
@@ -567,7 +567,7 @@ export const provenance: Knob[] = [
   { knob: "min_loop_detect_duration (classic)", value: "5.0 s", status: "arbitrary", note: "autoresearch measured 3.0 s better on the eval (33.66→31.26 m); classic keeps 5.0 with no recorded reason" },
   { knob: "ISAM2 relinearizeThreshold / relinearizeSkip", value: "0.01 / 1", status: "arbitrary", note: "departs from GTSAM defaults (0.1/10) with no recorded reason; the only ISAM2 setting ever tested is the Dogleg switch" },
   { knob: "eval marker_max_speed gate", value: "0.5 m/s", status: "arbitrary", note: "set in 'detector tuned' — verified EMPTY commit body; held fixed by autoresearch mandate; trial harness re-uses it verbatim" },
-  { knob: "eval marker_smoothing", value: "7.5 s", status: "arbitrary", note: "same empty-body 'detector tuned' origin; the trial referee deliberately runs 0.0 'so every sighting counts' — divergence, not validation" },
+  { knob: "eval marker_smoothing", value: "7.5 s", status: "arbitrary", note: "same empty-body 'detector tuned' origin; the trial marker pipeline deliberately runs 0.0 'so every sighting counts' — divergence, not validation" },
   { knob: "min_tags (tag-corroboration gate default)", value: "1", status: "arbitrary", note: "exposure driven by a review comment, but 1 = no corroboration required before publishing a world→map fix — simply the permissive minimum" },
   { knob: "ArUco detector parameters", value: "cv2.aruco.DetectorParameters() — all OpenCV library defaults", status: "arbitrary", note: "no in-repo tuning of any detector parameter, ever; PR #2107's 4 m real-life detection is usage evidence, not parameter selection" },
   { knob: "GRAVITY_TILT_MAX_DEG", value: "10.0 deg", status: "partial", note: "downgraded from tested on re-read: the single probe tied success and median (5-micron delta), decided on a third-order tiebreak" },

@@ -2,7 +2,7 @@
 
 **The one rule.** The relocalization benchmark grades what the shipped dimos pipeline
 publishes under `dimos --replay run <blueprint>`. The harness may **orchestrate** (pick
-recordings, hold PGO/referee truth, score, analyze) and may **call real dimos for the
+recordings, hold PGO/premap truth, score, analyze) and may **call real dimos for the
 legitimate steps** (premap = `dimos map global --pgo --export`; truth = the loop-closure
 `PoseGraph.correction_at`). It must **never re-implement a data-path step** — submap
 building, candidate generation, gravity/wall handling, pose composition, or frame
@@ -57,7 +57,7 @@ uv run --project /home/dimos/dimensional-trial/dimos \
   dimos loop-closure. The replay's `world` frame == the recording's `world_raw` (odom
   origin), so a published `world→map` fix is directly comparable. This is the **reference**,
   external to the system under test — reusing it is correct, not a re-implementation.
-- **Orchestrate + score**: pick recordings, hold referee/fiducial-tag truth, join logs,
+- **Orchestrate + score**: pick recordings, hold premap + PGO truth, join logs,
   compute error, stratify, plot.
 
 ## Audit — the superseded re-implementations (SILVER numbers archived, path retired)

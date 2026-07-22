@@ -15,13 +15,18 @@ from prose. Asserts pin the pooled rates to run_bench's own summaries so a
 stale artifact cannot leave a lying figure. Deterministic: pure reads, no RNG
 (SEED=0 printed per house rule).
 
-Pooled (both decorrelated, referee-tag split, full denominator):
+Pooled (both decorrelated by held-out tag id, full denominator):
   sf_office_go2_20260718_survey1              48 sections  (indoor, aliased)
   recording_go2_mid360_2026-05-29_4-45pm-PST  40 sections  (go2 lidar lane, walk)
 Deliberately EXCLUDED (documented in the footer): the mid360 FAST-LIO lane
 (RANSAC 0/40 is a gravity-gate frame-convention artifact, +fiducial byte-
 identical offline — not a submap-size effect) and hk_village3 (its fiducial arm
-is truth-correlated: its one tag IS the referee under the decorrelation split).
+is truth-correlated: it has only one tag id, so nothing can be held out).
+
+Archived instrument. The run_bench artifacts under out/results this reads were
+produced by the marker-truth benchmark deprecated 2026-07-22 (referee-tag
+scoring, git b713aec); relocalization is now scored against the premap. The
+figure still renders from those saved artifacts, but they cannot be rebuilt.
 
 Run: cd /home/dimos/dimensional-trial/dimos && \
      OMP_NUM_THREADS=1 uv run python ../trial/harness/regime_map.py
@@ -51,7 +56,8 @@ GATE_PTS = 50_000  # module.py MIN_LOCAL_POINTS — the live "don't even try" ga
 BIN_EDGES = [0, 30_000, GATE_PTS, 10**12]  # sub-30k / 30-50k / >=50k
 BIN_LABELS = ["< 30k pts", "30–50k pts", "≥ 50k pts"]
 
-# Pooled recordings: (key, short label). Only decorrelated referee-split runs.
+# Pooled recordings: (key, short label). Only runs whose marker map holds out
+# the graded tag id, so the grade is decorrelated from the prior.
 POOL = [
     ("sf_office_go2_20260718_survey1", "SF office"),
     ("recording_go2_mid360_2026-05-29_4-45pm-PST", "mid360 walk"),
@@ -190,10 +196,9 @@ def main() -> int:
         fd_s[i] / n[i] - ra_s[i] / n[i] for i in range(B)), "sub-30k is not the biggest lift"
 
     ff = parse_flipflop()
-    # SF wobble (truth floor) + walk referee certification, for the footer.
+    # SF wobble (truth floor), for the footer.
     wob = np.array(list(json.loads(
         (RES / f"{POOL[0][0]}.bench_analysis.json").read_text())["wobble_by_frame"].values()))
-    wref = json.loads((MRK / f"{POOL[1][0]}.referee.json").read_text())
     sums = {rec: load(rec, "ransac")[0] for rec, _ in POOL}
 
     p0r, p0f = 100 * ra_s[0] / n[0], 100 * fd_s[0] / n[0]
@@ -272,8 +277,8 @@ def main() -> int:
 
     footer(fig, [
         "method: offline sections bench (trial/harness/run_bench.py), replay rung — real recorded go2 sensors, offline; “with markers” arm = ransac+fiducial (marker candidates age-gated, ranked by the same wall-ICP judge fitness as RANSAC, no source bypass); submap size = ransac-arm n_pts; seeds=frame_idx; OMP_NUM_THREADS=1; SEED=0 (no RNG in plotting)",
-        f"truth: PGO-silver, full denominator (crashes / no-fix sections count as failures). Marker maps derive from the SAME PGO run as truth (deployment-realistic, truth-correlated in derivation); the referee tag (SF id 19 / walk id 4) is excluded from every marker map, so the ID split decorrelates the grade. SF wobble (two independent PGO builds): median {np.median(wob):.2f} m, p90 {np.percentile(wob, 90):.2f} m, max {wob.max():.2f} m late-run. Walk: referee tag-{wref['meta']['referee_tag']} certified ({wref['n_sightings']}-sighting consensus, rms {wref['consensus_rms_m']:.2f} m).",
-        f"pooled (n={sum(n)}): SF office survey1 (48 sec; dimos {sums[POOL[0][0]]['git_rev_dimos']} trial {sums[POOL[0][0]]['git_rev_trial']}) + mid360 walk go2 lidar lane (40 sec; dimos {sums[POOL[1][0]]['git_rev_dimos']} trial {sums[POOL[1][0]]['git_rev_trial']}). Excluded: mid360 FAST-LIO lane (RANSAC 0/40 = gravity-gate frame-convention artifact, +fiducial byte-identical offline — not a submap-size regime) and hk_village3 (fiducial arm truth-correlated: its one tag IS the referee under the split). Aliasing box: robotday_live/{{on,off}}/scorecard.txt.",
+        f"truth: PGO-silver, full denominator (crashes / no-fix sections count as failures). Marker maps derive from the SAME PGO run as truth (deployment-realistic, truth-correlated in derivation); one tag id per recording (SF 19 / walk 4) is held out of every marker map, so the ID split decorrelates the grade. SF wobble (two independent PGO builds): median {np.median(wob):.2f} m, p90 {np.percentile(wob, 90):.2f} m, max {wob.max():.2f} m late-run. Archived: built by the marker-truth benchmark deprecated 2026-07-22 (git b713aec) — not reproducible; relocalization is now scored against the premap.",
+        f"pooled (n={sum(n)}): SF office survey1 (48 sec; dimos {sums[POOL[0][0]]['git_rev_dimos']} trial {sums[POOL[0][0]]['git_rev_trial']}) + mid360 walk go2 lidar lane (40 sec; dimos {sums[POOL[1][0]]['git_rev_dimos']} trial {sums[POOL[1][0]]['git_rev_trial']}). Excluded: mid360 FAST-LIO lane (RANSAC 0/40 = gravity-gate frame-convention artifact, +fiducial byte-identical offline — not a submap-size regime) and hk_village3 (fiducial arm truth-correlated: it has only one tag id, so nothing can be held out). Aliasing box: robotday_live/{{on,off}}/scorecard.txt.",
     ])
 
     out = FIGS / "regime_map.png"

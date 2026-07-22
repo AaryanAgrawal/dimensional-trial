@@ -78,7 +78,7 @@ Next actions.
 | The public presentation page | https://aaryanagrawal.me/dimensional |
 | Trial page source | **`site/` in THIS repo (canonical copy — window 2 owns the website lane, Aaryan Jul 17)**: `page.tsx` (route), `data-dimensional.ts` (content data, lives at `src/data/dimensional.ts` in the portfolio repo), `assets/` (`public/dimensional/` there). Deploy home stays github.com/AaryanAgrawal/portfolio — to ship: copy the three pieces into the portfolio checkout, `npx tsc --noEmit && next build`, `vercel --prod` (scope servicerobotco, project aaryan-portfolio). Edit here first, sync on deploy — keep both in step. |
 | This repo | context/plan/benchmark-protocol/history only — `dimos` sits inside this folder on disk but is its own git repo, gitignored, never tracked as content here |
-| The offline benchmark (sections harness + marker referee) | `trial/harness/` in this repo — §6; tests: `cd dimos && uv run pytest ../trial/harness/tests/ -q` |
+| The offline benchmark (sections harness; premap-scored) | `trial/harness/` in this repo — §6; tests: `cd dimos && uv run pytest ../trial/harness/tests/ -q` |
 | Instruments of the cut real-life benchmark (logger, bench runner, referee, overlay, survey dumper) | REMOVED from the tree, Jul 17 cleanup (Aaryan-authorized) — lived in `trial/scripts/`; code + full usage in git history ≤ 90c494a, one-line ledger in §8 |
 | Synthetic proof harness (real detector, rendered pixels, no hardware) | REMOVED from the tree, Jul 17 cleanup — lived in `demo/`; code in git history ≤ 90c494a. Its recorded numbers survive in §7 (SIMULATED ATE 1.75 → 0.26 m) and `trial/harness/PROVENANCE.md`, whose demo file:line citations resolve against that history |
 | Physical marker kit | `print/*.pdf` REMOVED from the tree, Jul 17 cleanup (tags long deployed in the office recordings; nothing prescribes those sheets — §8 regenerates any sheet via `dimos apriltag`); PDFs in git history ≤ 90c494a. `office_markers.yaml` KEPT at repo root: dimos' go2 visual-reloc blueprint defaults `marker_map_file` to that bare name and `resolve_named_path` checks the cwd first — see the file's header comment |
@@ -109,21 +109,23 @@ Next actions.
      `visual_relocalization_module.py` `world_map_fix: Out`; blueprint
      `unitree-go2-fiducial-relocalization`): camera module and lidar module compose by
      name+type stream, toggleable per-deployment, off by default.
-- **Vocabulary:** *benchmark* = offline development instrument (replayed recordings + a referee
-  tag that never helps the system, grades every design change; `trial/harness/`). *Confidence* =
+- **Vocabulary:** *benchmark* = offline development instrument (replayed recordings graded
+  against the premap, scoring every design change; `trial/harness/`). The referee-tag variant
+  (one held-out physical tag as the grader) was retired 2026-07-22 — see the §8 ledger.) *Confidence* =
   the runtime signal published with each fix (judge fitness + winning source; measured: ranks
   well within an environment, thresholds do NOT transfer, saturates on sparse submaps → submap
   size belongs in it). Benchmark is for development; confidence is runtime.
-- **Real-world benchmark: YES** — robot day runs the same referee-tag grading live, and every
+- **Real-world benchmark: YES** — robot day runs the same grading live, and every
   IRL run is RECORDED, so it immediately becomes a replayable suite member. One instrument, two
   modes; the suite grows from reality.
 - **Integration-test ladder (recordings → IRL):** (a) committed replay integration test — run
   the composed blueprint on a recording via `--replay`, assert end-to-end observables (fix
   published, reloc accepts, source split, zero tracebacks) — the Jul 18 rehearsal formalized as
-  pytest; (b) referee-tag grading on top (excluded tag scores the run); (c) determinism
+  pytest; (b) premap scoring on top; (c) determinism
   discipline — seeds, exact commands, per-run artifact dirs; (d) IRL: survey walk → acceptance
-  (fix within 5 s near tag) → kidnap prior-on/off → start/end referee → with/without mid360 →
+  (fix within 5 s near tag) → kidnap prior-on/off → start/end loop → with/without mid360 →
   record everything.
+  (Rung (b) read "referee-tag grading (excluded tag scores the run)" until 2026-07-22.)
 
 **HONEST FRAMING OF RECORD (Aaryan agreed, Jul 19 ~1 AM — use this wording everywhere, page
 included; never claim fiducial precision):**
@@ -147,7 +149,9 @@ every number bit-reproduced):**
   RECONCILES the "0 live wins" contradiction: fiducial DOES win — in the sub-50k stratum the
   live 50k gate blocks from judging. Offline judges it, live doesn't (yet) → the per-source gate
   is the unlock, now evidenced twice.
-- **PROBLEM 1 (recording truth-floor):** SF PGO truth FAILS its own referee test late-run —
+- **PROBLEM 1 (recording truth-floor; REFEREE-ERA — the referee test was removed 2026-07-22,
+  git b713aec; the truth-floor finding stands, the instrument does not):** SF PGO truth FAILS
+  its own referee test late-run —
   referee-19 revisit at 60+s gap goes 2.67→3.64 m (PGO *worse*), truth wobble median 0.41 m /
   max 2.28 m. So late-run (t>600 s) calls are TRUTH-limited, not relocalizer-limited; absolute
   rates grade the recording as much as the algo. Fix for next capture: sight referee AND a
@@ -185,7 +189,8 @@ WORDING:**
 
 **RESEARCH METHOD (aligned with Aaryan, Jul 18 ~1 AM — every claim goes through this loop):**
 1. Falsifiable number FIRST — state the claim as a measurable quantity before running anything.
-2. Truth external to the system under test — the referee tag never helps what it grades.
+2. Truth external to the system under test — the grader never helps what it grades.
+   (Until 2026-07-22 that external truth was a held-out referee tag; it is the premap now.)
 3. Deterministic + reproducible — seeds, exact command, git revs printed ON the artifact.
 4. Stratify by the mechanism's variable — aggregates hide composition.
 5. Adversarial verification before anything lands — an independent agent re-derives every number
@@ -210,7 +215,7 @@ WORDING:**
   decides between priors on-robot (today: one judge, source-blind, winner-take-all — live on the
   branch) and later fuses them (Phase 4 arbiter: calibrated composite confidence = fitness +
   submap size + source tier + age + marker-innovation; fuse only agreeing candidates, never
-  average a disagreement). **The relocalization benchmark runs OFFLINE** as the referee that
+  average a disagreement). **The relocalization benchmark runs OFFLINE** as the grader that
   calibrates those knobs; its runtime echo = the live marker-innovation spot-check.
 - Morning Linear tidy-up (remote, Aaryan or on your word): retitle DIM-1254 to match
   ("relocalization benchmark (marker-truth, offline)"), keep DIM-1252 as the confidence track.
@@ -373,8 +378,10 @@ EXCLUDED recording; allowed-data verification is step 1. Online PGO added to pla
 in §7) but sequenced BEHIND mid360 items, Go2 exploration lane only.
 
 **Priority queue:**
-1. **FAST-LIO revisit consistency, mid360 walk lane B** (referee machinery ready, ~1 hr) — the
+1. **FAST-LIO revisit consistency, mid360 walk lane B** (~1 hr) — the
    number the whole mid360 strategy rests on; replaces excluded evidence.
+   NOTE 2026-07-22: the machinery this line called "ready" was `fastlio_lane_markers.py`,
+   removed with the referee benchmark (git b713aec). Redo it premap-scored or restore from history.
 2. **Sections benchmark on the mid360 lane** (premap from fastlio_lidar) — re-measure success AND
    confidence gates there (environment-dependence finding: village gates won't transfer; the
    shipping lane needs its own calibration). Also answers relocalize() behavior on 15x-denser
@@ -1005,6 +1012,8 @@ day. dimos branch commits `086371238` (blueprint + 3 tests) + `c468c55a8` (docs)
 - **Replay rehearsal** (hk_village3; artifacts in `trial/harness/out/rehearsal/`): PGO premap
   exported (4.3 MB `.pc2.lcm`); marker map YAML built from tag-10's 152 reproj-gated sightings
   (position delta vs referee.json consensus 0.0000 m; new `make_rehearsal_marker_map.py`).
+  [REFEREE-ERA: that cross-check was removed from the builder 2026-07-22, git b713aec — the
+  standing-marker-map cross-check remains.]
   150 s live run of the blueprint: both modules up on the same `/world_map_fix` topic, 20
   relocalize accepts tracking ~1.1 m drift, 112 world→map fixes published (LCM spy), 0
   tracebacks.
@@ -1063,7 +1072,8 @@ Figure: `live_fix_quality_village3.png` (takeaway title). Analysis: `live_fix_qu
   clean shutdown. Consistent with pass1 (44/21) — the gated live path is stable across passes.
 - **mid360 walk (full 780 s):** 207 fixes / 11 accepts all source=ransac / 0 tracebacks; gate
   observability tallies: 34 mirror_ambiguous rejects (tag2's flagged ambiguity, caught as
-  predicted), 12 unmapped_id (referee tag 4 correctly refused — decorrelation held live),
+  predicted), 12 unmapped_id (referee tag 4 correctly refused — decorrelation held live;
+  REFEREE-ERA, the refusal is gone as of 2026-07-22 / git b713aec),
   1 high_reprojection. Fiducial wins live: still 0 on tier-A recordings — consistent with the
   measured lever ceiling; the win case needs tags near the map origin (robot-day placement).
 
@@ -1145,8 +1155,8 @@ orientation truth to give a 10 cm fix; a tag 2 m out tolerates 3°.
 > Which: the shipped offline PGO (`dimos map global --pgo` → `mapping/loop_closure/pgo.py`,
 > gtsam iSAM2 + o3d ICP closures) at stock `PGOConfig` defaults — no custom tune.
 > How: your observe→loop→observe protocol, made stratified — same-physical-tag placement
-> disagreement by time gap, raw odom vs PGO-corrected, per recording; referee tag never helps
-> the system; medians per gap bucket. Hardened numbers (5 fresh PGO runs per recording, bar =
+> disagreement by time gap, raw odom vs PGO-corrected, per recording; the graded tag never
+> helps the system; medians per gap bucket. Hardened numbers (5 fresh PGO runs per recording, bar =
 > median of run medians): PGO 0.17–0.42 m vs raw 0.37–8.8 m across the 5 valid recordings
 > (v2/v4 excluded — each has TWO physical tags sharing id 10, which also likely explains the
 > v4 "recognition away from the group" you mentioned). v3's PGO median alone swings 0.22–0.47 m
@@ -1173,6 +1183,8 @@ name.
 **Tag kit (decided):** fiducial ids **0–5**, referee id **10** — the referee grades, never
 helps: id 10 must never appear in any marker_map.yaml (the builder refuses it once the
 recording is registered in `trial/harness/benchmark_setup.yaml`).
+HISTORICAL (executed Jul 18): the referee-tag split it describes was removed 2026-07-22 — last present at git b713aec. `make_rehearsal_marker_map.py` no longer reads a referee id and no longer refuses one;
+`--tags` is required. The yaml key is now a single `tags:` list.
 
 ### Morning prep (~30 min, before leaving)
 1. Print tags at 100 mm (= `marker_length_m 0.10` everywhere; detector family matches).
@@ -1270,6 +1282,8 @@ ROBOT_IP=<ip> uv run dimos run unitree-go2-markers go2-memory \
 ```
 Walk ≥10 min at operating pace, see every fiducial from ≥2 angles, revisit the referee ≥3
 times (suite v2 acceptance: ≥600 s, ≥3 referee revisits, ≥2 fiducials + distinct referee).
+[HISTORICAL (executed Jul 18): the referee-tag split it describes was removed 2026-07-22 — last present at git b713aec. The acceptance keys `tag_split` and `referee_revisits` are gone from
+benchmark_setup.yaml; `duration_s` and the scenario/rig/provenance keys remain.]
 Watch: `marker_<id>` TFs appear in rerun as tags are met; db growing ~200 MB/min (preflight
 item 3 — check MID-WALK too, run1's flow froze silently after 4 min). Pass: all 7 ids seen;
 ≥600 s.
@@ -1278,13 +1292,15 @@ Artifact: `data/..._survey1.db`. Verify immediately with `dimos mem summary`.
 **Build the survey artifacts** (laptop, during a break — order matters):
 ```bash
 # (a) register the recording in ../trial/harness/benchmark_setup.yaml (tier B block):
-#     referee_tag: 10, fiducial_tags: [0,1,2,3,4,5] — tools read the referee id from there
+#     HISTORICAL: was `referee_tag: 10, fiducial_tags: [0,1,2,3,4,5]`; the split was removed
+#     2026-07-22 (git b713aec) and the key is now one `tags: [0,1,2,3,4,5,10]` list. No code
+#     reads this file any more — it is a manifest.
 # (b) premap -> ./sf_office_go2_20260718_survey1.pc2.lcm (cwd = dimos/):
 uv run dimos map global sf_office_go2_20260718_survey1 --export --no-gui --device CPU:0
 # (c) pose graph for the marker map (sections not needed yet, so keep it small):
 uv run python ../trial/harness/prep.py sf_office_go2_20260718_survey1 --n-queries 4 --device CPU:0
 # (d) marker map from the RECORDING (PGO-corrected centroids + Markley consensus — the
-#     rehearsal path, RECOMMENDED; refuses the referee id; prints health signals):
+#     rehearsal path, RECOMMENDED; prints health signals; --tags is required since 2026-07-22):
 uv run python ../trial/harness/make_rehearsal_marker_map.py sf_office_go2_20260718_survey1 \
   --tags 0,1,2,3,4,5 --out-dir robotday
 # -> ../trial/harness/out/robotday/sf_office_go2_20260718_survey1.marker_map.yaml
@@ -1292,8 +1308,8 @@ uv run python ../trial/harness/make_rehearsal_marker_map.py sf_office_go2_202607
 Health bars, recalibrated on the Jul 18 preflight drill (5-tag build on the mid360 recording,
 ~3 min nice'd; every tag reproduced the standing benchmark positions to 0.0000 m): healthy
 tags show Markley max dev ~15–25°; ≫ that = re-survey that tag (a known-weak tag printed
-115°). Builder refuses partial maps and the referee id (both refusals drill-verified).
-Referee check: id 10 absent from the yaml. Fallback path
+115°). Builder refuses partial maps (drill-verified). The referee-id refusal was removed
+2026-07-22 (git b713aec) — hold ids out by simply not listing them in `--tags`. Fallback path
 B (no compute, only if A fails): read `marker_<id>` TFs off rerun during the survey into the
 yaml by hand (schema = `office_markers.yaml` header) — raw-odom poses, no PGO correction,
 strictly worse.
@@ -1332,6 +1348,9 @@ Pass bar for the PAIR: ON is never worse than OFF; log both recovery times.
 **R5 — referee loop**: start the stack viewing referee tag 10, walk the full loop, end viewing
 it again (≥3 visits ideal), `db_path=data/..._loop1.db`. The referee is not in the map — it
 only grades, offline. Pass: clean run, ≥1 loop, start+end sightings recorded.
+[HISTORICAL (executed Jul 18): the referee-tag split was removed 2026-07-22, git b713aec.
+The loop itself is still the right run — a revisited start/end tag is good coverage; it just
+no longer plays a grading role. Relocalization is scored against the premap.]
 
 ### mid360 arm — IF a mid360-equipped go2 is available
 The fiducial blueprint rides the go2 camera either way; the mid360 adds the second lidar lane
@@ -1372,17 +1391,19 @@ Per-run overhead: robot boot→standing ~30–60 s; stack start ~30 s; 50k boot-
 
 ### Post-day (any machine; every run joins the replay suite)
 1. All `.db` in `dimos/data/`; register each in `benchmark_setup.yaml` (tier B).
-2. Referee-grade each recording (manual chain — `run_suite.sh`'s marker stage only pattern-matches
-   the legacy names):
+2. Grade each recording (manual chain — `run_suite.sh`'s marker stage only pattern-matches
+   the legacy names). **HISTORICAL as written**: the last line invoked `referee_verdict.py`,
+   removed 2026-07-22 with the referee-tag benchmark (last present at git b713aec); scoring is
+   against the premap now. The first four lines still run.
    ```bash
    uv run python ../trial/harness/prep.py <rec> --n-queries 24        # --device CUDA:0 on this box
-   uv run python ../trial/harness/markers.py <rec>                    # referee split from setup yaml
+   uv run python ../trial/harness/markers.py <rec>                    # scatter + marker map + fixes
    uv run python ../trial/harness/run_bench.py <rec> --config ransac
    uv run python ../trial/harness/run_bench.py <rec> --config ransac+fiducial \
      --fiducial-fixes ../trial/harness/out/markers/<rec>.fixes.json
    uv run python ../trial/harness/run_bench.py <rec> --config fiducial+judge \
      --fiducial-fixes ../trial/harness/out/markers/<rec>.fixes.json
-   uv run python ../trial/harness/referee_verdict.py <rec>
+   # uv run python ../trial/harness/referee_verdict.py <rec>   # REMOVED — see git b713aec
    ```
 3. Replay any live run against its own artifacts (recorder self-disables in replay):
    `uv run dimos --replay --replay-db=<rec> run unitree-go2-fiducial-relocalization -o <same -o set, minus go2memory>`.
@@ -1398,7 +1419,7 @@ ON-arm replays). `dimos run <bp> --help` still crashes AND exits 0 — don't tru
 either. Preflight-executed Jul 18 evening: apriltag PDFs (letter, render-checked), replay
 smoke + `-o go2memory.db_path` (13 modules, recorder self-disable line, no file written),
 `mem summary` bare-name, `map global --help` (--export implies --pgo), prep/markers/run_bench/
-referee_verdict argparse, marker-map builder end-to-end 5-tag drill + both refusal drills,
+referee_verdict argparse (referee_verdict.py removed 2026-07-22, git b713aec), marker-map builder end-to-end 5-tag drill + both refusal drills,
 /dev/tcp port probe against the live robot. Verified BY the live session itself: WebRTC
 connect (10.0.0.79), recorder writes during a live run (246.0 s / 836 MiB before the flow
 froze — into a deleted inode; rescued snapshot validates clean under `mem summary`, see
@@ -1417,6 +1438,40 @@ superseded by `trial/harness/`; code + full usage docs in git history ≤ 90c494
 - `bench.py` — `start`/`stop`/`report` run scorer (modes/routes, `results/benchmarks.csv`, `RESULTS.md`, `calibrate-referee`) — REMOVED.
 - `holdout_overlay.py` — one-window run controller around the start/end tag (live view, START/STOP, distance-recolored box) — REMOVED.
 - `survey_dump.py` — TF-stream marker surveyor that wrote `office_markers.yaml` + sidecar — REMOVED.
+
+**Removed instruments** (2026-07-22, Aaryan-authorized — the referee-tag marker-truth benchmark,
+superseded by premap scoring; a TRIAL HARNESS construct, never shipped in dimos. Code + full
+usage docs in git history ≤ `b713aec`, e.g. `git show b713aec:trial/harness/referee_verdict.py`):
+- `referee_verdict.py` — graded run_bench `T_est` against the recording's referee tag (in-window
+  sections, consensus map position, arm-vs-arm on the referee subset) — REMOVED.
+- `cluster_gate.py` — single-linkage 1.0 m spatial-cluster duplicate-id gate that promoted or
+  excluded a PROVISIONAL referee (the hk_village2/4 exclusion instrument) — REMOVED.
+- `show_benchmark.py` — three-system placement-cloud figure for one referee tag per recording
+  (`benchmark_hk_village{1,3,5,6}.png`, `benchmark_odom_pgo_module.png`) — REMOVED.
+- `fig3_hardened.py` — hardened long-gap revisit sweep, 5 fresh PGO runs, one referee tag per
+  recording (`revisit_medians_hardened.png`) — REMOVED.
+- `fastlio_lane_markers.py` — FAST-LIO-lane rebuild of scatter/marker map/fixes/referee so the
+  referee chain ran on the mid360 lane — REMOVED.
+- `markers.py` — STRIPPED, not removed: the referee/fiducial split, `referee_from_setup()`,
+  `print_referee_table()`, `--benchmark-tag`, and the `<rec>.referee.json` writer are gone. Every
+  detected id is a fiducial now, so a REGENERATED `<rec>.marker_map.json` / `.fixes.json` will
+  INCLUDE the id the old rule excluded. Do not mix pre- and post-`b713aec` caches in one figure.
+- `make_rehearsal_marker_map.py` — STRIPPED: no referee default, no referee refusal, no
+  `referee.json` cross-check, one unconditional yaml header; `--tags` is now required. Kept
+  because it is the only producer of `eval.py`'s live fiducial prior
+  (`out/robotday_build_gated/sf_office_go2_20260718_survey1.marker_map.yaml`).
+- `benchmark_setup.yaml` — STRIPPED to a pure manifest: `referee_tag:`/`fiducial_tags:` merged
+  into one `tags:` list, the decorrelation prose and `protocol.{revisit_test,validity_gate}` and
+  `suite_v2_acceptance.{tag_split,referee_revisits}` dropped. No code reads it now.
+- `regime_map.py`, `robotday_figures.py`, `run_suite.sh` — STRIPPED of their referee reads only;
+  both figures still render from the saved artifacts.
+KEPT: everything under `trial/harness/out/` (gitignored, 0 tracked files — including the 10
+`*.referee.json` and both verdict logs) and all 25 tracked figures in `trial/results/figures/`.
+Deleting them buys nothing and destroys the only evidence behind published numbers; they are now
+an archive with no producer, which is correct. Numbers that become unreproducible are stamped
+REFEREE-ERA in §7 rather than deleted.
+OPEN for Aaryan: the site's "How we grade honestly" section (`site/data-dimensional.ts`) is built
+on this method. It is relabelled historical here, not retired — retire-vs-relabel is his call.
 
 ## 9. History — the arc so far
 
@@ -1556,6 +1611,12 @@ evidence per Aaryan Jul 17 — awaiting the purpose-built mid360 walk instead). 
 kind only show against a physical marker anchor — which is
 presumably exactly why the team records marker-staring walks.
 
+
+**REFEREE-ERA — UNREPRODUCIBLE AFTER `b713aec`.** Numbers kept verbatim. The instruments that
+produced them (`referee_verdict.py`, `cluster_gate.py`, `show_benchmark.py`, `fig3_hardened.py`,
+`fastlio_lane_markers.py`) were removed 2026-07-22 and `markers.py` no longer writes
+`<rec>.referee.json`. The saved artifacts under `trial/harness/out/` survive; nothing can rebuild
+them. Relocalization is scored against the premap now.
 **Jul 17 — LIO LANE MEASURED (plan-v6 step 1 DONE; the number the mid360 strategy rests on):**
 FAST-LIO revisit consistency on the purpose-built walk, all 6 tags, n=2,979 positioned
 detections: **300s+ gaps raw 0.035–0.111 m** (referee tag 4: 0.035 m median over the 12.8-min
@@ -1595,6 +1656,9 @@ quantified. Linear: only sub-0.3 m figures are FAST-LIO2 literature specs in a d
 (DIM-1088, "Estimated Value"); reloc thresholds elsewhere are placeholders. **Conclusion: the
 marker-revisit numbers from this trial are the first externally-anchored PGO accuracy evidence
 at Dimensional, and prior internal (unmerged) work independently lands in the same range.**
+(REFEREE-ERA: those marker-revisit numbers came from `fig3_hardened.py` / `show_benchmark.py`,
+removed 2026-07-22 — last present at git b713aec. The claim stands as recorded; it can be
+re-quoted, not re-established.)
 
 **Jul 17 — GRAVITY WALKOVER FIXED (dimos branch, local commit; found->fixed->verified same
 day by the benchmark loop):** `refine_candidates` gains `sources=` — per-source gravity gating
@@ -1605,6 +1669,12 @@ bit-identical). Regression test reproduces the walkover under the old gate and a
 protection (all priors flow through the per-source gate). This is the benchmark's development
 loop closing end-to-end: benchmark finds -> probe isolates -> fix lands -> benchmark confirms.
 
+
+**REFEREE-ERA — UNREPRODUCIBLE AFTER `b713aec`.** Numbers kept verbatim. The instruments that
+produced them (`referee_verdict.py`, `cluster_gate.py`, `show_benchmark.py`, `fig3_hardened.py`,
+`fastlio_lane_markers.py`) were removed 2026-07-22 and `markers.py` no longer writes
+`<rec>.referee.json`. The saved artifacts under `trial/harness/out/` survive; nothing can rebuild
+them. Relocalization is scored against the premap now.
 **Jul 17 — DECORRELATED FIDUCIAL VERDICT (the goal's last open question — HOLDS; mid360 walk,
 n=40 full denominator, replay):** referee tag 4 verifiably ABSENT from all 45 fixes (ids
 {0,1,2,6,7}). ransac 52.5% (21/40; hard 2.78M-pt outdoor premap, 62.5 s solves, wrong-basin
@@ -1630,6 +1700,12 @@ from probe_gravity_walkover.py (repro: hk_village1 frame 831). Caveat: 3/72 rate
 stride (~40 frames between sections; seed maximally stale) — mechanism stride-independent, rate
 may differ live.
 
+
+**REFEREE-ERA — UNREPRODUCIBLE AFTER `b713aec`.** Numbers kept verbatim. The instruments that
+produced them (`referee_verdict.py`, `cluster_gate.py`, `show_benchmark.py`, `fig3_hardened.py`,
+`fastlio_lane_markers.py`) were removed 2026-07-22 and `markers.py` no longer writes
+`<rec>.referee.json`. The saved artifacts under `trial/harness/out/` survive; nothing can rebuild
+them. Relocalization is scored against the premap now.
 **Jul 17 — MID360 DECORRELATED BENCHMARK (replay, 40 sections, PGO-silver truth + tag-4 referee;
 results jsons in harness out/, instrument `trial/harness/referee_verdict.py`, commit 621b92a):**
 - ransac 52.5% (21/40) -> ransac+fiducial 72.5% (29/40) -> fiducial+judge 37.5% (15/40 full
@@ -1823,6 +1899,11 @@ scope: this repo only, 30-day expiry.
 ---
 
 ## 12. Jul 19 — red-team verdict
+
+**REFEREE-ERA — kept verbatim.** Several findings below (items 4, 13, 21 and the "held clean"
+line) are statements about the referee-tag instrument, removed 2026-07-22 (last present at git
+`b713aec`). Their caveats can no longer be re-verified by running anything; that makes the
+numbers they qualify weaker, not stronger. Do not quote the number without the caveat.
 
 Adversarial re-derivation of tonight's proof package (SF office n=48 bench · livox/fastlio lane ·
 live ON/OFF), on-disk artifacts only — no `--replay`, no GPU. An independent agent re-derived every
