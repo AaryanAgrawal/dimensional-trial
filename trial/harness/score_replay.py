@@ -106,9 +106,14 @@ def _summarize(rows: list[dict]) -> dict:
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("recording")
+    ap.add_argument("--tag", default=None,
+                    help="input/output-file key (default = recording); set for A/B so "
+                         "the off/on score files don't collide. Graph truth still loads "
+                         "by `recording`.")
     a = ap.parse_args()
 
-    in_path = RESULTS_DIR / f"{a.recording}.replay.json"
+    key = a.tag or a.recording  # file key; a.recording still selects the PGO truth graph
+    in_path = RESULTS_DIR / f"{key}.replay.json"
     data = json.loads(in_path.read_text())
     meta, fixes = data["meta"], data["fixes"]
     graph, graph_src = _load_graph(a.recording, "lidar")
@@ -139,6 +144,7 @@ def main() -> None:
     first_success = next((r for r in scored if r["success"]), None)
     report = {
         "recording": a.recording,
+        "tag": key,
         "graph_source": graph_src,
         "premap": meta.get("premap"),
         "n_accepts": len(scored),
@@ -158,7 +164,7 @@ def main() -> None:
             "divergence here exceeds it. NOT a flat ~6 cm floor."),
         "fixes": scored,
     }
-    out_path = RESULTS_DIR / f"{a.recording}.replay_score.json"
+    out_path = RESULTS_DIR / f"{key}.replay_score.json"
     out_path.write_text(json.dumps(report, indent=2))
 
     o = report["overall"]
@@ -168,7 +174,8 @@ def main() -> None:
     print(f"  success={o['n_success']}/{o['n_judged']} "
           f"rate={o['success_rate']} median_err_t={o['median_err_t_m_on_success']} m "
           f"median_err_r={o['median_err_r_deg_on_success']} deg  min_err_t={o['min_err_t_m']} m")
-    print(f"  first_accept={report['first_accept_t_since_drive_start_s']:.1f}s "
+    _fa = report["first_accept_t_since_drive_start_s"]  # None on a 0-accept run -> guard :.1f
+    print(f"  first_accept={'-' if _fa is None else f'{_fa:.1f}s'} "
           f"first_success={report['first_success_t_since_drive_start_s']}s (since drive start)")
     for s in strata:
         print(f"  n_pts {s['n_pts_band']:>22}: n={s['n']:2d} judged={s['n_judged']:2d} "

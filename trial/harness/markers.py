@@ -89,6 +89,7 @@ def detect_all(store: SqliteStore, graph) -> list[dict]:
         .transform(SpeedLimit(max_mps=0.5, max_dps=50.0))
         .transform(DetectMarkers(camera_info=_camera_info_static(),
                                  marker_length_m=MARKER_LENGTH_M,
+                                 ambiguity_ratio_min=2.0,
                                  smoothing_window=0.0))
     )
     rows = []

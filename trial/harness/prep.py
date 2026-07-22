@@ -217,14 +217,25 @@ def build_sections(
         finally:
             grid.dispose()
 
-        # Re-anchor to the query frame's body frame: a kidnapped robot knows its
-        # cloud only relative to itself, never in the recording's world frame.
-        P = pose7_to_mat(q_obs.pose_tuple)  # world_raw_T_body
-        Pinv = np.linalg.inv(P)
+        # Re-anchor to the query's GRAVITY-ALIGNED body frame. A relocalizing robot
+        # knows its cloud relative to itself AND which way is down (IMU/LIO gravity);
+        # it lacks only its map position + heading. Keeping the full body attitude
+        # (roll/pitch) was wrong: on a tilted-sensor rig (mid360 ~50 deg) it rotated
+        # the submap off-gravity — a scan a gravity-aware robot never produces — and
+        # the (correct) gravity gate then rejected it. So strip only translation + yaw
+        # and keep gravity, matching production's world-frame VoxelGrid submap. Level
+        # rigs are unaffected (roll/pitch ~0 -> yaw-only == full pose).
+        P = pose7_to_mat(q_obs.pose_tuple)  # world_raw_T_body (full attitude)
+        yaw = float(np.arctan2(P[1, 0], P[0, 0]))  # body heading about world-z (gravity)
+        Pg = np.eye(4)  # gravity-aligned body frame: world-z up, body's heading kept
+        Pg[0, 0], Pg[0, 1] = np.cos(yaw), -np.sin(yaw)
+        Pg[1, 0], Pg[1, 1] = np.sin(yaw), np.cos(yaw)
+        Pg[:3, 3] = P[:3, 3]
+        Pinv = np.linalg.inv(Pg)
         body_pts = (world_pts @ Pinv[:3, :3].T + Pinv[:3, 3]).astype(np.float32)
 
         C = transform_to_mat(graph.correction_at(q_obs.ts))  # world_corrected <- world_raw
-        T_true = C @ P  # map_T_body
+        T_true = C @ Pg  # map_T_gravitybody (translation + yaw — the true unknowns)
         sections.append(Section(
             frame_idx=int(qi), ts=float(q_obs.ts), body_pts=body_pts,
             T_true=T_true.astype(np.float64), n_scans=n_scans,

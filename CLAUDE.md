@@ -105,6 +105,54 @@ steps and orchestration glue only. Findings from workflow agents get adversarial
 they land on the board (the night of Jul 17 is the template: every headline number independently
 re-derived, two claims reframed by the verifiers).
 
+**Operator's working mode (Aaryan, Jul 20).** Substantive work runs in workflows/agents, not the
+main window — the main window is orchestration and responses only. Opus for all coding and all
+workflow agents. Serialize edits to the SAME file across workflows: never run two workflows editing
+one file at once — it clobbers.
+
+## Writing (PRs, Discord, tickets)
+
+**Voice: very short, plain, human.** Only what's required. Say what a thing IS, not what it isn't
+("streams are declared in config," not "toggleable, not hardcoded") — the contrast is inferred. Few
+hyphens. No sales pitch, no hype, no filler. Over-explaining, negation, and marketing tone read as
+AI. Applies to every deliverable: PR bodies, Discord, Linear tickets.
+
+**PR format: the repo house template, verbatim** (`.github/pull_request_template.md`): Contribution
+path → Problem → Solution → Breaking Changes → How to Test → AI assistance → Checklist.
+
+- **Problem** — lead with the USE CASE (the real scenario + who it blocks); the *second sentence* is
+  the current pain, named bluntly (not its own header). One tight paragraph, no preamble.
+- **Solution** — built on **existing core primitives**, named at the exact seams (the hook, the call
+  sites), closing with the safety line. State what it *is*, not what it enables.
+- **Breaking Changes** — an explicit `None` or the list, on its own `---`-fenced line.
+
+Three required additions: a **"Core changes — why"** section stating honestly whether shared code
+(`core/`, `msgs/`, `transport/`, blueprints) was touched, each justified (default-off /
+inert-unless-opted-in is the safety story); **How to Test leads with HARDWARE** (robot + firmware +
+what you observed, or explicitly that it was not run on hardware), exact copy-pasteable command per
+rung, then the one test to read + "existing suites unchanged"; and an **Evidence** section of real
+graphs from the dimos-native `eval`, one caption line each (what it shows → takeaway).
+
+Every magic choice is justified inline with the physical why — in Evidence captions and Core-why
+too, not just code. Nabla7 #2861 is the template: "Voxel size is 0.08 to match go2 — at 0.05 the
+raytracer pegged the Orin and fell ~60 s behind." Add reviewers if useful (`cc @handle`) — optional,
+not a rule.
+
+**Exemplars (real PRs, read them):** #2981 `declared_streams` for tone + leanness + Solution-at-the-
+existing-seams (it is lean — no "Current Status" header, no Evidence section, no `cc`; those are our
+deliberate departures, not inherited from it); #2959 (mustafab0) co-exemplar for the same lean
+Problem→Solution→Breaking→How-to-Test shape; #3004 (ruthwikdasyam) for the full house template filled
+in verbatim; leshy #2811 and Nabla7 #2861 for Evidence density and inline hardware-tuning justification.
+
+**Ours is denser — more figures — and that density is wanted.** Bodies run longer in exactly two
+places and nowhere else: the **Evidence** section (multiple `eval` figures, one caption line each —
+leshy #2811 pastes tables/screenshots with near-zero prose) and the **How to Test hardware rung**.
+Everywhere else, match #2981's leanness. Density is earned by figures and commands, never by prose.
+
+Every substantial PR gets a companion Discord announcement in the same voice (problem → what changed
+→ how to use it). Keep PRs small: dimos norm is one clean squash-merged commit, a few at most; terse
+body-less commit subjects.
+
 ## Writing code the dimos way (studied from lesh + Sam Bull, Jul 17)
 
 Counted at dimos upstream/main 29f3555: lesh corpus 133 files / 21.0k code lines, Sam 2,221
@@ -160,6 +208,17 @@ property ("Every message published within one ring is delivered exactly once, in
 test_ipc_factory.py:70), try/finally cleanup, wait_until never sleep. Both meta-test their
 conventions so fixtures can't rot (test_pgo.py:50-60; test_all_blueprints.py:98-101).
 
+Tests are hermetic and known-truth: test data lives in the repo beside the test — never read
+external or build-output files. Prefer CONSTRUCTED synthetic data with known truth (you built the
+answer, so you can assert exact correctness); for realistic cases commit a SMALL fixture next to the
+test. Unit-test everything, plus integration tests that run the full path on constructed known-truth
+data. dimos enforces a codecov PATCH gate (`.codecov.yml` `patch: true`) — new/changed lines must be
+covered or CI blocks. Canonical Sam Bull (Dreamsorcerer) reference:
+`protocol/pubsub/shm/test_ipc_factory.py` — co-located `test_foo.py` beside `foo.py`,
+invariant-per-test docstring (states the property, not the mechanics), deterministic-constructed
+data with exact-literal asserts, try/finally cleanup on every resource, and
+`pytest.raises(<Type>, match="<message>")` that tests the MESSAGE on raise paths.
+
 **Imports & commits.** Three ruff-enforced import blocks; heavy imports deferred with a
 justification + enforcing-test pointer ("stays fast. See test_cli_startup.py", map.py:27-29).
 Commits: terse imperative subjects, 86% body-less (Sam, mean 34.7 chars) — PR carries context.
@@ -181,6 +240,17 @@ technique** — no FAST-LIO / Point-LIO / ICP / RANSAC / PGO / solvePnP referenc
 knowledge and clutters the code. Rule of thumb: if a reader would need the paper to understand
 *why this specific method/number*, cite it; if it's a household SLAM/vision term, don't.
 
+**Always cite important logic code (Aaryan, 2026-07-20).** Beyond magic thresholds, put a source on
+any load-bearing or non-obvious logic — the algorithm, the method, the paper — as a simple URL on the
+same line, so the reasoning is traceable. Pairs with 'use verified code'. Still skip household
+techniques (ICP/RANSAC/solvePnP).
+
+**Use verified code, not re-implementations (Aaryan, 2026-07-20).** Prefer established, verified
+sources — OpenCV (cv2.calibrateCamera, cv2.projectPoints, cv2.solvePnP), the existing production dimos
+functions, published algorithms — over hand-rolled math. Cite the source on the same line when a reader
+would want it. This extends 'test real dimos, never a re-implementation' to library code: don't rewrite
+what a verified library already does correctly.
+
 **Checklist before pushing dimos code:**
 1. Magic numbers: unit or physical translation on the same line; non-obvious algos/thresholds
    get a simple-URL citation (Huber/Markley/IPPE/Umeyama/segment_plane), never industry-standard.
@@ -198,3 +268,9 @@ knowledge and clutters the code. Rule of thumb: if a reader would need the paper
 State the assumption, name the simpler path, ask only if it's a real fork in the road — otherwise
 proceed. This is one FDE's working repo, not a product: optimize for "the next person can pick
 this up cold," never for cleverness.
+
+**Track open design-decision questions until closed (Aaryan, 2026-07-20).** When Aaryan asks a
+question that is a design decision, log it as an open item (the session task list) and keep it open
+until it is resolved. Go deep on the claim at hand in a workflow/agent so the investigation stays out
+of the main thread, but the higher-level open questions must not get lost in the rabbitholes. Main
+window is for orchestration and tracking; workflows are for depth.

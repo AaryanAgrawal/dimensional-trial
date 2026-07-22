@@ -433,6 +433,7 @@ export const evidence: EvidenceSection[] = [
 // Open questions — Aaryan's running list. ADD YOURS HERE: one string per
 // question, newest at the top. Public page: keep wording additive/neutral.
 export const openQuestions: string[] = [
+  "Should every prior get judged? The judge ICP-refines only the top-10 candidates, ranked on PRE-ICP wall fitness. The 34 RANSAC candidates are near-duplicates of one solution (8 of the 10 finalists land within 0.044 fitness of each other after ICP), while the fiducial candidate is an unpolished marker-derived pose and usually misses the cut: proposed in 27/32 cycles, reached the judge in only 5, won 3 of those 5. So the prior is eliminated before the judge rather than by it. Reserve a judged slot per prior, or polish candidates before ranking?",
   "SF office with the mid360 rig — capture and grade the same space on both rigs?",
   "Far-tag offices: multi-tag fusion vs. re-survey with origin-near tags — which first?",
   "The first 30–60 s after boot are map-blind: relocalization skips until the submap reaches 50k points (measured 34 s / 65 s to first accepted fix on two replays). Is 50k too high? Test later: sweep MIN_LOCAL_POINTS against risk on the benchmark's stored per-section sizes, and make the gate conditional when a fresh tag fix exists (Phase 4).",

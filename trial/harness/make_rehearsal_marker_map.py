@@ -76,6 +76,9 @@ def main() -> int:
                          "refuses the referee tag)")
     ap.add_argument("--out-dir", default="rehearsal",
                     help="subdir of out/ for the yaml (e.g. rehearsal_mid360)")
+    ap.add_argument("--force", action="store_true",
+                    help="write even if the position cross-check disagrees with the standing "
+                         "map (use when re-surveying with a different gate, e.g. ambiguity)")
     a = ap.parse_args()
 
     referee = referee_from_setup(a.recording)
@@ -128,14 +131,14 @@ def main() -> int:
                 delta_m = float(np.linalg.norm(pos - np.array(ref_pos)))
                 print(f"consensus position vs {referee_file.name}: delta={delta_m:.4f} m "
                       f"(n_used here={len(gated)}, there={ref.get('consensus_n_used')})")
-                if delta_m > 0.05:
+                if delta_m > 0.05 and not a.force:
                     print("cross-check FAILED (>0.05 m): refusing to write a marker map "
                           "that disagrees with the standing referee consensus")
                     return 1
         if str(tag) in standing:
             delta_m = float(np.linalg.norm(pos - np.array(standing[str(tag)])[:3, 3]))
             print(f"  position vs {marker_map_file.name}: delta={delta_m:.4f} m")
-            if delta_m > 0.05:
+            if delta_m > 0.05 and not a.force:
                 print("  cross-check FAILED (>0.05 m): refusing to write a marker map "
                       "that disagrees with the standing benchmark marker map")
                 return 1

@@ -54,6 +54,10 @@ _PREMAP_PTS: np.ndarray | None = None
 _SECTIONS: list | None = None
 _CONFIG: str = "ransac"
 _FIDUCIAL_FIXES: dict | None = None  # frame_idx -> list of candidate dicts
+# Map gravity-up axis threaded into the judge (refine_candidates). None = the
+# world-z opt-out = today's BEFORE behavior bit-for-bit; a supplied axis engages
+# the attitude-aware consistency gate (module.py's live path). Fork-inherited.
+_MAP_UP: np.ndarray | None = None
 
 _worker_premap = None  # per-process o3d cloud cache
 
@@ -111,21 +115,21 @@ def _eval_one(i: int) -> dict:
     try:
         source = "ransac"
         if _CONFIG == "ransac":
-            T, fitness = relocalize(gm, lm)
+            T, fitness = relocalize(gm, lm, map_up=_MAP_UP)
         elif _CONFIG == "ransac+fiducial":
             from dimos.mapping.relocalization.relocalize import generate_ransac_candidates
 
             cands = _fiducial_candidates(s.frame_idx)
             pool = [c.T for c in cands] + generate_ransac_candidates(gm, lm)
             sources = ["fiducial"] * len(cands) + ["ransac"] * (len(pool) - len(cands))
-            T, fitness, idx = refine_candidates(gm, lm, pool)
+            T, fitness, idx = refine_candidates(gm, lm, pool, map_up=_MAP_UP)
             source = sources[idx]
         elif _CONFIG == "fiducial+judge":
             cands = _fiducial_candidates(s.frame_idx)
             if not cands:
                 return {"frame_idx": s.frame_idx, "status": "no_candidates",
                         "dt": time.perf_counter() - t0}
-            T, fitness, idx = refine_candidates(gm, lm, [c.T for c in cands])
+            T, fitness, idx = refine_candidates(gm, lm, [c.T for c in cands], map_up=_MAP_UP)
             source = "fiducial"
         else:
             raise ValueError(f"unknown config {_CONFIG}")
@@ -153,9 +157,14 @@ def main() -> int:
     ap.add_argument("--fiducial-fixes", default=None,
                     help="JSON from markers.py: per-frame fiducial candidates")
     ap.add_argument("--workers", type=int, default=max(1, (os.cpu_count() or 2) - 2))
+    ap.add_argument("--map-up-from-premap", action="store_true",
+                    help="Estimate the premap's gravity-up (estimate_map_up) and thread it "
+                         "into the judge, engaging the attitude-aware gravity-CONSISTENCY gate "
+                         "-- module.py's live path. Default off = world-z opt-out (the BEFORE). "
+                         "Writes a *_gravityv2 result so the archived baseline is never touched.")
     a = ap.parse_args()
 
-    global _PREMAP_PTS, _SECTIONS, _CONFIG, _FIDUCIAL_FIXES
+    global _PREMAP_PTS, _SECTIONS, _CONFIG, _FIDUCIAL_FIXES, _MAP_UP
     with open(HARNESS / "out" / "prepared" / f"{a.recording}.pkl", "rb") as f:
         prep_d = pickle.load(f)
     from types import SimpleNamespace
@@ -167,11 +176,18 @@ def main() -> int:
     if a.fiducial_fixes:
         with open(a.fiducial_fixes) as f:
             _FIDUCIAL_FIXES = {int(k): v for k, v in json.load(f).items()}
+    if a.map_up_from_premap:
+        # Compute once, in the parent, BEFORE the pool forks (workers inherit it);
+        # done here so a rerun logs the exact axis. estimate_map_up re-seeds nothing
+        # workers rely on (each re-seeds per frame), so determinism is unaffected.
+        from dimos.mapping.relocalization.relocalize import estimate_map_up
+        _MAP_UP = estimate_map_up(_to_cloud(_PREMAP_PTS))
 
+    gate = "world-z (map_up=None)" if _MAP_UP is None else f"consistency map_up={_MAP_UP.round(4).tolist()}"
     print(f"bench: {a.recording} config={a.config} sections={len(_SECTIONS)} "
           f"premap={len(_PREMAP_PTS)} pts workers={a.workers} "
           f"dimos={prep.git_rev_dimos} trial={prep.git_rev_trial} "
-          f"seeds=frame_idx OMP=1", flush=True)
+          f"gravity_gate={gate} seeds=frame_idx OMP=1", flush=True)
 
     t0 = time.perf_counter()
     if a.config == "ransac+lastpose":
@@ -186,7 +202,7 @@ def main() -> int:
             t1 = time.perf_counter()
             try:
                 T, fitness, source = relocalize_with_priors(
-                    gm, _to_cloud(s.body_pts), [RansacPrior(), lp])
+                    gm, _to_cloud(s.body_pts), [RansacPrior(), lp], map_up=_MAP_UP)
             except Exception as e:
                 results.append({"frame_idx": s.frame_idx, "status": "crashed",
                                 "error": repr(e), "dt": time.perf_counter() - t1})
@@ -211,6 +227,17 @@ def main() -> int:
         with ProcessPoolExecutor(max_workers=a.workers) as pool:
             results = list(pool.map(_eval_one, range(len(_SECTIONS))))
 
+    # Actual CODE rev executed (may differ from prep.git_rev_dimos, which is the
+    # DATA rev baked into the pkl at prep time). Under --project the running
+    # relocalize.py can be a different clone/branch than the sections were built on.
+    import dimos.mapping.relocalization.relocalize as _relmod
+    try:
+        code_rev = subprocess.run(
+            ["git", "-C", str(Path(_relmod.__file__).parent), "rev-parse", "--short", "HEAD"],
+            capture_output=True, text=True, check=True).stdout.strip()
+    except (subprocess.CalledProcessError, OSError):
+        code_rev = "unknown"
+
     wall = time.perf_counter() - t0
     ok = [r for r in results if r["status"] == "ok"]
     n_all = len(results)
@@ -227,12 +254,16 @@ def main() -> int:
         "wall_seconds": wall,
         "truth": "PGO silver (~6 cm run-to-run floor, see WORKSPACE §7)",
         "rung": "replay (real recorded sensor data, offline)",
-        "git_rev_dimos": prep.git_rev_dimos, "git_rev_trial": prep.git_rev_trial,
+        "git_rev_dimos": prep.git_rev_dimos, "git_rev_dimos_code": code_rev,
+        "git_rev_trial": prep.git_rev_trial,
+        "gravity_gate": "world-z (map_up=None)" if _MAP_UP is None else "consistency (map_up threaded)",
+        "map_up": _MAP_UP.round(6).tolist() if _MAP_UP is not None else None,
         "command": " ".join(sys.argv), "seeds": "per-frame frame_idx; OMP_NUM_THREADS=1",
         "unix": time.time(),
     }
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    out = OUT_DIR / f"{a.recording}.{a.config.replace('+', '_')}.json"
+    tag = "_gravityv2" if a.map_up_from_premap else ""
+    out = OUT_DIR / f"{a.recording}.{a.config.replace('+', '_')}{tag}.json"
     with open(out, "w") as f:
         json.dump({"summary": summary, "results": results}, f, indent=1)
     print(json.dumps(summary, indent=2))
