@@ -2,9 +2,10 @@
 """Unit tests for reloc_log.py -- the harness's RelocalizationModule log parser.
 
 Constructed known-truth lines (I wrote the answer, so the asserts are exact
-literals), one invariant per test. Both wire formats are graded because both are
-on disk: the CURRENT structlog rendering and the LEGACY f-string every archived
-capture in out/ is written in.
+literals), one invariant per test. All three wire formats are graded because all
+three are on disk: the QUIET default the module logs today, the VERBOSE/CURRENT
+structlog rendering (`verbose_eval_logging=True`), and the LEGACY f-string every
+archived capture in out/ is written in.
 
 Deterministic: fixed strings, no RNG, no clock. Run:
   uv run --project /home/dimos/dimensional-trial/dimos \
@@ -32,6 +33,12 @@ LEGACY_ACCEPT = (
     "22:11:50.589 [inf][pping/relocalization/module.py] relocalize: fitness=0.756 "
     "time_cost=13.0s n_pts=89003 reloc_t=[-2.467, -8.645, -0.086] "
     "TF 'world' -> 'map' published_t=[-8.849, -1.587, 0.073] source=fiducial"
+)
+# The quiet default (verbose_eval_logging=False): four kwargs, no pose fields.
+# Alphabetical again -- fitness, margin, source, time_cost_s.
+QUIET_ACCEPT = (
+    "08:44:54.015 [inf][pping/relocalization/module.py] relocalize accepted "
+    "fitness=0.873 margin=0.178 source=fiducial time_cost_s=1.4"
 )
 CURRENT_JSONL = (
     '{"source": "fiducial", "fitness": 0.87, "time_cost_s": 2.0, "n_pts": 100, '
@@ -61,6 +68,55 @@ def test_legacy_console_accept_reports_the_trailing_source() -> None:
     assert acc.fitness == 0.756
     assert acc.time_cost_s == 13.0  # `time_cost=13.0s` -- the unit suffix is not a digit
     assert acc.published_t_m == [-8.849, -1.587, 0.073]
+
+
+def test_quiet_accept_parses_with_a_margin_and_no_position() -> None:
+    """A quiet-mode accept is a record, not a parse failure: fitness/source/margin/
+    time_cost_s survive, and the absent pose fields read as None -- never dropped,
+    never 0, so a caller that needs a position can tell it was not logged."""
+    (acc,) = reloc_log.parse_accepts(QUIET_ACCEPT)
+    assert acc.tod_s == 8 * 3600 + 44 * 60 + 54.015
+    assert acc.fitness == 0.873
+    assert acc.source == "fiducial"
+    assert acc.margin == 0.178
+    assert acc.time_cost_s == 1.4
+    assert acc.published_t_m is None
+    assert acc.reloc_t_m is None
+    assert acc.n_pts is None
+
+
+def test_quiet_accept_without_a_rival_source_reports_margin_none() -> None:
+    """margin= is omitted when one source held the finalists. None means 'no rival
+    to subtract', which is not the 0.0 a tie would print."""
+    line = QUIET_ACCEPT.replace("margin=0.178 ", "")
+    (acc,) = reloc_log.parse_accepts(line)
+    assert acc.margin is None
+    assert acc.fitness == 0.873
+
+
+def test_verbose_accept_carries_no_margin() -> None:
+    """The verbose accept drops margin= (its finalist table already has it), so the
+    field is None there too -- reading margin never silently means 'tied'."""
+    (acc,) = reloc_log.parse_accepts(CURRENT_ACCEPT)
+    assert acc.margin is None
+
+
+def test_quiet_reject_is_counted_and_never_an_accept() -> None:
+    """The trimmed reject line (source/fitness/threshold, no time_cost_s or n_pts)
+    still lands in the denominator and still stays out of parse_accepts."""
+    text = "\n".join([
+        "08:45:00.000 [war][...module.py] relocalize rejected fitness=0.31 "
+        "source=fiducial threshold=0.45",
+        QUIET_ACCEPT,
+    ])
+    assert reloc_log.count_rejects(text) == 1
+    assert len(reloc_log.parse_accepts(text)) == 1
+
+
+def test_quiet_run_has_no_census_rather_than_a_zero_census() -> None:
+    """A quiet log emits no `relocalize candidates` at all, so the census is empty.
+    Callers must read [] as 'not logged', not as 'no source proposed'."""
+    assert reloc_log.parse_census(QUIET_ACCEPT) == []
 
 
 def test_jsonl_and_console_twins_agree() -> None:

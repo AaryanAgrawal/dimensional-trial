@@ -4,12 +4,25 @@
 Mirrors the approach in dimos ``mapping/relocalization/eval_module.py::_parse_line``
 (key-anchored regexes, ANSI stripped, console + main.jsonl through one path) and
 adds what the harness needs on top of eval_module's HealthLine: the console
-time-of-day (every harness clock join keys off it), ``n_pts``, ``time_cost_s`` and
-``reloc_t_m``.
+time-of-day (every harness clock join keys off it), ``n_pts``, ``time_cost_s``,
+``reloc_t_m`` and ``margin``.
 
-TWO WIRE FORMATS, both live on disk here, so both parse:
+THREE WIRE FORMATS, all live on disk here, so all three parse:
 
-  CURRENT (dimos 708332fe7, structlog kwargs; console kwargs render ALPHABETICALLY)
+  QUIET (today's operating default -- `verbose_eval_logging=False` in module.py)
+    `08:44:54.015 [inf][...module.py] relocalize accepted fitness=0.873
+     margin=0.178 source=fiducial time_cost_s=1.4`
+    No `published_t_m` and no `n_pts`: the quiet line is a health signal, not a
+    pose, so an Accept off it carries position None and every consumer that joins
+    on the TF (replay_bench, record_reloc, live_fix_quality, correction_rate)
+    must run its replay with `-o relocalizationmodule.verbose_eval_logging=true`.
+    `margin=` is new and quiet-only -- the winner's post-ICP wall fitness minus the
+    best OTHER source's, absent when one source held the finalists (never 0.0,
+    which would read as a tie). No census and no judge line at all in this mode.
+    rejects trim to `relocalize rejected fitness=0.31 source=fiducial threshold=0.45`.
+
+  VERBOSE (`verbose_eval_logging=True`, and every dimos >= 708332fe7 before the
+  quiet default landed; structlog kwargs, console renders them ALPHABETICALLY)
     `08:44:54.015 [inf][...module.py] relocalize accepted fitness=0.984 n_pts=51034
      published_t_m=[-0.079, -0.025, 0.067] reloc_t_m=[0.078, 0.025, -0.067]
      source=ransac tf_from=world tf_to=map time_cost_s=1.7`
@@ -60,6 +73,7 @@ _TCOST_RE = re.compile(r"\btime_cost(?:_s)?=([-\d.eE+]+)")
 _NPTS_RE = re.compile(r"\bn_pts=(\d+)")
 _RELOC_T_RE = re.compile(r"\breloc_t(?:_m)?=\[([^\]]+)\]")
 _PUB_T_RE = re.compile(r"\bpublished_t(?:_m)?=\[([^\]]+)\]")
+_MARGIN_RE = re.compile(r"\bmargin=([-\d.eE+]+)")  # quiet accepts only
 _SOURCE_RE = re.compile(r"\bsource=([A-Za-z_]\w*)")
 _COUNTS_RE = re.compile(r"\bcounts=\{([^}]*)\}")  # current: a python dict repr
 _COUNT_ENTRY_RE = re.compile(r"'(\w+)':\s*(\d+)")
@@ -70,7 +84,10 @@ _LEGACY_COUNT_RE = re.compile(r"\b([a-z_]+)=(\d+)")  # legacy: `ransac=34 fiduci
 class Accept:
     """One `relocalize accepted` record. ``source`` is None on the single-source
     path (module.py tags a winner only when the multi-prior judge ran) -- callers
-    pick their own label for that, they are not the same thing as a ransac WIN."""
+    pick their own label for that, they are not the same thing as a ransac WIN.
+
+    Everything but ``fitness`` is optional because the quiet line drops the pose
+    fields; a None here means "this run's log did not carry it", never 0."""
 
     tod_s: float | None  # seconds since midnight, from the log clock (UTC in captures)
     fitness: float
@@ -79,6 +96,9 @@ class Accept:
     reloc_t_m: list[float] | None  # map_T_world translation
     published_t_m: list[float] | None  # world_T_map translation (the TF join key)
     source: str | None
+    # Winner's post-ICP wall fitness minus the best other source's. Quiet-only, and
+    # None whenever one source held the finalists -- that is "no rival", not a tie.
+    margin: float | None = None
 
 
 def _floats(csv: str) -> list[float]:
@@ -159,6 +179,7 @@ def parse_accepts(log_text: str) -> list[Accept]:
         reloc_t = _field(obj, "reloc_t_m", text, _RELOC_T_RE)
         pub_t = _field(obj, "published_t_m", text, _PUB_T_RE)
         src = _field(obj, "source", text, _SOURCE_RE)
+        margin = _field(obj, "margin", text, _MARGIN_RE)
         out.append(
             Accept(
                 tod_s=_tod(text if obj is None else str(obj.get("timestamp", ""))),
@@ -168,6 +189,7 @@ def parse_accepts(log_text: str) -> list[Accept]:
                 reloc_t_m=reloc_t if isinstance(reloc_t, list) else _as_floats(reloc_t),
                 published_t_m=pub_t if isinstance(pub_t, list) else _as_floats(pub_t),
                 source=None if src is None else str(src),
+                margin=None if margin is None else float(margin),
             )
         )
     return out
@@ -184,7 +206,10 @@ def count_rejects(log_text: str) -> int:
 
 def parse_census(log_text: str) -> list[dict[str, int]]:
     """One dict of per-source PROPOSAL counts per judge cycle. A source missing here
-    proposed nothing that cycle -- distinct from proposing and losing the judge."""
+    proposed nothing that cycle -- distinct from proposing and losing the judge.
+
+    Empty for a quiet run: the census is emitted only under verbose_eval_logging, so
+    [] means "this log has no census", not "nothing was proposed"."""
     out: list[dict[str, int]] = []
     for kind, text, obj in _records(log_text):
         if kind != "census":
