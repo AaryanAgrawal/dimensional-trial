@@ -10,8 +10,10 @@ bug). Here dimos does the localizing; we only listen.
 What we capture, and why each channel (verified against source Jul 2026):
   - RelocalizationModule (mapping/relocalization/module.py) publishes its
     world->map answer to the TF tree via `self.tf.publish(tf.now())`, and logs
-    one `relocalize:` line per accept (fitness, time_cost, n_pts, reloc_t,
-    published_t, source). The log line has NO rotation and NO recording ts.
+    one `relocalize accepted` line per accept (fitness, time_cost_s, n_pts,
+    reloc_t_m, published_t_m, source). The log line has NO rotation and NO
+    recording ts. Parsing lives in reloc_log.py -- key-anchored, both wire
+    formats; see its module docstring for why field order is never assumed.
   - The TF tree rides LCM topic `dimos/tf` as TFMessage (protocol/tf/tf.py
     LCMTF). We subscribe there for the FULL world->map transform (rotation the
     log omits). In a reloc-only run (no marker_map_file) the visual module idles
@@ -48,9 +50,9 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import re
 import signal
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -61,37 +63,23 @@ from dimos.memory2.store.sqlite import SqliteStore
 from dimos.msgs.geometry_msgs.PoseStamped import PoseStamped
 from dimos.msgs.tf2_msgs.TFMessage import TFMessage
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # harness-local modules
+from reloc_log import count_rejects, module_started, parse_accepts  # noqa: E402
+
 DIMOS_ROOT = Path(__file__).resolve().parents[2] / "dimos"
 TRIAL_ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = Path(__file__).parent / "out" / "results_dimos"
 
-BLUEPRINT = "unitree-go2-fiducial-relocalization"
+BLUEPRINT = "unitree-go2-relocalization-fiducial"
 FRAME_WORLD = "world"
 FRAME_MAP = "map"
 WARMUP_BUDGET_S = 90.0  # module deploy + teardown headroom on top of drive length
-
-# `07:51:58.887 [inf][...module.py] relocalize: fitness=0.980 time_cost=2.0s
-#  n_pts=55828 reloc_t=[..] TF 'world' -> 'map' published_t=[..] source=ransac`
-_ACCEPT_RE = re.compile(
-    r"(?P<h>\d\d):(?P<m>\d\d):(?P<s>\d\d)\.(?P<ms>\d+)\s.*?"
-    r"relocalize: fitness=(?P<fit>[0-9.]+) time_cost=(?P<tc>[0-9.]+)s "
-    r"n_pts=(?P<npts>\d+) reloc_t=\[(?P<reloc>[^\]]+)\] "
-    r"TF 'world' -> 'map' published_t=\[(?P<pub>[^\]]+)\]"
-    r"(?: source=(?P<src>\S+))?"
-)
-# rejects share the timestamp+fitness shape; counted for the denominator only.
-_REJECT_RE = re.compile(r"relocalize rejected: fitness=(?P<fit>[0-9.]+)")
-
 
 def _git_rev(path: Path) -> str:
     return subprocess.run(
         ["git", "-C", str(path), "rev-parse", "--short", "HEAD"],
         capture_output=True, text=True, check=True,
     ).stdout.strip()
-
-
-def _floats(csv: str) -> list[float]:
-    return [float(x) for x in csv.split(",")]
 
 
 def _preflight_bus_clear() -> None:
@@ -266,11 +254,16 @@ def _parse_and_join(
     midnight_local = now - (lt.tm_hour * 3600 + lt.tm_min * 60 + lt.tm_sec + now % 1.0)
 
     raw = []
-    for mobj in _ACCEPT_RE.finditer(text):
-        g = mobj.groupdict()
-        tod = int(g["h"]) * 3600 + int(g["m"]) * 60 + int(g["s"]) + int(g["ms"]) / 10 ** len(g["ms"])
-        T, tf_wall, rot_source = _match_world_map(_floats(g["pub"]), cap.world_map)
-        raw.append((g, tod, float(g["tc"]), T, tf_wall, rot_source))
+    dropped = 0
+    for acc in parse_accepts(text):
+        # The clock math below is anchored on the log time-of-day and the logged
+        # compute time; an accept missing either cannot be placed on the recording
+        # timeline, so it is dropped and counted rather than guessed at.
+        if acc.tod_s is None or acc.time_cost_s is None or acc.published_t_m is None:
+            dropped += 1
+            continue
+        T, tf_wall, rot_source = _match_world_map(acc.published_t_m, cap.world_map)
+        raw.append((acc, acc.tod_s, acc.time_cost_s, T, tf_wall, rot_source))
 
     # Calibrate tod -> recording from tf-matched accepts: R = (tod - time_cost) + K.
     ks = [(tw + offset) - (tod - tc) for (_, tod, tc, _, tw, _) in raw if tw is not None]
@@ -280,7 +273,7 @@ def _parse_and_join(
     clock_gaps = [tw - (midnight_local + tod) for (_, tod, _, _, tw, _) in raw if tw is not None]
 
     fixes: list[dict] = []
-    for g, tod, tc, T, tf_wall, rot_source in raw:
+    for acc, tod, tc, T, tf_wall, rot_source in raw:
         if tf_wall is not None:
             ts_rec, ts_source = (tf_wall + offset) - tc, "tf"
         else:
@@ -290,12 +283,14 @@ def _parse_and_join(
             "ts_source": ts_source,
             "wall_ts": tf_wall if tf_wall is not None else midnight_local + tod,
             "world_map_fix": T.tolist() if T is not None else None,
-            "reloc_t": _floats(g["reloc"]),           # map_T_world translation (log)
-            "published_t": _floats(g["pub"]),          # world_T_map translation (log)
-            "fitness": float(g["fit"]),
-            "n_pts": int(g["npts"]),
+            "reloc_t": acc.reloc_t_m,                  # map_T_world translation (log)
+            "published_t": acc.published_t_m,          # world_T_map translation (log)
+            "fitness": acc.fitness,
+            "n_pts": acc.n_pts,
             "time_cost_s": tc,
-            "source": g["src"] or "ransac",
+            # No source= means the single-source path ran (no judge) -- that path IS
+            # ransac, which is why absence maps to it here and in eval_module.
+            "source": acc.source or "ransac",
             "rot_source": rot_source,
         })
 
@@ -304,11 +299,17 @@ def _parse_and_join(
         "n_odom_samples": len(cap.odom),
         "n_world_map_tf": len(cap.world_map),
         "n_accepts": len(fixes),
-        "n_rejects": len(_REJECT_RE.findall(text)),
+        "n_accepts_unplaceable": dropped,  # accept lines with no tod / time_cost / published_t
+        "n_rejects": count_rejects(text),
         "n_with_rotation": sum(1 for f in fixes if f["world_map_fix"] is not None),
+        # Who WON each accept, straight from the capture -- a parser that stops
+        # seeing a source now shows up here as a split that lost a name, instead of
+        # silently collapsing onto ransac (the bug this file shipped with).
+        "source_split": {s: sum(1 for f in fixes if f["source"] == s)
+                         for s in sorted({f["source"] for f in fixes})},
         "log_vs_wall_clock_gap_s": float(np.median(clock_gaps)) if clock_gaps else None,
         "traceback_in_log": "Traceback (most recent call last)" in text,
-        "module_started": "Relocalization module started" in text,
+        "module_started": module_started(text),
     }
     return fixes, diag
 
@@ -317,6 +318,9 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("recording")
     ap.add_argument("--premap", required=True, help="ABS path to the .pc2.lcm premap")
+    ap.add_argument("--tag", default=None,
+                    help="output-file key (default = recording); set for A/B runs so "
+                         "the off/on outputs don't collide. Does NOT change --replay-db.")
     ap.add_argument("--max-wall-s", type=float, default=None,
                     help="hard cap; default = drive length + 90 s warmup/teardown")
     ap.add_argument("-o", dest="overrides", action="append", default=[],
@@ -328,11 +332,12 @@ def main() -> None:
         raise FileNotFoundError(f"premap not found: {premap}")
     _preflight_bus_clear()
 
+    key = a.tag or a.recording  # output-file key; a.recording still drives --replay-db
     win = _recording_window(a.recording)
     drive_s = win[1] - win[0]
     max_wall_s = a.max_wall_s if a.max_wall_s is not None else drive_s + WARMUP_BUDGET_S
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    log_path = OUT_DIR / f"{a.recording}.replay_run.log"
+    log_path = OUT_DIR / f"{key}.replay_run.log"
 
     extra = [arg for o in a.overrides for arg in ("-o", o)]
     print(f"[replay_bench] {a.recording}: drive={drive_s:.1f}s cap={max_wall_s:.0f}s premap={premap}")
@@ -351,6 +356,7 @@ def main() -> None:
     out = {
         "meta": {
             "recording": a.recording,
+            "tag": key,
             "premap": str(premap),
             "blueprint": BLUEPRINT,
             "command": " ".join(argv),
@@ -365,7 +371,7 @@ def main() -> None:
         },
         "fixes": fixes,
     }
-    out_path = OUT_DIR / f"{a.recording}.replay.json"
+    out_path = OUT_DIR / f"{key}.replay.json"
     out_path.write_text(json.dumps(out, indent=2))
     print(f"[replay_bench] wrote {out_path}")
     print(f"[replay_bench] accepts={diag['n_accepts']} rejects={diag['n_rejects']} "

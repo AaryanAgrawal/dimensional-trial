@@ -27,6 +27,7 @@ import json
 import math
 import pickle
 import re
+import sys
 import textwrap
 from datetime import datetime, timezone
 from pathlib import Path
@@ -36,6 +37,9 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402  (backend must be set first)
 import numpy as np  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # harness-local modules
+from reloc_log import parse_accepts  # noqa: E402
 
 SEED = 0  # no RNG anywhere in this script
 
@@ -196,8 +200,6 @@ def fig_sf_bench() -> None:
 
 # ---------------------------------------------------------------- fig 2: SF live A/B
 _TS = r"(\d{2}):(\d{2}):(\d{2}\.\d+)"
-ACCEPT_RE = re.compile(_TS + r" .*relocalize: fitness=([\d.]+) time_cost=([\d.]+)s n_pts=(\d+) "
-                             r"reloc_t=\[([^\]]+)\] TF 'world' -> 'map' published_t=\[([^\]]+)\](?: source=(\w+))?")
 START_RE = re.compile(_TS + r" .*Starting DimOS")
 FIX_RE = re.compile(r"fix#(\d+) ts=([\d.]+) world->map t=\[([-\d.,]+)\](?: wall=([\d.]+))?")
 DAY_UTC = datetime(2026, 7, 19, tzinfo=timezone.utc).timestamp()  # both arms logged 03:07–05:12 UTC Jul 19
@@ -214,11 +216,11 @@ def parse_arm(arm: str) -> dict:
     cmd = (LIVE / arm / "replay_cmd.txt").read_text()
     epoch = float(re.search(r"start .* epoch=(\d+)", cmd).group(1))
     assert abs(t0 - epoch) < 60.0, f"{arm}: log day mismatch vs replay_cmd epoch"  # guards DAY_UTC
-    acc = []
-    for ln in txt.splitlines():
-        if (m := ACCEPT_RE.match(ln)):
-            ts = DAY_UTC + int(m.group(1)) * 3600 + int(m.group(2)) * 60 + float(m.group(3))
-            acc.append(dict(t=ts - t0, dt=float(m.group(5)), src=m.group(9) or "plain"))
+    # src "plain" = the accept carried no source=, i.e. the single-source path ran
+    # and no judge ranked anything -- not the same event as a judged RANSAC win.
+    acc = [dict(t=DAY_UTC + a.tod_s - t0, dt=a.time_cost_s, src=a.source or "plain")
+           for a in parse_accepts(txt)
+           if a.tod_s is not None and a.time_cost_s is not None]
     fixes = [float(m.group(4) or m.group(2)) - t0
              for ln in (LIVE / arm / "spy_world_map_fix.log").read_text().splitlines()
              if (m := FIX_RE.match(ln))]

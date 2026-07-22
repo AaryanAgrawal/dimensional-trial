@@ -34,21 +34,13 @@ from pathlib import Path
 import numpy as np
 
 HARNESS = Path(__file__).parent
+sys.path.insert(0, str(HARNESS))
+from reloc_log import count_rejects, parse_accepts  # noqa: E402
 
 SEED = 0  # no RNG anywhere below; printed per house rule
 
 _FIX_RE = re.compile(r"fix#(\d+) ts=([\d.]+) world->map t=\[([-\d.,]+)\]")
-_ACCEPT_RE = re.compile(
-    r"(\d{2}):(\d{2}):(\d{2}\.\d+) .*relocalize: fitness=([\d.]+) time_cost=([\d.]+)s "
-    r"n_pts=(\d+) reloc_t=\[([-\d.e, ]+)\] TF 'world' -> 'map' "
-    r"published_t=\[([-\d.e, ]+)\] source=(\w+)"
-)
-_REJECT_RE = re.compile(r"relocalize rejected: fitness=([\d.]+)")
 _GATE_RE = re.compile(r"gate rejected \((\d+) tags seen(?:, rejects=\{([^}]*)\})?\)")
-
-
-def _hms_to_epoch(day: datetime, hh: str, mm: str, ss: str) -> float:
-    return day.timestamp() + int(hh) * 3600 + int(mm) * 60 + float(ss)
 
 
 def main() -> int:
@@ -85,12 +77,14 @@ def main() -> int:
           f"{len(gate_warns)}, summed per-frame reasons {reasons or '{}'}")
 
     # ---- judge accepts / rejects / crashes
-    accepts = [m for m in map(_ACCEPT_RE.match, replay_txt.splitlines()) if m]
-    acc_ts = np.array([_hms_to_epoch(day, m.group(1), m.group(2), m.group(3)) for m in accepts])
-    acc_src = [m.group(9) for m in accepts]
-    acc_fit = np.array([float(m.group(4)) for m in accepts])
-    acc_t = np.array([[float(v) for v in m.group(8).split(",")] for m in accepts])
-    n_below = len(_REJECT_RE.findall(replay_txt))
+    # source absent = the single-source (no judge) path, which IS ransac.
+    accepts = [a for a in parse_accepts(replay_txt)
+               if a.tod_s is not None and a.published_t_m is not None]
+    acc_ts = np.array([day.timestamp() + a.tod_s for a in accepts])
+    acc_src = [a.source or "ransac" for a in accepts]
+    acc_fit = np.array([a.fitness for a in accepts])
+    acc_t = np.array([a.published_t_m for a in accepts])
+    n_below = count_rejects(replay_txt)
     n_tb = replay_txt.count("Traceback (most recent call last)")
     src_split = {s: acc_src.count(s) for s in sorted(set(acc_src))}
     print(f"\nrelocalize accepts: {len(accepts)}  source split: {src_split}")

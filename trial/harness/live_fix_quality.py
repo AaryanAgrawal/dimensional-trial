@@ -71,6 +71,7 @@ from scipy.stats import spearmanr
 HARNESS = Path(__file__).parent
 sys.path.insert(0, str(HARNESS))
 from prep import pose7_to_mat, transform_to_mat  # noqa: E402
+from reloc_log import parse_accepts  # noqa: E402
 
 from dimos.memory2.store.sqlite import SqliteStore  # noqa: E402
 from dimos.msgs.geometry_msgs.PoseStamped import PoseStamped  # noqa: E402
@@ -106,11 +107,6 @@ BURST_GAP_S = 5.0  # >5 s between fixes = a new tag-approach pass
 # --------------------------------------------------------------- log parsing
 
 _FIX_RE = re.compile(r"^fix#(\d+) ts=([\d.]+) world->map t=\[([^\]]+)\]")
-_RELOC_RE = re.compile(
-    r"^(\d\d):(\d\d):(\d\d\.\d+) .*relocalize: fitness=([\d.]+) time_cost=([\d.]+)s "
-    r"n_pts=\d+ reloc_t=\[[^\]]+\] TF 'world' -> 'map' "
-    r"published_t=\[([^\]]+)\] source=(\w+)"
-)
 
 
 def parse_spy(path: Path) -> tuple[np.ndarray, np.ndarray]:
@@ -134,13 +130,18 @@ def parse_replay_log(path: Path, date_utc: str) -> dict[str, np.ndarray]:
     """
     day = datetime.strptime(date_utc, "%Y-%m-%d").replace(tzinfo=timezone.utc)
     ts, t, fit, cost = [], [], [], []
-    for line in path.read_text().splitlines():
-        if (m := _RELOC_RE.match(line)) and m.group(7) == "ransac":
-            hh, mm, ss = int(m.group(1)), int(m.group(2)), float(m.group(3))
-            ts.append(day.timestamp() + hh * 3600 + mm * 60 + ss)
-            fit.append(float(m.group(4)))
-            cost.append(float(m.group(5)))
-            t.append([float(v) for v in m.group(6).split(",")])
+    for acc in parse_accepts(path.read_text()):
+        # ransac only: this reference is scan-matching self-consistency, so a
+        # fiducial-sourced accept would be the thing under test, not the ruler.
+        # source absent = the single-source (no judge) path, which IS ransac.
+        if (acc.source or "ransac") != "ransac":
+            continue
+        if acc.tod_s is None or acc.published_t_m is None or acc.time_cost_s is None:
+            continue
+        ts.append(day.timestamp() + acc.tod_s)
+        fit.append(acc.fitness)
+        cost.append(acc.time_cost_s)
+        t.append(acc.published_t_m)
     if not ts:
         raise ValueError(f"no accepted relocalize lines in {path}")
     return {"wall_ts": np.array(ts), "t": np.array(t),
