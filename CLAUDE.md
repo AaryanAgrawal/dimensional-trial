@@ -159,6 +159,19 @@ lines): any function past ~25 lines that is not the one sanctioned knob-concentr
 gets ONE definition in the util module both import — never a second copy in a CLI or a module. Code
 must not overlap: before adding a helper, grep for it.
 
+**Configs live only where they are consumed (Aaryan, Jul 24).** A config field its own module never
+reads is a forwarding vessel — delete it and let the consumer's config own the value. Wiring one
+config's field into another module at blueprint-construction time looks like coupling but is **fake
+sync**: it binds once at import, so an `-o` override on the source never reaches the destination, and
+the two silently diverge. Proof: `FiducialPriorConfig` carried `marker_length_m` / `aruco_dictionary` /
+`aggregation`, read none of them, and existed only for the blueprint to hand them to
+`MarkerDetectionStreamModule` — which already declares all three upstream. Deleted; the blueprint
+passes the detector its own values directly.
+
+Corollary — **a blueprint states only what DIFFERS from a default.** Everything a module can default,
+it defaults; a value in a blueprint means "I deliberately differ," so restating a default is noise
+that reads as intent. Give every field we own a default so the blueprint declares nothing.
+
 **Touch as few files as possible.** A new file that compartmentalizes a genuinely distinct concern
 — mirroring the code's own module boundaries — is fine. But don't proliferate, especially test
 files: many small `test_*.py` for one cohesive surface is scatter, not co-location. Be critical —
