@@ -117,6 +117,22 @@ it into ONE util function both call, never re-implement it twice. But only refac
 never restructure an upstream function to enable the sharing (that widens the diff and the blast
 radius). The shared util lives in our file; the upstream caller stays as it was.
 
+**One line. Never two (Aaryan, Jul 24).** A comment is ONE line. Not a block, not a paragraph, not
+"just this once because the race is subtle." If the WHY does not fit on one line, the line it sits on
+is the problem — name the thing better, or split the function. Two consecutive `#` lines that we added
+is a defect, full stop; the only multi-line comment blocks in our diff should be the license header.
+Same for docstrings: one line states WHAT, and the rest gets cut or moved inline.
+
+    # ILLEGAL — five lines explaining one guard:
+    # --eval turns the relocalization module's own verbose accept trace on: each
+    # accepted fix logs source + fitness + published pose. Guarded on the module
+    # being present because blueprint.config() is extra="forbid" -- an unconditional
+    # override would hard-fail --eval on a stack with no relocalization. An explicit
+    # -o still wins; config_key(b.name) so a namespaced instance resolves.
+
+    # RIGHT — the one WHY a reader cannot get from the code, on the line it explains:
+    # extra="forbid": overriding a module that isn't in this stack would hard-fail --eval.
+
 **Docstrings are one line, maybe two (Aaryan, Jul 23).** A function docstring states WHAT it does in a
 sentence. Multi-paragraph WHY — a race, a physics reason, a gotcha — goes in a *targeted inline comment
 on the exact line it explains*, never a docstring essay. Past ~2 lines, the rest gets cut or moved
