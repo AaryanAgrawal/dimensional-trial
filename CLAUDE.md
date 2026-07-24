@@ -185,6 +185,22 @@ ready — never flip it themselves.
 attention. Cut anything constant, redundant, or restating the code. A field that never varies is
 noise; two fields carrying one fact is one field. Log what changes and what the reader acts on.
 
+**Code says what IS; the PR says what CHANGED (Aaryan, Jul 24).** A comment about a past state — what
+we removed, what used to be here, why we did not do the other thing — never goes in the code. The
+next reader opens the file with no access to that past and does not need it; the line just ages into
+a lie. It goes on the PR instead, as an **inline comment on the diff line**, not in the body — that
+is where a reviewer is actually asking "why?". Especially worth one on a deletion, where the diff
+shows what left but not why. Keep them scarce: a handful at the real decision points, never a
+running commentary.
+
+    # WRONG (in the code — explains a removal the file has no memory of):
+    # No transport override: autoconnect wires it. An explicit LCMTransport is only needed
+    # when a consumer is a cpp/rust or external (non-blueprint) module.
+    aggregated_detections: Out[Detection3DArray]
+
+    # RIGHT: the code carries only what IS; that sentence becomes an inline PR comment on the line.
+    aggregated_detections: Out[Detection3DArray]
+
 **Explain with ASCII diagrams wherever they fit.** Data flow, trigger/gate order, frame chains,
 before/after — draw it. A diagram beats a paragraph for anything with a shape, and it survives being
 skimmed. Prose only for what a picture cannot carry.
