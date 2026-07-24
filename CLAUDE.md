@@ -67,6 +67,106 @@ and may call real dimos for the legitimate steps (premap = `dimos map global --p
 it must **grade fixes the real pipeline published**, never fixes it computed itself. If you cannot
 test something through real dimos, say so — do not substitute a look-alike.
 
+## Never run a full replay to iterate (Aaryan, Jul 22)
+
+A full-recording `dimos --replay` (survey2 is 730 s) takes 10+ min, ties up the LCM bus, and hangs
+often enough to burn a whole agent's timeout on one number. **Never run one to validate or iterate.**
+Instead:
+
+- **Test values, not runs.** Unit-test the changed function on constructed known-truth data —
+  fitness math, pose composition, a scoring mode — and assert the numbers directly. This is faster,
+  deterministic, and needs no bus. It's the default; reach for a replay only when the value can't be
+  constructed offline.
+- **If you must replay, bound it.** A short slice via `--seek`/`--duration` (a handful of reloc
+  cycles) proves the wiring end-to-end without the full recording. Enough to see accepts/rejects and
+  a source label; never the whole drive.
+- **Full replays are a final, explicit deliverable step only** — a headline eval number Aaryan asked
+  for — not something an agent fires to check its own work. Still exercise *real* dimos (above), just
+  on a bounded slice.
+
+## Hard rule (Aaryan, Jul 22)
+
+Write only what Paul, Ivan, Jeff and Sam already write. Copy the pattern from the file you're
+editing; introduce nothing new. An API with one caller is not a norm. Fewest lines; skip anything
+not strictly needed.
+
+**Always the smallest possible diff against main.** Every line changed is review surface. Touch a
+file only if the feature cannot work without it; delete our own dead code rather than carry it.
+
+**Default to adding.** Extend an API, never change one — a new stream, a new optional field, a new
+entity beside the old. Existing callers must keep working untouched.
+
+**Share our own logic through utils — but only ours (Aaryan, Jul 23).** When the same computation is
+needed in two of our code paths (e.g. live tag aggregation and the offline `--markers` survey), factor
+it into ONE util function both call, never re-implement it twice. But only refactor OUR code to do it —
+never restructure an upstream function to enable the sharing (that widens the diff and the blast
+radius). The shared util lives in our file; the upstream caller stays as it was.
+
+**Docstrings are one line, maybe two (Aaryan, Jul 23).** A function docstring states WHAT it does in a
+sentence. Multi-paragraph WHY — a race, a physics reason, a gotcha — goes in a *targeted inline comment
+on the exact line it explains*, never a docstring essay. Past ~2 lines, the rest gets cut or moved
+inline. Same for block comments: a paragraph restating the code is noise; a one-line WHY on the tricky
+line is signal.
+
+    # TOO LONG (a 7-line docstring re-explaining RANSAC-vs-fiducial triggering):
+    def _on_local_map(self, msg):
+        """Poll the RANSAC prior on the module's timer, and on cold start fire a pending
+        fiducial fix.  RANSAC lives on THIS path because it GENERATES its candidates from
+        the cloud in hand; the fiducial reaches here only when its burst beat the first
+        cached cloud.  min_local_points gates the RANSAC prior ONLY -- a tag burst fires
+        below the floor, and a starved RANSAC cycle leaves the timer unmoved ..."""
+
+    # RIGHT (one line + the one non-obvious WHY carried inline, at the line it explains):
+    def _on_local_map(self, msg):
+        """Fire RANSAC on its timer; on cold start, fire a pending fiducial fix."""
+        ...
+        if n_pts < self._min_local_points:   # starved: skip, leave the timer so it re-fires when dense
+            ...
+
+**Logic lives in utils; mains just call them (Aaryan, Jul 24).** An entry point — a CLI `main()`, a
+module's runtime method — should read as a LIST OF CALLS, not an implementation. Put each step in a
+small named function and let the entry point orchestrate. The existing size bar applies (lesh p90 = 25
+lines): any function past ~25 lines that is not the one sanctioned knob-concentrator gets split. A
+123-line method is not a function, it is a script that lost its name.
+
+    # WRONG: _try_relocalize doing solve + accept gate + jump guard + publish + tally inline (123 lines)
+    # RIGHT:
+    def _try_relocalize(self, msg, priors):
+        """Solve, gate, guard, publish."""
+        result = self._solve(msg, priors)          # each step is a named function
+        if result is None or not self._accepted(result):
+            return None
+        if not self._jump_ok(result.T):
+            return None
+        return self._publish(result.T)
+
+**Never define the same function twice (Aaryan, Jul 24).** If two paths need the same computation, it
+gets ONE definition in the util module both import — never a second copy in a CLI or a module. Code
+must not overlap: before adding a helper, grep for it.
+
+**Touch as few files as possible.** A new file that compartmentalizes a genuinely distinct concern
+— mirroring the code's own module boundaries — is fine. But don't proliferate, especially test
+files: many small `test_*.py` for one cohesive surface is scatter, not co-location. Be critical —
+each file must earn its existence. Consolidate an over-split surface; reach for a new file only when
+a cohesive concern deserves its own home. Prefer editing an existing file for an incidental change.
+
+**Always open PRs as drafts.** `gh pr create --draft`. It stays a draft until the operator marks it
+ready — never flip it themselves.
+
+**Someone reads every line you emit.** Log fields, comments, PR text — all of it costs a reader's
+attention. Cut anything constant, redundant, or restating the code. A field that never varies is
+noise; two fields carrying one fact is one field. Log what changes and what the reader acts on.
+
+**Explain with ASCII diagrams wherever they fit.** Data flow, trigger/gate order, frame chains,
+before/after — draw it. A diagram beats a paragraph for anything with a shape, and it survives being
+skimmed. Prose only for what a picture cannot carry.
+
+**A PR describes CODE, not results.** Measured numbers in a PR body rot: a threshold moves and every
+figure quoted around it is now a lie (this cost us 7 false claims in one draft). Evidence belongs in
+figures a reviewer can look at and commands they can re-run — never as prose numbers asserting what
+some build once did. If a number is load-bearing, it goes in the code beside the constant it
+justifies, where it is maintained with the thing it describes.
+
 ## Robotics non-negotiables
 
 - **Every pose names its frame. Every number names its unit.** `world_T_camera`, never bare
