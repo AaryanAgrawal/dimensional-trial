@@ -96,6 +96,21 @@ file only if the feature cannot work without it; delete our own dead code rather
 **Default to adding.** Extend an API, never change one — a new stream, a new optional field, a new
 entity beside the old. Existing callers must keep working untouched.
 
+**No temp fixes, no compat shims for callers that don't exist (Aaryan, Jul 23).** Never push a
+workaround, stopgap, or band-aid — fix it now or leave it alone and say so. The subtle case is the
+**compatibility shim** (migration/deprecation redirect, a tombstone pointing an old name at its new
+home). Inside an unmerged PR it has zero users *by construction*: nothing ever shipped the old
+spelling, so the migration path is "rebase and use the new name." Fowler's name for the defect is
+**speculative generality** — code serving a caller that does not exist; when it guards a state that
+cannot occur it is a **dead guard**. Both are real code someone must read, review, and maintain.
+
+Proof: `_MOVED_TO_PRIORS` (27 lines) mapped three module-Config keys to their new per-prior homes so
+a stale config would get a helpful error. But exactly ONE blueprint constructs `RelocalizationModule`
+and we edit it in the same commit; two of the three keys were never Config fields at all (module
+constants); and `extra="forbid"` already raises loudly naming the bad key. Deleted.
+
+Shims earn their keep only for a **shipped** API with **unknown** callers.
+
 **Share our own logic through utils — but only ours (Aaryan, Jul 23).** When the same computation is
 needed in two of our code paths (e.g. live tag aggregation and the offline `--markers` survey), factor
 it into ONE util function both call, never re-implement it twice. But only refactor OUR code to do it —
